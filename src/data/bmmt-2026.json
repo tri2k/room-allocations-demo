@@ -1,0 +1,151 @@
+{
+  "event": {
+    "name": "BmMT 2026",
+    "eventDate": "2026-03-15",
+    "timezone": "America/Los_Angeles",
+    "slotMinutes": 15,
+    "gridStart": "07:00",
+    "gridEnd": "16:15"
+  },
+  "buildings": [
+    { "id": "b-dwin", "code": "DWIN", "name": "Dwinelle Hall" },
+    { "id": "b-vlsb", "code": "VLSB", "name": "Valley Life Sciences Building" }
+  ],
+  "floors": [
+    { "id": "f-dwin-1", "buildingId": "b-dwin", "label": "1", "sortOrder": 1 },
+    { "id": "f-dwin-2", "buildingId": "b-dwin", "label": "2", "sortOrder": 2 },
+    { "id": "f-vlsb-2", "buildingId": "b-vlsb", "label": "2", "sortOrder": 2 }
+  ],
+  "rooms": [
+    {
+      "id": "r-dwin-155",
+      "buildingId": "b-dwin",
+      "floorId": "f-dwin-1",
+      "name": "155",
+      "roomType": "auditorium",
+      "capacity": 481,
+      "optimalCapacity": 400
+    },
+    {
+      "id": "r-dwin-182",
+      "buildingId": "b-dwin",
+      "floorId": "f-dwin-1",
+      "name": "182",
+      "roomType": "small",
+      "capacity": 48,
+      "optimalCapacity": 45
+    },
+    {
+      "id": "r-dwin-183",
+      "buildingId": "b-dwin",
+      "floorId": "f-dwin-1",
+      "name": "183",
+      "roomType": "small",
+      "capacity": 30,
+      "optimalCapacity": 27
+    },
+    {
+      "id": "r-dwin-187",
+      "buildingId": "b-dwin",
+      "floorId": "f-dwin-1",
+      "name": "187",
+      "roomType": "small",
+      "capacity": 30,
+      "optimalCapacity": 27
+    },
+    {
+      "id": "r-dwin-205",
+      "buildingId": "b-dwin",
+      "floorId": "f-dwin-2",
+      "name": "205",
+      "roomType": "large",
+      "capacity": 56,
+      "optimalCapacity": 50
+    },
+    {
+      "id": "r-dwin-209",
+      "buildingId": "b-dwin",
+      "floorId": "f-dwin-2",
+      "name": "209",
+      "roomType": "small",
+      "capacity": 32,
+      "optimalCapacity": 30
+    },
+    {
+      "id": "r-vlsb-2040",
+      "buildingId": "b-vlsb",
+      "floorId": "f-vlsb-2",
+      "name": "2040",
+      "roomType": "auditorium",
+      "capacity": 158,
+      "optimalCapacity": 126
+    },
+    {
+      "id": "r-vlsb-2050",
+      "buildingId": "b-vlsb",
+      "floorId": "f-vlsb-2",
+      "name": "2050",
+      "roomType": "auditorium",
+      "capacity": 157,
+      "optimalCapacity": 126
+    },
+    {
+      "id": "r-vlsb-2060",
+      "buildingId": "b-vlsb",
+      "floorId": "f-vlsb-2",
+      "name": "2060",
+      "roomType": "small",
+      "capacity": 40,
+      "optimalCapacity": 30
+    }
+  ],
+  "activities": [
+    { "id": "a-arrival", "name": "Arrival", "color": "#b3e5fc", "defaultDurationMin": 45 },
+    { "id": "a-checkin", "name": "Check-in", "color": "#90caf9", "defaultDurationMin": 45 },
+    { "id": "a-puzzle", "name": "Puzzle", "color": "#ffcc80", "defaultDurationMin": 75 },
+    { "id": "a-indiv", "name": "Indiv", "color": "#fff59d", "defaultDurationMin": 60 },
+    { "id": "a-team", "name": "Team", "color": "#ffe082", "defaultDurationMin": 90 },
+    { "id": "a-relay", "name": "Relay", "color": "#c5e1a5", "defaultDurationMin": 45 },
+    { "id": "a-lunch", "name": "Lunch", "color": "#e1bee7", "defaultDurationMin": 60 }
+  ],
+  "timeBlocks": [
+    { "id": "tb-arrival", "label": "Arrival", "startTime": "07:00", "endTime": "07:45", "color": "#b3e5fc" },
+    { "id": "tb-checkin", "label": "Check-in", "startTime": "07:45", "endTime": "09:00", "color": "#90caf9" },
+    { "id": "tb-puzzle", "label": "Puzzle", "startTime": "09:15", "endTime": "10:30", "color": "#ffcc80" },
+    { "id": "tb-indiv", "label": "Indiv", "startTime": "10:45", "endTime": "11:45", "color": "#fff59d" },
+    { "id": "tb-lunch", "label": "Lunch", "startTime": "12:00", "endTime": "13:00", "color": "#e1bee7" },
+    { "id": "tb-team", "label": "Team", "startTime": "13:30", "endTime": "15:00", "color": "#ffe082" },
+    { "id": "tb-relay", "label": "Relay", "startTime": "15:00", "endTime": "15:45", "color": "#c5e1a5" },
+    { "id": "tb-activities", "label": "Activities", "startTime": "15:45", "endTime": "16:15", "color": "#f5f5dc" }
+  ],
+  "allocations": [
+    {
+      "id": "alloc-1",
+      "roomId": "r-dwin-155",
+      "activityId": "a-checkin",
+      "startAt": "2026-03-15T07:45:00",
+      "endAt": "2026-03-15T09:00:00"
+    },
+    {
+      "id": "alloc-2",
+      "roomId": "r-vlsb-2040",
+      "activityId": "a-checkin",
+      "startAt": "2026-03-15T07:45:00",
+      "endAt": "2026-03-15T09:00:00"
+    },
+    {
+      "id": "alloc-3",
+      "roomId": "r-dwin-182",
+      "activityId": "a-puzzle",
+      "startAt": "2026-03-15T09:15:00",
+      "endAt": "2026-03-15T10:30:00"
+    },
+    {
+      "id": "alloc-4",
+      "roomId": "r-dwin-183",
+      "activityId": "a-puzzle",
+      "startAt": "2026-03-15T09:15:00",
+      "endAt": "2026-03-15T10:30:00"
+    }
+  ]
+}
