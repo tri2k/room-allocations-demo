@@ -4,6 +4,7 @@ export type Building = {
   id: string;
   code: string;
   name: string;
+  isActive?: boolean;
 };
 
 export type Floor = {
@@ -22,6 +23,7 @@ export type Room = {
   capacity: number;
   optimalCapacity: number;
   sortOrder?: number;
+  isActive?: boolean;
 };
 
 export type Activity = {

@@ -655,6 +655,17 @@ body {
   padding-bottom: 6px;
 }
 
+.catalog-list li.is-inactive {
+  color: #64748b;
+}
+
+.catalog-status {
+  margin-left: 8px;
+  font-size: 12px;
+  font-style: italic;
+  color: #b45309;
+}
+
 .catalog-error {
   color: #b91c1c;
 }

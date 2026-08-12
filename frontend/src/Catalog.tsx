@@ -10,9 +10,13 @@ import {
   deleteRoom,
   listBuildings,
   listFloors,
-  listRooms
+  listRooms,
+  patchBuilding,
+  patchRoom
 } from "./lib/api";
 import type { Building, Floor, Room } from "./types/schedule";
+
+const isActive = (row: { isActive?: boolean }): boolean => row.isActive !== false;
 
 function Catalog() {
   const [buildings, setBuildings] = useState<Building[]>([]);
@@ -31,6 +35,8 @@ function Catalog() {
     setFloors(nextFloors);
     setRooms(await listRooms());
   };
+
+  const activeBuildings = buildings.filter(isActive);
 
   useEffect(() => {
     void refresh().catch((err: unknown) => {
@@ -89,22 +95,33 @@ function Catalog() {
           <button type="submit">Add building</button>
         </form>
         <ul className="catalog-list">
-          {buildings.map((building) => (
-            <li key={building.id}>
-              <strong>{building.code}</strong> {building.name}
-              <button
-                type="button"
-                onClick={() =>
-                  void withError(async () => {
-                    await deleteBuilding(building.id);
-                    setToast("Soft-deleted building");
-                  })
-                }
-              >
-                Deactivate
-              </button>
-            </li>
-          ))}
+          {buildings.map((building) => {
+            const active = isActive(building);
+            return (
+              <li key={building.id} className={active ? undefined : "is-inactive"}>
+                <span>
+                  <strong>{building.code}</strong> {building.name}
+                  {active ? null : <em className="catalog-status">Inactive</em>}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    void withError(async () => {
+                      if (active) {
+                        await deleteBuilding(building.id);
+                        setToast("Deactivated building (hidden from schedule)");
+                      } else {
+                        await patchBuilding(building.id, { isActive: true });
+                        setToast("Reactivated building");
+                      }
+                    })
+                  }
+                >
+                  {active ? "Deactivate" : "Reactivate"}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       </section>
 
@@ -130,7 +147,7 @@ function Catalog() {
             <option value="" disabled>
               Building
             </option>
-            {buildings.map((building) => (
+            {activeBuildings.map((building) => (
               <option key={building.id} value={building.id}>
                 {building.code}
               </option>
@@ -190,7 +207,7 @@ function Catalog() {
             <option value="" disabled>
               Building
             </option>
-            {buildings.map((building) => (
+            {activeBuildings.map((building) => (
               <option key={building.id} value={building.id}>
                 {building.code}
               </option>
@@ -198,14 +215,16 @@ function Catalog() {
           </select>
           <select name="floorId" defaultValue="">
             <option value="">No floor</option>
-            {floors.map((floor) => {
-              const building = buildings.find((item) => item.id === floor.buildingId);
-              return (
-                <option key={floor.id} value={floor.id}>
-                  {building?.code} F{floor.label}
-                </option>
-              );
-            })}
+            {floors
+              .filter((floor) => activeBuildings.some((building) => building.id === floor.buildingId))
+              .map((floor) => {
+                const building = buildings.find((item) => item.id === floor.buildingId);
+                return (
+                  <option key={floor.id} value={floor.id}>
+                    {building?.code} F{floor.label}
+                  </option>
+                );
+              })}
           </select>
           <input name="name" placeholder="Number (155)" required />
           <select name="roomType" defaultValue="small">
@@ -220,20 +239,29 @@ function Catalog() {
         <ul className="catalog-list">
           {rooms.map((room) => {
             const building = buildings.find((item) => item.id === room.buildingId);
+            const active = isActive(room);
             return (
-              <li key={room.id}>
-                {building?.code}
-                {room.name} · {room.roomType} · {room.capacity}
+              <li key={room.id} className={active ? undefined : "is-inactive"}>
+                <span>
+                  {building?.code}
+                  {room.name} · {room.roomType} · {room.capacity}
+                  {active ? null : <em className="catalog-status">Inactive</em>}
+                </span>
                 <button
                   type="button"
                   onClick={() =>
                     void withError(async () => {
-                      await deleteRoom(room.id);
-                      setToast("Soft-deleted room");
+                      if (active) {
+                        await deleteRoom(room.id);
+                        setToast("Deactivated room (hidden from schedule)");
+                      } else {
+                        await patchRoom(room.id, { isActive: true });
+                        setToast("Reactivated room");
+                      }
                     })
                   }
                 >
-                  Deactivate
+                  {active ? "Deactivate" : "Reactivate"}
                 </button>
               </li>
             );
