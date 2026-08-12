@@ -245,8 +245,14 @@ Each step should leave the repo runnable.
 
 ### Deferred
 - Hosted deploy
-- v0 UI bugs (merged-block leader-only edits, collapse, sticky headers)
+- Merged-block leader-only edits ([docs/known-bugs-v0.md](../docs/known-bugs-v0.md))
+- Soft-delete ghost allocations (inactive rooms with lingering bookings that block overlaps)
 - GUIDELINES extras (Zustand, Tailwind, pnpm, TanStack, tests)
+
+### Post-ship UI fixes (2026-08-12)
+- Collapse expand/collapse and transpose collapse parity
+- Sticky headers and time gutter; transpose merge stacking over grid lines
+- Drag/resize interaction polish; Reset failure handling; catalog reactivate; room floor scoping; clear selection
 
 ---
 

@@ -2,12 +2,30 @@
 
 ## Unreleased
 
-- Phase 1 core loop: FastAPI + PostgreSQL persistence, SPA wired to `/api/v1`, catalog forms
+### Phase 1 core loop (shipped 2026-08-11)
+
+- FastAPI + PostgreSQL persistence, SPA wired to `/api/v1`, catalog forms
 - Split Event (`#/event`) from Catalog (`#/catalog`): venue spaces vs the day being planned
 - Repo layout is now `frontend/` + `server/`; schedule no longer lives in `localStorage`
 - C4 architecture diagrams in `docs/c4/` (context, container, component; theme-neutral flowcharts for light and dark mode)
 - Split `SPEC.md` into `PRODUCT.md` + `specs/`; slim `AGENTS.md`; align `GUIDELINES.md`
 - Note v0 merged-block edit bug in `docs/known-bugs-v0.md`
+
+### UI polish and bug fixes (2026-08-12)
+
+- Harden Vite `/api` proxy and surface non-JSON API errors clearly
+- Collapse: building/floor headers expand again; same controls in transpose view
+- Drag/resize: resize handles no longer start a move; live pointer preview while dragging/resizing
+- Sticky schedule headers, time gutter, and transpose “Time” corner while scrolling
+- Reset: failed reseed stays on the grid with an error toast instead of the boot error screen
+- Catalog/Event toasts auto-dismiss; inactive buildings/rooms show **Inactive** with **Reactivate**
+- Catalog room form: floor dropdown scoped to selected building; API rejects floor/building mismatch
+- Schedule: **Clear selection** button and `Escape` to deselect allocation or bulk-selected rooms
+
+### Still open
+
+- Merged blocks only edit the leader allocation ([docs/known-bugs-v0.md](docs/known-bugs-v0.md))
+- Soft-deleted rooms may leave hidden allocations that still block overlaps on the API
 
 ## v0 — Vision demo (2026-08-11)
 
