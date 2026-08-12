@@ -19,7 +19,7 @@ import {
   reseed
 } from "./lib/api";
 import AppNav from "./AppNav";
-import { buildBuildingGroups, buildFloorGroups, orderColumns } from "./lib/grid";
+import { buildBuildingGroups, buildFloorGroups, buildGridSlots, orderColumns } from "./lib/grid";
 import { buildOverlapSet } from "./lib/overlap";
 import { allocationStartSlot, buildIso, clamp, formatTimeLabel, getSlotCount, slotToTime, timeFromIso, timeToSlot } from "./lib/time";
 import type { Activity, Allocation, Room, ScheduleState, TimeBlock } from "./types/schedule";
@@ -148,6 +148,11 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
     [state.buildings, state.floors, state.rooms, collapsedBuildings, collapsedFloors]
   );
 
+  const gridSlots = useMemo(
+    () => buildGridSlots(state.buildings, state.floors, state.rooms, collapsedBuildings, collapsedFloors),
+    [state.buildings, state.floors, state.rooms, collapsedBuildings, collapsedFloors]
+  );
+
   const overlapsSet = useMemo(() => buildOverlapSet(state.allocations), [state.allocations]);
   const activitiesById = useMemo(
     () => new Map(state.activities.map((activity) => [activity.id, activity])),
@@ -155,11 +160,16 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
   );
   const mergedNormalMeta = useMemo(() => {
     const meta = new Map<string, MergeMeta>();
-    const roomIds = columns.map((column) => column.room.id);
-    const roomIndexById = new Map(roomIds.map((roomId, index) => [roomId, index]));
+    const slotRoomIds = gridSlots.map((slot) => (slot.type === "room" ? slot.column.room.id : null));
+    const roomIndexById = new Map<string, number>();
+    slotRoomIds.forEach((roomId, index) => {
+      if (roomId) roomIndexById.set(roomId, index);
+    });
     const roomKeyToAllocation = new Map<string, Map<string, Allocation>>();
 
-    for (const roomId of roomIds) roomKeyToAllocation.set(roomId, new Map());
+    for (const roomId of slotRoomIds) {
+      if (roomId) roomKeyToAllocation.set(roomId, new Map());
+    }
     for (const allocation of state.allocations) {
       if (!roomIndexById.has(allocation.roomId)) continue;
       const key = `${allocation.activityId}|${allocation.startAt}|${allocation.endAt}`;
@@ -171,23 +181,26 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
       if (baseIndex === undefined) continue;
       const key = `${allocation.activityId}|${allocation.startAt}|${allocation.endAt}`;
 
-      const leftRoomId = roomIds[baseIndex - 1];
+      const leftRoomId = slotRoomIds[baseIndex - 1];
       if (leftRoomId && roomKeyToAllocation.get(leftRoomId)?.has(key)) {
         meta.set(allocation.id, { isLeader: false, span: 0 });
         continue;
       }
 
       let span = 1;
-      while (baseIndex + span < roomIds.length) {
-        const nextRoomId = roomIds[baseIndex + span];
+      let cursor = baseIndex + 1;
+      while (cursor < slotRoomIds.length) {
+        const nextRoomId = slotRoomIds[cursor];
+        if (!nextRoomId) break;
         if (!roomKeyToAllocation.get(nextRoomId)?.has(key)) break;
         span += 1;
+        cursor += 1;
       }
       meta.set(allocation.id, { isLeader: true, span });
     }
 
     return meta;
-  }, [columns, state.allocations]);
+  }, [gridSlots, state.allocations]);
 
   useEffect(() => {
     if (!toast) return;
@@ -399,8 +412,67 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
     );
   };
 
-  const buildingGroups = useMemo(() => buildBuildingGroups(state.buildings, columns), [state.buildings, columns]);
-  const floorGroups = useMemo(() => buildFloorGroups(state.buildings, columns), [state.buildings, columns]);
+  const buildingGroups = useMemo(
+    () =>
+      buildBuildingGroups(
+        state.buildings,
+        state.rooms,
+        columns,
+        state.floors,
+        collapsedBuildings,
+        collapsedFloors
+      ),
+    [state.buildings, state.rooms, state.floors, columns, collapsedBuildings, collapsedFloors]
+  );
+  const floorGroups = useMemo(
+    () =>
+      buildFloorGroups(
+        state.buildings,
+        state.floors,
+        state.rooms,
+        columns,
+        collapsedBuildings,
+        collapsedFloors
+      ),
+    [state.buildings, state.floors, state.rooms, columns, collapsedBuildings, collapsedFloors]
+  );
+
+  const headerSpan = useMemo(
+    () => gridSlots.length,
+    [gridSlots]
+  );
+
+  const toggleBuildingCollapsed = (buildingId: string) => {
+    const willCollapse = !collapsedBuildings.has(buildingId);
+    setCollapsedBuildings((previous) => {
+      const next = new Set(previous);
+      if (next.has(buildingId)) next.delete(buildingId);
+      else next.add(buildingId);
+      return next;
+    });
+    if (willCollapse) {
+      const hiddenRoomIds = new Set(
+        state.rooms.filter((room) => room.buildingId === buildingId).map((room) => room.id)
+      );
+      setSelectedRoomIds((selected) => selected.filter((id) => !hiddenRoomIds.has(id)));
+    }
+  };
+
+  const toggleFloorCollapsed = (floorId: string) => {
+    const willCollapse = !collapsedFloors.has(floorId);
+    setCollapsedFloors((previous) => {
+      const next = new Set(previous);
+      if (next.has(floorId)) next.delete(floorId);
+      else next.add(floorId);
+      return next;
+    });
+    if (willCollapse) {
+      const hiddenRoomIds = new Set(
+        state.rooms.filter((room) => room.floorId === floorId).map((room) => room.id)
+      );
+      setSelectedRoomIds((selected) => selected.filter((id) => !hiddenRoomIds.has(id)));
+    }
+  };
   const transposeBuildingBands = useMemo(() => {
     const bands: Array<{ id: string; buildingId: string; label: string; start: number; span: number }> = [];
     let index = 0;
@@ -494,25 +566,30 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
           </aside>
 
           <div className="schedule-wrap">
-            <div className="schedule" style={{ minWidth: columns.length * COLUMN_WIDTH + 120 }}>
+            <div className="schedule" style={{ minWidth: Math.max(columns.length, headerSpan) * COLUMN_WIDTH + 120 }}>
               {orientation === "normal" ? (
                 <>
                   <div className="header-row building-row" style={{ marginLeft: 120 }}>
                     {buildingGroups.map((group) => (
                       <button
                         key={group.building.id}
-                        className="header-button building"
-                        style={{ width: group.count * COLUMN_WIDTH }}
-                        onClick={(event) => selectBuilding(group.building.id, event.shiftKey)}
-                        onDoubleClick={() =>
-                          setCollapsedBuildings((previous) => {
-                            const next = new Set(previous);
-                            if (next.has(group.building.id)) next.delete(group.building.id);
-                            else next.add(group.building.id);
-                            return next;
-                          })
-                        }
+                        className={`header-button building ${group.collapsed ? "collapsed" : ""}`}
+                        style={{ width: group.span * COLUMN_WIDTH }}
+                        title={group.collapsed ? "Double-click to expand" : "Click to select · Double-click to collapse"}
+                        onClick={(event) => {
+                          if (group.collapsed) {
+                            toggleBuildingCollapsed(group.building.id);
+                            return;
+                          }
+                          selectBuilding(group.building.id, event.shiftKey);
+                        }}
+                        onDoubleClick={() => {
+                          if (!group.collapsed) toggleBuildingCollapsed(group.building.id);
+                        }}
                       >
+                        <span className="collapse-marker" aria-hidden>
+                          {group.collapsed ? "▸" : "▾"}
+                        </span>
                         <strong>{group.building.code}</strong> {group.building.name}
                       </button>
                     ))}
@@ -522,44 +599,74 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                     {floorGroups.map((group) => (
                       <button
                         key={group.id}
-                        className="header-button floor"
-                        style={{ width: group.count * COLUMN_WIDTH }}
+                        className={`header-button floor ${group.collapsed ? "collapsed" : ""}`}
+                        style={{ width: group.span * COLUMN_WIDTH }}
+                        title={
+                          group.collapsed
+                            ? group.floorId
+                              ? "Click or double-click to expand"
+                              : "Building collapsed"
+                            : group.floorId
+                              ? "Click to select · Double-click to collapse"
+                              : undefined
+                        }
                         onClick={(event) => {
+                          if (group.collapsed && group.floorId) {
+                            toggleFloorCollapsed(group.floorId);
+                            return;
+                          }
+                          if (group.collapsed && !group.floorId) {
+                            toggleBuildingCollapsed(group.buildingId);
+                            return;
+                          }
                           if (group.floorId) selectFloor(group.floorId, event.shiftKey);
                         }}
                         onDoubleClick={() => {
-                          if (!group.floorId) return;
-                          setCollapsedFloors((previous) => {
-                            const next = new Set(previous);
-                            if (next.has(group.floorId!)) next.delete(group.floorId!);
-                            else next.add(group.floorId!);
-                            return next;
-                          });
+                          if (group.collapsed) return;
+                          if (group.floorId) toggleFloorCollapsed(group.floorId);
                         }}
                       >
-                        {group.label}
+                        {group.floorId ? (
+                          <>
+                            <span className="collapse-marker" aria-hidden>
+                              {group.collapsed ? "▸" : "▾"}
+                            </span>
+                            {group.label}
+                          </>
+                        ) : (
+                          group.label
+                        )}
                       </button>
                     ))}
                   </div>
 
                   <div className="header-row room-row">
                     <div className="time-header">Time</div>
-                    {columns.map((column) => (
-                      <button
-                        key={column.room.id}
-                        className={`room-header ${selectedRoomIds.includes(column.room.id) ? "selected" : ""}`}
-                        style={{ width: COLUMN_WIDTH, background: roomTint(column.room.roomType) }}
-                        onClick={(event) => {
-                          if (event.shiftKey) toggleRoom(column.room.id);
-                          else setSelectedRoomIds([column.room.id]);
-                        }}
-                      >
-                        <div>{column.building.code + column.room.name}</div>
-                        <small>
-                          {column.room.roomType} ({column.room.capacity}/{column.room.optimalCapacity})
-                        </small>
-                      </button>
-                    ))}
+                    {gridSlots.map((slot) =>
+                      slot.type === "spacer" ? (
+                        <div
+                          key={slot.id}
+                          className="room-header-spacer"
+                          style={{ width: COLUMN_WIDTH }}
+                          aria-hidden
+                        />
+                      ) : (
+                        <button
+                          key={slot.column.room.id}
+                          className={`room-header ${selectedRoomIds.includes(slot.column.room.id) ? "selected" : ""}`}
+                          style={{ width: COLUMN_WIDTH, background: roomTint(slot.column.room.roomType) }}
+                          onClick={(event) => {
+                            if (event.shiftKey) toggleRoom(slot.column.room.id);
+                            else setSelectedRoomIds([slot.column.room.id]);
+                          }}
+                        >
+                          <div>{slot.column.building.code + slot.column.room.name}</div>
+                          <small>
+                            {slot.column.room.roomType} ({slot.column.room.capacity}/{slot.column.room.optimalCapacity})
+                          </small>
+                        </button>
+                      )
+                    )}
                   </div>
                 </>
               ) : null}
@@ -594,27 +701,38 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                   </div>
 
                   <div className="rooms-grid">
-                    {columns.map((column) => (
-                      <RoomColumn
-                        key={column.room.id}
-                        roomId={column.room.id}
-                        slotCount={slotCount}
-                        slotHeight={SLOT_HEIGHT}
-                        allocations={state.allocations.filter((allocation) => allocation.roomId === column.room.id)}
-                        activitiesById={activitiesById}
-                        overlapIds={overlapsSet}
-                        selected={selectedRoomIds.includes(column.room.id)}
-                        eventDate={state.event.eventDate}
-                        gridStart={state.event.gridStart}
-                        slotMinutes={state.event.slotMinutes}
-                        onResize={onResize}
-                        onDelete={(id) => void removeAllocation(id)}
-                        selectedAllocationId={selectedAllocationId}
-                        onSelectAllocation={setSelectedAllocationId}
-                        blockTitle={blockTitle}
-                        mergeMeta={mergedNormalMeta}
-                      />
-                    ))}
+                    {gridSlots.map((slot) =>
+                      slot.type === "spacer" ? (
+                        <div
+                          key={slot.id}
+                          className="room-column-spacer"
+                          style={{ width: COLUMN_WIDTH, height: gridHeight }}
+                          aria-hidden
+                        />
+                      ) : (
+                        <RoomColumn
+                          key={slot.column.room.id}
+                          roomId={slot.column.room.id}
+                          slotCount={slotCount}
+                          slotHeight={SLOT_HEIGHT}
+                          allocations={state.allocations.filter(
+                            (allocation) => allocation.roomId === slot.column.room.id
+                          )}
+                          activitiesById={activitiesById}
+                          overlapIds={overlapsSet}
+                          selected={selectedRoomIds.includes(slot.column.room.id)}
+                          eventDate={state.event.eventDate}
+                          gridStart={state.event.gridStart}
+                          slotMinutes={state.event.slotMinutes}
+                          onResize={onResize}
+                          onDelete={(id) => void removeAllocation(id)}
+                          selectedAllocationId={selectedAllocationId}
+                          onSelectAllocation={setSelectedAllocationId}
+                          blockTitle={blockTitle}
+                          mergeMeta={mergedNormalMeta}
+                        />
+                      )
+                    )}
                   </div>
                 </div>
               ) : (

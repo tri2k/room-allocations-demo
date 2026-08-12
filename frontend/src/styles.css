@@ -173,6 +173,18 @@ body {
   background: #f1f3f4;
 }
 
+.header-button.collapsed {
+  opacity: 0.85;
+  font-style: italic;
+}
+
+.collapse-marker {
+  display: inline-block;
+  width: 0.9em;
+  margin-right: 2px;
+  font-style: normal;
+}
+
 .room-row {
   position: sticky;
   top: 0;
@@ -200,6 +212,24 @@ body {
 .room-header.selected {
   outline: 2px solid #2563eb;
   outline-offset: -2px;
+}
+
+.room-header-spacer,
+.room-column-spacer {
+  border-right: 1px solid #e5e7eb;
+  background: repeating-linear-gradient(
+    -45deg,
+    #f8fafc,
+    #f8fafc 6px,
+    #eef2f7 6px,
+    #eef2f7 12px
+  );
+  flex-shrink: 0;
+}
+
+.room-header-spacer {
+  border: 1px solid #e5e7eb;
+  border-left: none;
 }
 
 .room-header small {
