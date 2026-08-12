@@ -40,6 +40,12 @@ function EventPage() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!toast) return;
+    const timeout = window.setTimeout(() => setToast(""), 2200);
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
+
   const withError = async (action: () => Promise<void>) => {
     try {
       setError("");
