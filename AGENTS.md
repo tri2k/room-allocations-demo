@@ -13,6 +13,13 @@
   - `fix: keep allocation duration when moving blocks`
   - `docs: log v0 vision demo completion`
 
+## C4 diagrams
+
+- Keep [docs/c4/](docs/c4/README.md) accurate for the **current commit**.
+- If a change adds, removes, or rewires containers, components, persistence, or external systems, update the relevant Mermaid C4 diagram in the same commit.
+- Diagrams describe what exists now, not the Phase 1+ target in SPEC.md.
+- Use Mermaid `C4Context`, `C4Container`, and `C4Component`. Node IDs must be camelCase with no spaces.
+
 ## Python Version Guardrail
 
 - The backend standard interpreter is Python 3.13.

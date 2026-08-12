@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- C4 architecture diagrams in `docs/c4/` (context, container, component)
+
 ## v0 — Vision demo (2026-08-11)
 
 **Status: complete.** Frontend-only prototype that proves the grid UX against the BmMT spreadsheet workflow.
