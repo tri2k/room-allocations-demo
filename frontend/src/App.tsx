@@ -218,16 +218,30 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!selectedAllocationId) return;
       const target = event.target as HTMLElement | null;
       if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+
+      if (event.key === "Escape") {
+        if (selectedAllocationId) {
+          event.preventDefault();
+          setSelectedAllocationId(null);
+          return;
+        }
+        if (selectedRoomIds.length > 0) {
+          event.preventDefault();
+          setSelectedRoomIds([]);
+        }
+        return;
+      }
+
+      if (!selectedAllocationId) return;
       if (event.key !== "Delete" && event.key !== "Backspace") return;
       event.preventDefault();
       void removeAllocation(selectedAllocationId);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selectedAllocationId]);
+  }, [selectedAllocationId, selectedRoomIds]);
 
   const resetToSeed = async () => {
     try {
@@ -629,6 +643,16 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
             >
               {orientation === "normal" ? "Transpose" : "Normal View"}
             </button>
+            {selectedRoomIds.length > 0 ? (
+              <button
+                type="button"
+                className="reset-button"
+                onClick={() => setSelectedRoomIds([])}
+                title="Stop bulk-assigning to selected rooms"
+              >
+                Clear selection ({selectedRoomIds.length})
+              </button>
+            ) : null}
             <button onClick={() => void resetToSeed()} className="reset-button">
               Reset
             </button>
