@@ -1,8 +1,8 @@
-# Phase 2 Collaboration
+# Collaboration
 
-**Status**: Draft
+**Status**: Draft (unsequenced)
 
-Preserved from the former `SPEC.md`. Do not implement until Phase 1 exists. Product context: [PRODUCT.md](../PRODUCT.md).
+Was Phase 2; moved after polish so the next work after the core loop is power features, not live editing. Do not implement until a later phase is scheduled. Product context: [PRODUCT.md](../PRODUCT.md). Filename kept for existing links.
 
 ## Problem
 

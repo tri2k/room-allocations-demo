@@ -103,8 +103,8 @@ Known limitation of that merge: edits apply to the leader allocation only. See [
 ### Deferred
 
 - Persistence and catalog CRUD → [phase-1 draft](2026-08-11-phase-1-core-loop.md)
-- Collaboration → Phase 2 in PRODUCT.md
-- Proctors, export, Sheets import → Phases 3–4
+- Collaboration → unsequenced; [draft spec](2026-08-11-phase-2-collaboration.md)
+- Proctors, export → Phase 2; Sheets import → Phase 3
 
 ### Seed
 

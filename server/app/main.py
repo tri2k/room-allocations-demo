@@ -1,0 +1,25 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.routers import allocations, buildings, dev, events, floors, rooms
+
+app = FastAPI(title="Room Allocations API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(buildings.router)
+app.include_router(floors.router)
+app.include_router(rooms.router)
+app.include_router(events.router)
+app.include_router(allocations.router)
+app.include_router(dev.router)
+
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok"}

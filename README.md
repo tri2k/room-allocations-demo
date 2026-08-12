@@ -1,28 +1,30 @@
-# Room Allocations Demo (v0)
+# Room Allocations
 
-**v0 — Vision demo** is complete. Frontend-only prototype for pitching the room-scheduling grid.
+Local single-user room scheduler: a Vite grid plus a FastAPI / PostgreSQL API.
 
-See [PRODUCT.md](PRODUCT.md), [v0 spec](specs/2026-08-11-v0-vision-demo.md), [CHANGELOG.md](CHANGELOG.md), and [C4 diagrams](docs/c4/README.md).
+See [PRODUCT.md](PRODUCT.md), [Phase 1 spec](specs/2026-08-11-phase-1-core-loop.md), [CHANGELOG.md](CHANGELOG.md), and [C4 diagrams](docs/c4/README.md).
 
 ## Run locally
 
 ```bash
+docker compose up -d postgres
+
+cd server
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+alembic upgrade head
+python -m scripts.seed
+uvicorn app.main:app --reload --port 8000
+```
+
+In another terminal:
+
+```bash
+cd frontend
 npm install
 npm run dev
 ```
 
-Open the printed localhost URL.
-
-## Included in v0
-
-- Seeded BmMT-style buildings, floors, rooms, activities, and timeline
-- Drag activity from palette to create allocations
-- Click floor/building headers to select rooms for bulk assignment
-- Drag existing allocation blocks to move
-- Resize allocation blocks (handles follow orientation)
-- Overlap warning styling (red border)
-- Select + keyboard delete
-- Transpose view (rooms as rows, time as columns)
-- Merged adjacent blocks for the same activity
-- Local persistence in `localStorage`
-- Reset button to restore seed data
+Open the printed localhost URL. Catalog is `#/catalog`. Reset reseeds the BmMT demo (requires `ENABLE_DEV_RESEED=true`).

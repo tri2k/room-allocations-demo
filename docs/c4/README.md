@@ -4,7 +4,7 @@ Living C4 model of this repo, drawn in Mermaid. These files describe **the archi
 
 - [Context](context.md) — people and neighboring systems
 - [Container](container.md) — deployable / runtime units
-- [Component](component.md) — internals of the schedule SPA
+- [Component](component.md) — internals of the SPA and API
 
 ## How to maintain
 

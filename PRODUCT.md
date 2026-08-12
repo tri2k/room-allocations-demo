@@ -26,24 +26,24 @@ Hierarchy: **Building → Floor → Room → Allocation**. Floor is optional on 
 
 Display label: `{building.code}{room.name}` → `DWIN155`. Room number and floor are stored separately.
 
-As-built types for v0: [specs/2026-08-11-v0-vision-demo.md](specs/2026-08-11-v0-vision-demo.md). Persistence field lists and SQL: [specs/2026-08-11-phase-1-core-loop.md](specs/2026-08-11-phase-1-core-loop.md) (draft).
+As-built types for v0: [specs/2026-08-11-v0-vision-demo.md](specs/2026-08-11-v0-vision-demo.md). Persistence field lists and SQL: [specs/2026-08-11-phase-1-core-loop.md](specs/2026-08-11-phase-1-core-loop.md).
 
 ## Architecture
 
-**Current (v0):** one static React SPA. Seed JSON is bundled. Edits persist in browser `localStorage`. No server, auth, or shared DB.
+**Current (Phase 1):** Vite SPA in `frontend/` talks to FastAPI in `server/`. PostgreSQL is the schedule store. No auth.
 
-As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **current commit**, not this phased target.
+As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **current commit**, not a future target.
 
-**Planned:** keep the same domain; add a FastAPI + PostgreSQL API (Phase 1), then WebSocket sync and roles (Phase 2). Events do not own buildings — they use rooms across buildings, with an optional building filter.
+**Planned:** live multi-user editing (auth, WebSockets, roles) is a later phase, not next. Events do not own buildings — they use rooms across buildings, with an optional building filter.
 
 ## Technology Summary
 
-| Layer | v0 (now) | Later (when we need it) |
-| ----- | -------- | ----------------------- |
+| Layer | Phase 1 (now) | Later (when we need it) |
+| ----- | ------------- | ----------------------- |
 | UI | React 18, TypeScript, Vite, `@dnd-kit` | Same core; GUIDELINES defaults (router, Tailwind, etc.) only if we adopt them |
-| State | React `useState` | TBD when catalog CRUD appears |
-| Persistence | `localStorage` + seed JSON | PostgreSQL + SQLAlchemy + Alembic |
-| API | None | FastAPI |
+| State | React `useState` | TBD if catalog/grid state gets hard to share |
+| Persistence | PostgreSQL + SQLAlchemy + Alembic | Same |
+| API | FastAPI `/api/v1` | Same |
 | Realtime | None | WebSockets |
 | Package manager | npm | Stay on npm until we choose otherwise |
 
@@ -52,16 +52,16 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | Phase | Goal | Status |
 | ----- | ---- | ------ |
 | **v0 — Vision demo** | Prove grid UX | **Complete** (2026-08-11). Spec: [specs/2026-08-11-v0-vision-demo.md](specs/2026-08-11-v0-vision-demo.md) |
-| **1 — Core loop** | Persistent single-user product | Planned. Draft: [specs/2026-08-11-phase-1-core-loop.md](specs/2026-08-11-phase-1-core-loop.md) |
-| **2 — Collaboration** | Live multi-user editing | Planned |
-| **3 — Power features** | Templates, proctors, export, capacity | Planned |
-| **4 — Polish** | Sheets import, mobile read-only | Planned |
+| **1 — Core loop** | Persistent single-user product | **Complete** (2026-08-11). Spec: [specs/2026-08-11-phase-1-core-loop.md](specs/2026-08-11-phase-1-core-loop.md) |
+| **2 — Power features** | Templates, proctors, export, capacity | Planned |
+| **3 — Polish** | Sheets import, mobile read-only | Planned |
+| **Future — Collaboration** | Live multi-user editing | Unsequenced. Draft: [specs/2026-08-11-phase-2-collaboration.md](specs/2026-08-11-phase-2-collaboration.md) |
 
 ## Non-Functional Requirements
 
-- v0: static host, no server; UI may be demo-quality / buggy
-- Slot grid: 15 minutes (event-configurable later: 5 / 15 / 30)
-- Overlap in one room: show a warning in v0; reject on the server in Phase 1
+- Phase 1: local Docker Postgres + FastAPI; UI may still be demo-quality / buggy
+- Slot grid: 15 minutes (event-configurable: 5 / 15 / 30)
+- Overlap in one room: HTTP 409; bulk create reports skipped rooms
 - Warnings over hard blocks for room-type and capacity exceptions
 
 ## Open Questions
@@ -72,5 +72,5 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | Multi-day events | **Decided:** one grid per day, day tabs |
 | v0 deploy | **Decided:** static host |
 | Registration / team counts | **Decided:** manual `team_count` on event in Phase 3; no external API in Phase 1 |
-| Layout `src/` vs `frontend/` + `server/` | **Decided:** keep `src/` at repo root until a backend exists |
-| Adopt GUIDELINES frontend extras (Zustand, Tailwind, pnpm, …) | **Open:** not in v0; decide when Phase 1 starts |
+| Layout `src/` vs `frontend/` + `server/` | **Decided (Phase 1 spec):** move to `frontend/` + `server/` when the API lands |
+| Adopt GUIDELINES frontend extras (Zustand, Tailwind, pnpm, …) | **Decided (Phase 1 spec):** no; keep v0 UI stack |

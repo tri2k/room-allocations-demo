@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Phase 1 core loop: FastAPI + PostgreSQL persistence, SPA wired to `/api/v1`, catalog forms
+- Repo layout is now `frontend/` + `server/`; schedule no longer lives in `localStorage`
 - C4 architecture diagrams in `docs/c4/` (context, container, component; theme-neutral flowcharts for light and dark mode)
 - Split `SPEC.md` into `PRODUCT.md` + `specs/`; slim `AGENTS.md`; align `GUIDELINES.md`
 - Note v0 merged-block edit bug in `docs/known-bugs-v0.md`

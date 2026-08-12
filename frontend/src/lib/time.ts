@@ -20,15 +20,18 @@ export const slotToTime = (gridStart: string, slotMinutes: number, slotIndex: nu
 export const timeToSlot = (gridStart: string, slotMinutes: number, timeHHmm: string): number =>
   Math.floor((toMinutes(timeHHmm) - toMinutes(gridStart)) / slotMinutes);
 
+export const timeFromIso = (iso: string): string => {
+  const match = iso.match(/T(\d{2}:\d{2})/);
+  if (!match) throw new Error(`Invalid ISO datetime: ${iso}`);
+  return match[1];
+};
+
 export const allocationStartSlot = (
   _eventDate: string,
   gridStart: string,
   slotMinutes: number,
   iso: string
-): number => {
-  const hhmm = iso.slice(11, 16);
-  return timeToSlot(gridStart, slotMinutes, hhmm);
-};
+): number => timeToSlot(gridStart, slotMinutes, timeFromIso(iso));
 
 export const buildIso = (eventDate: string, hhmm: string): string =>
   `${eventDate}T${hhmm}:00`;

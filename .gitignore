@@ -2,3 +2,11 @@ node_modules/
 dist/
 .DS_Store
 *.tsbuildinfo
+.venv/
+.vite/
+
+server/.venv/
+server/.env
+server/__pycache__/
+**/__pycache__/
+*.pyc

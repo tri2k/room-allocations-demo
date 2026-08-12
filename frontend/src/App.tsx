@@ -1,11 +1,26 @@
 import { DndContext, type DragEndEvent, useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { Fragment, useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from "react";
-import seedData from "./data/bmmt-2026.json";
+import {
+  Fragment,
+  useEffect,
+  useMemo,
+  useState,
+  type Dispatch,
+  type MouseEvent as ReactMouseEvent,
+  type SetStateAction
+} from "react";
+import {
+  ApiError,
+  bulkCreateAllocations,
+  createAllocation,
+  deleteAllocation,
+  loadFirstSchedule,
+  patchAllocation,
+  reseed
+} from "./lib/api";
 import { buildBuildingGroups, buildFloorGroups, orderColumns } from "./lib/grid";
-import { buildOverlapSet, overlaps } from "./lib/overlap";
-import { clearState, loadState, saveState } from "./lib/storage";
-import { allocationStartSlot, buildIso, clamp, formatTimeLabel, getSlotCount, slotToTime, timeToSlot } from "./lib/time";
+import { buildOverlapSet } from "./lib/overlap";
+import { allocationStartSlot, buildIso, clamp, formatTimeLabel, getSlotCount, slotToTime, timeFromIso, timeToSlot } from "./lib/time";
 import type { Activity, Allocation, Room, ScheduleState, TimeBlock } from "./types/schedule";
 
 const SLOT_HEIGHT = 26;
@@ -19,18 +34,11 @@ type HeaderSelection = {
   roomIds: string[];
 };
 
-const cloneSeed = (): ScheduleState => JSON.parse(JSON.stringify(seedData)) as ScheduleState;
-
 const roomTint = (type: Room["roomType"]): string => {
   if (type === "auditorium") return "#c8daf5";
   if (type === "large") return "#f8d7da";
   return "#d4edda";
 };
-
-const uid = (): string =>
-  typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : `alloc-${Math.random().toString(36).slice(2, 11)}`;
 
 type MergeMeta = {
   isLeader: boolean;
@@ -38,7 +46,83 @@ type MergeMeta = {
 };
 
 function App() {
-  const [state, setState] = useState<ScheduleState>(() => loadState() ?? cloneSeed());
+  const [state, setState] = useState<ScheduleState | null>(null);
+  const [boot, setBoot] = useState<"loading" | "empty" | "ready" | "error">("loading");
+  const [bootMessage, setBootMessage] = useState("");
+
+  const reload = async () => {
+    try {
+      const next = await loadFirstSchedule();
+      if (!next) {
+        setState(null);
+        setBoot("empty");
+        return;
+      }
+      setState(next);
+      setBoot("ready");
+    } catch (error) {
+      setBoot("error");
+      setBootMessage(error instanceof Error ? error.message : "Failed to load schedule");
+    }
+  };
+
+  useEffect(() => {
+    void reload();
+  }, []);
+
+  const onReseed = async () => {
+    try {
+      await reseed();
+      await reload();
+    } catch (error) {
+      setBoot("error");
+      setBootMessage(error instanceof Error ? error.message : "Reseed failed");
+    }
+  };
+
+  if (boot === "loading") {
+    return (
+      <div className="boot-screen">
+        <p>Loading schedule…</p>
+      </div>
+    );
+  }
+
+  if (boot === "empty") {
+    return (
+      <div className="boot-screen">
+        <h1>No events in the database</h1>
+        <p>Seed the BmMT demo to load the grid.</p>
+        <button className="reset-button" onClick={() => void onReseed()}>
+          Seed demo data
+        </button>
+      </div>
+    );
+  }
+
+  if (boot === "error" || !state) {
+    return (
+      <div className="boot-screen">
+        <h1>Could not load schedule</h1>
+        <p>{bootMessage}</p>
+        <button className="reset-button" onClick={() => void reload()}>
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  return <ScheduleBoard state={state} setState={setState} reload={reload} onReseed={onReseed} />;
+}
+
+type ScheduleBoardProps = {
+  state: ScheduleState;
+  setState: Dispatch<SetStateAction<ScheduleState | null>>;
+  reload: () => Promise<void>;
+  onReseed: () => Promise<void>;
+};
+
+function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps) {
   const [selectedRoomIds, setSelectedRoomIds] = useState<HeaderSelection["roomIds"]>([]);
   const [selectedAllocationId, setSelectedAllocationId] = useState<string | null>(null);
   const [collapsedBuildings, setCollapsedBuildings] = useState<Set<string>>(new Set());
@@ -100,10 +184,6 @@ function App() {
   }, [columns, state.allocations]);
 
   useEffect(() => {
-    saveState(state);
-  }, [state]);
-
-  useEffect(() => {
     if (!toast) return;
     const timeout = window.setTimeout(() => setToast(""), 2200);
     return () => window.clearTimeout(timeout);
@@ -120,20 +200,14 @@ function App() {
       if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
       if (event.key !== "Delete" && event.key !== "Backspace") return;
       event.preventDefault();
-      setState((previous) => ({
-        ...previous,
-        allocations: previous.allocations.filter((allocation) => allocation.id !== selectedAllocationId)
-      }));
-      setSelectedAllocationId(null);
-      setToast("Deleted allocation");
+      void removeAllocation(selectedAllocationId);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [selectedAllocationId]);
 
-  const resetToSeed = () => {
-    clearState();
-    setState(cloneSeed());
+  const resetToSeed = async () => {
+    await onReseed();
     setSelectedRoomIds([]);
     setSelectedAllocationId(null);
     setCollapsedBuildings(new Set());
@@ -141,14 +215,18 @@ function App() {
     setToast("Reset to seed schedule");
   };
 
-  const upsertAllocation = (allocation: Allocation) => {
-    setState((previous) => ({
-      ...previous,
-      allocations: previous.allocations.map((entry) => (entry.id === allocation.id ? allocation : entry))
-    }));
+  const replaceAllocation = (allocation: Allocation) => {
+    setState((previous) =>
+      previous
+        ? {
+            ...previous,
+            allocations: previous.allocations.map((entry) => (entry.id === allocation.id ? allocation : entry))
+          }
+        : previous
+    );
   };
 
-  const handleCreateFromPalette = (activity: Activity, targetRoomIds: string[], startSlot: number) => {
+  const handleCreateFromPalette = async (activity: Activity, targetRoomIds: string[], startSlot: number) => {
     const durationSlots = Math.max(1, Math.round(activity.defaultDurationMin / state.event.slotMinutes));
     const clampedStart = clamp(startSlot, 0, slotCount - durationSlots);
     const startAt = buildIso(state.event.eventDate, slotToTime(state.event.gridStart, state.event.slotMinutes, clampedStart));
@@ -157,25 +235,40 @@ function App() {
       slotToTime(state.event.gridStart, state.event.slotMinutes, clampedStart + durationSlots)
     );
 
-    const created: Allocation[] = [];
-    let skipped = 0;
-
-    for (const roomId of targetRoomIds) {
-      const next: Allocation = { id: uid(), roomId, activityId: activity.id, startAt, endAt };
-      const conflicts = [...state.allocations, ...created].some((entry) => overlaps(entry, next));
-      if (conflicts) {
-        skipped += 1;
-      } else {
-        created.push(next);
+    try {
+      if (targetRoomIds.length === 1) {
+        const result = await createAllocation(state.event.id, {
+          roomId: targetRoomIds[0],
+          activityId: activity.id,
+          startAt,
+          endAt
+        });
+        setState((previous) =>
+          previous ? { ...previous, allocations: [...previous.allocations, result.allocation] } : previous
+        );
+        const warning = result.warnings[0]?.message;
+        setToast(warning ?? "Created 1 allocation");
+        return;
       }
-    }
 
-    if (created.length > 0) {
-      setState((previous) => ({ ...previous, allocations: [...previous.allocations, ...created] }));
+      const result = await bulkCreateAllocations(state.event.id, {
+        roomIds: targetRoomIds,
+        activityId: activity.id,
+        startAt,
+        endAt
+      });
+      if (result.created.length > 0) {
+        await reload();
+      }
+      const skipped = result.skipped.length;
+      if (result.created.length > 0 && skipped > 0) setToast(`Created ${result.created.length}, skipped ${skipped} overlaps`);
+      else if (result.created.length > 0) {
+        setToast(`Created ${result.created.length} allocation${result.created.length === 1 ? "" : "s"}`);
+      } else setToast("No allocations created (overlap)");
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) setToast("No allocations created (overlap)");
+      else setToast(error instanceof Error ? error.message : "Create failed");
     }
-    if (created.length > 0 && skipped > 0) setToast(`Created ${created.length}, skipped ${skipped} overlaps`);
-    else if (created.length > 0) setToast(`Created ${created.length} allocation${created.length === 1 ? "" : "s"}`);
-    else setToast("No allocations created (overlap)");
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -194,7 +287,7 @@ function App() {
       const activity = activitiesById.get(dragData.activityId);
       if (!activity) return;
       const targetRoomIds = selectedRoomIds.length > 0 ? selectedRoomIds : [roomId];
-      handleCreateFromPalette(activity, targetRoomIds, slotIndex);
+      void handleCreateFromPalette(activity, targetRoomIds, slotIndex);
       return;
     }
 
@@ -213,47 +306,71 @@ function App() {
       slotToTime(state.event.gridStart, state.event.slotMinutes, clampedStart + durationSlots)
     );
 
-    upsertAllocation({ ...source, roomId, startAt, endAt });
+    const next = { ...source, roomId, startAt, endAt };
+    replaceAllocation(next);
+    void (async () => {
+      try {
+        const result = await patchAllocation(source.id, { roomId, startAt, endAt });
+        replaceAllocation(result.allocation);
+      } catch (error) {
+        replaceAllocation(source);
+        if (error instanceof ApiError && error.status === 409) setToast("Move blocked (overlap)");
+        else setToast(error instanceof Error ? error.message : "Move failed");
+      }
+    })();
   };
 
   const onResize = (allocationId: string, direction: "start" | "end", deltaSlots: number) => {
-    setState((previous) => {
-      const nextAllocations = previous.allocations.map((allocation) => {
-        if (allocation.id !== allocationId) return allocation;
+    const allocation = state.allocations.find((entry) => entry.id === allocationId);
+    if (!allocation) return;
 
-        const startSlot = allocationStartSlot(
-          previous.event.eventDate,
-          previous.event.gridStart,
-          previous.event.slotMinutes,
-          allocation.startAt
-        );
-        const endSlot = allocationStartSlot(
-          previous.event.eventDate,
-          previous.event.gridStart,
-          previous.event.slotMinutes,
-          allocation.endAt
-        );
-
-        const nextStart = direction === "start" ? clamp(startSlot + deltaSlots, 0, endSlot - 1) : startSlot;
-        const nextEnd = direction === "end" ? clamp(endSlot + deltaSlots, nextStart + 1, slotCount) : endSlot;
-
-        return {
-          ...allocation,
-          startAt: buildIso(previous.event.eventDate, slotToTime(previous.event.gridStart, previous.event.slotMinutes, nextStart)),
-          endAt: buildIso(previous.event.eventDate, slotToTime(previous.event.gridStart, previous.event.slotMinutes, nextEnd))
-        };
-      });
-      return { ...previous, allocations: nextAllocations };
-    });
+    const startSlot = allocationStartSlot(
+      state.event.eventDate,
+      state.event.gridStart,
+      state.event.slotMinutes,
+      allocation.startAt
+    );
+    const endSlot = allocationStartSlot(
+      state.event.eventDate,
+      state.event.gridStart,
+      state.event.slotMinutes,
+      allocation.endAt
+    );
+    const nextStart = direction === "start" ? clamp(startSlot + deltaSlots, 0, endSlot - 1) : startSlot;
+    const nextEnd = direction === "end" ? clamp(endSlot + deltaSlots, nextStart + 1, slotCount) : endSlot;
+    const next = {
+      ...allocation,
+      startAt: buildIso(state.event.eventDate, slotToTime(state.event.gridStart, state.event.slotMinutes, nextStart)),
+      endAt: buildIso(state.event.eventDate, slotToTime(state.event.gridStart, state.event.slotMinutes, nextEnd))
+    };
+    replaceAllocation(next);
+    void (async () => {
+      try {
+        const result = await patchAllocation(allocation.id, { startAt: next.startAt, endAt: next.endAt });
+        replaceAllocation(result.allocation);
+      } catch (error) {
+        replaceAllocation(allocation);
+        if (error instanceof ApiError && error.status === 409) setToast("Resize blocked (overlap)");
+        else setToast(error instanceof Error ? error.message : "Resize failed");
+      }
+    })();
   };
 
-  const deleteAllocation = (allocationId: string) => {
-    setState((previous) => ({
-      ...previous,
-      allocations: previous.allocations.filter((allocation) => allocation.id !== allocationId)
-    }));
-    setSelectedAllocationId((previous) => (previous === allocationId ? null : previous));
-    setToast("Deleted allocation");
+  const removeAllocation = async (allocationId: string) => {
+    const previous = state.allocations;
+    setState((current) =>
+      current
+        ? { ...current, allocations: current.allocations.filter((allocation) => allocation.id !== allocationId) }
+        : current
+    );
+    setSelectedAllocationId((current) => (current === allocationId ? null : current));
+    try {
+      await deleteAllocation(allocationId);
+      setToast("Deleted allocation");
+    } catch (error) {
+      setState((current) => (current ? { ...current, allocations: previous } : current));
+      setToast(error instanceof Error ? error.message : "Delete failed");
+    }
   };
 
   const selectFloor = (floorId: string, append: boolean) => {
@@ -332,7 +449,7 @@ function App() {
     );
 
   const blockTitle = (activity: Activity, allocation: Allocation) =>
-    `${activity.name} (${allocation.startAt.slice(11, 16)}-${allocation.endAt.slice(11, 16)})`;
+    `${activity.name} (${timeFromIso(allocation.startAt)}-${timeFromIso(allocation.endAt)})`;
 
   const phaseBounds = (block: TimeBlock) => {
     const start = timeToSlot(state.event.gridStart, state.event.slotMinutes, block.startTime);
@@ -346,16 +463,19 @@ function App() {
         <header className="topbar">
           <div>
             <h1>{state.event.name} Room Schedule</h1>
-            <p>v0 vision demo: drag from palette, bulk assign by floor, overlap warnings.</p>
+            <p>Drag from palette, bulk assign by floor. Schedule is saved on the server.</p>
           </div>
           <div className="topbar-actions">
+            <a className="reset-button" href="#/catalog">
+              Catalog
+            </a>
             <button
               onClick={() => setOrientation((previous) => (previous === "normal" ? "transposed" : "normal"))}
               className="reset-button"
             >
               {orientation === "normal" ? "Transpose" : "Normal View"}
             </button>
-            <button onClick={resetToSeed} className="reset-button">
+            <button onClick={() => void resetToSeed()} className="reset-button">
               Reset
             </button>
           </div>
@@ -484,7 +604,7 @@ function App() {
                         gridStart={state.event.gridStart}
                         slotMinutes={state.event.slotMinutes}
                         onResize={onResize}
-                        onDelete={deleteAllocation}
+                        onDelete={(id) => void removeAllocation(id)}
                         selectedAllocationId={selectedAllocationId}
                         onSelectAllocation={setSelectedAllocationId}
                         blockTitle={blockTitle}
@@ -617,7 +737,7 @@ function App() {
                                   selected={selectedAllocationId === allocation.id}
                                   blockTitle={blockTitle(activity, allocation)}
                                   onSelect={setSelectedAllocationId}
-                                  onDelete={deleteAllocation}
+                                  onDelete={(id) => void removeAllocation(id)}
                                   onResize={onResize}
                                 />
                               );

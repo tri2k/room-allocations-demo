@@ -29,6 +29,7 @@ export type Activity = {
   name: string;
   color: string;
   defaultDurationMin: number;
+  allowedRoomTypes?: string[];
 };
 
 export type TimeBlock = {
@@ -49,6 +50,7 @@ export type Allocation = {
 };
 
 export type EventInfo = {
+  id: string;
   name: string;
   eventDate: string;
   timezone: string;
