@@ -344,7 +344,8 @@ body {
   position: absolute;
   left: 0;
   right: 0;
-  height: 6px;
+  height: 8px;
+  z-index: 2;
 }
 
 .resize-handle.top {
@@ -361,7 +362,7 @@ body {
   top: 0;
   bottom: 0;
   left: 0;
-  width: 6px;
+  width: 8px;
   height: auto;
   cursor: ew-resize;
 }
@@ -371,7 +372,7 @@ body {
   bottom: 0;
   left: auto;
   right: 0;
-  width: 6px;
+  width: 8px;
   height: auto;
   cursor: ew-resize;
 }

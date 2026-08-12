@@ -6,7 +6,6 @@ import {
   useMemo,
   useState,
   type Dispatch,
-  type MouseEvent as ReactMouseEvent,
   type SetStateAction
 } from "react";
 import {
@@ -1040,16 +1039,16 @@ function AllocationCard({
     data: { type: "allocation", allocationId: allocation.id }
   });
 
-  const onHandleMouseDown = (direction: "start" | "end") => (event: ReactMouseEvent<HTMLDivElement>) => {
+  const onHandlePointerDown = (direction: "start" | "end") => (event: React.PointerEvent<HTMLDivElement>) => {
+    event.stopPropagation();
     event.preventDefault();
     const initialY = event.clientY;
-    const onMouseUp = (upEvent: MouseEvent) => {
-      const delta = upEvent.clientY - initialY;
-      const slots = Math.round(delta / SLOT_HEIGHT);
+    const onPointerUp = (upEvent: PointerEvent) => {
+      const slots = Math.round((upEvent.clientY - initialY) / SLOT_HEIGHT);
       if (slots !== 0) onResize(allocation.id, direction, slots);
-      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("pointerup", onPointerUp);
     };
-    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("pointerup", onPointerUp);
   };
 
   return (
@@ -1072,7 +1071,7 @@ function AllocationCard({
         onSelect(allocation.id);
       }}
     >
-      <div className="resize-handle top" onMouseDown={onHandleMouseDown("start")} />
+      <div className="resize-handle top" onPointerDown={onHandlePointerDown("start")} />
       <button
         className="allocation-delete"
         type="button"
@@ -1089,7 +1088,7 @@ function AllocationCard({
         ×
       </button>
       <span>{activity.name}</span>
-      <div className="resize-handle bottom" onMouseDown={onHandleMouseDown("end")} />
+      <div className="resize-handle bottom" onPointerDown={onHandlePointerDown("end")} />
     </div>
   );
 }
@@ -1126,16 +1125,16 @@ function AllocationCardHorizontal({
     data: { type: "allocation", allocationId: allocation.id }
   });
 
-  const onHandleMouseDown = (direction: "start" | "end") => (event: ReactMouseEvent<HTMLDivElement>) => {
+  const onHandlePointerDown = (direction: "start" | "end") => (event: React.PointerEvent<HTMLDivElement>) => {
+    event.stopPropagation();
     event.preventDefault();
     const initialX = event.clientX;
-    const onMouseUp = (upEvent: MouseEvent) => {
-      const delta = upEvent.clientX - initialX;
-      const slots = Math.round(delta / TRANSPOSE_SLOT_WIDTH);
+    const onPointerUp = (upEvent: PointerEvent) => {
+      const slots = Math.round((upEvent.clientX - initialX) / TRANSPOSE_SLOT_WIDTH);
       if (slots !== 0) onResize(allocation.id, direction, slots);
-      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("pointerup", onPointerUp);
     };
-    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("pointerup", onPointerUp);
   };
 
   return (
@@ -1158,7 +1157,7 @@ function AllocationCardHorizontal({
         onSelect(allocation.id);
       }}
     >
-      <div className="resize-handle left" onMouseDown={onHandleMouseDown("start")} />
+      <div className="resize-handle left" onPointerDown={onHandlePointerDown("start")} />
       <button
         className="allocation-delete"
         type="button"
@@ -1174,7 +1173,7 @@ function AllocationCardHorizontal({
         ×
       </button>
       <span>{activity.name}</span>
-      <div className="resize-handle right" onMouseDown={onHandleMouseDown("end")} />
+      <div className="resize-handle right" onPointerDown={onHandlePointerDown("end")} />
     </div>
   );
 }
