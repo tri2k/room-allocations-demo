@@ -18,7 +18,9 @@
 - Keep [docs/c4/](docs/c4/README.md) accurate for the **current commit**.
 - If a change adds, removes, or rewires containers, components, persistence, or external systems, update the relevant Mermaid C4 diagram in the same commit.
 - Diagrams describe what exists now, not the Phase 1+ target in SPEC.md.
-- Use Mermaid `C4Context`, `C4Container`, and `C4Component`. Node IDs must be camelCase with no spaces.
+- Draw C4 **structure** with unstyled Mermaid `flowchart` + `subgraph` (not `C4Context` / `C4Container` / `C4Component`; those ignore themes and fail in dark mode).
+- Prefix diagrams with `%%{init: {"theme": "neutral"}}%%`. Do not add `style`, `classDef`, or hex fills.
+- Node IDs must be camelCase with no spaces.
 
 ## Python Version Guardrail
 

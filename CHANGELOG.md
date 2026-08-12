@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- C4 architecture diagrams in `docs/c4/` (context, container, component)
+- C4 architecture diagrams in `docs/c4/` (context, container, component; theme-neutral flowcharts for light and dark mode)
 
 ## v0 — Vision demo (2026-08-11)
 

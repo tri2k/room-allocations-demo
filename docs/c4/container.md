@@ -3,21 +3,17 @@
 v0 ships as a static Vite SPA. Persistence is the browser, not a backend.
 
 ```mermaid
-C4Container
-title Room Allocations — Containers (v0)
-
-Person(planner, "Event planner", "Uses the demo in a browser")
-
-System_Boundary(boundary, "Room Allocations v0") {
-    Container(spa, "Schedule SPA", "React, TypeScript, Vite", "Palette, grid, transpose, bulk assign")
-    Container(seed, "Seed catalog", "JSON", "Bundled BmMT 2026 buildings, rooms, activities, allocations")
-}
-
-System_Ext(browserStorage, "Browser localStorage", "Key room-allocations-demo:v1 plus orientation")
-
-Rel(planner, spa, "Opens via npm run dev or a static host")
-Rel(spa, seed, "Loads on first visit and on Reset")
-Rel(spa, browserStorage, "Saves schedule after edits")
+%%{init: {"theme": "neutral"}}%%
+flowchart TB
+  planner["Person: Event planner"]
+  subgraph demo [Room Allocations v0]
+    spa["Container: Schedule SPA"]
+    seed["Container: Seed catalog"]
+  end
+  browserStorage["External: Browser localStorage"]
+  planner -->|"Opens in the browser"| spa
+  spa -->|"Loads on first visit and Reset"| seed
+  spa -->|"Saves schedule after edits"| browserStorage
 ```
 
 ## Runtime
