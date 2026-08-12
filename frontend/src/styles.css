@@ -332,7 +332,7 @@ body {
   top: 2px;
   right: auto;
   padding: 6px 20px 6px 12px;
-  z-index: 2;
+  z-index: 4;
 }
 
 .allocation-delete {
@@ -521,7 +521,6 @@ body {
 
 .transpose-room-track {
   position: relative;
-  z-index: 1;
   display: flex;
   border-bottom: 1px solid #eef2f7;
   border-right: 1px solid #e5e7eb;
