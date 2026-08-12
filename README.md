@@ -27,4 +27,4 @@ npm install
 npm run dev
 ```
 
-Open the printed localhost URL. Catalog is `#/catalog`. Reset reseeds the BmMT demo (requires `ENABLE_DEV_RESEED=true`).
+Open the printed localhost URL. Catalog is `#/catalog` (venue spaces). Event setup is `#/event`. Reset reseeds the BmMT demo (requires `ENABLE_DEV_RESEED=true`).

@@ -1,23 +1,16 @@
 import { useEffect, useState } from "react";
+import AppNav from "./AppNav";
 import {
   ApiError,
-  createActivity,
   createBuilding,
   createFloor,
   createRoom,
-  createTimeBlock,
-  deleteActivity,
   deleteBuilding,
   deleteFloor,
   deleteRoom,
-  deleteTimeBlock,
-  getEvent,
   listBuildings,
-  listEvents,
   listFloors,
-  listRooms,
-  patchEvent,
-  type EventDetail
+  listRooms
 } from "./lib/api";
 import type { Building, Floor, Room } from "./types/schedule";
 
@@ -25,7 +18,6 @@ function Catalog() {
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [floors, setFloors] = useState<Floor[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [event, setEvent] = useState<EventDetail | null>(null);
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
 
@@ -38,8 +30,6 @@ function Catalog() {
     }
     setFloors(nextFloors);
     setRooms(await listRooms());
-    const events = await listEvents();
-    setEvent(events[0] ? await getEvent(events[0].id) : null);
   };
 
   useEffect(() => {
@@ -50,6 +40,7 @@ function Catalog() {
 
   const withError = async (action: () => Promise<void>) => {
     try {
+      setError("");
       await action();
       await refresh();
     } catch (err) {
@@ -62,11 +53,9 @@ function Catalog() {
       <header className="topbar">
         <div>
           <h1>Catalog</h1>
-          <p>Buildings, floors, rooms, and event metadata.</p>
+          <p>Reusable venue spaces: buildings, floors, and rooms.</p>
         </div>
-        <a className="reset-button" href="#/">
-          Back to schedule
-        </a>
+        <AppNav current="catalog" />
       </header>
 
       {error ? <p className="catalog-error">{error}</p> : null}
@@ -245,124 +234,6 @@ function Catalog() {
           })}
         </ul>
       </section>
-
-      {event ? (
-        <section className="catalog-section">
-          <h2>Event</h2>
-          <form
-            className="catalog-form"
-            onSubmit={(submit) => {
-              submit.preventDefault();
-              const data = new FormData(submit.currentTarget);
-              void withError(async () => {
-                await patchEvent(event.id, {
-                  name: String(data.get("name")),
-                  eventDate: String(data.get("eventDate")),
-                  timezone: String(data.get("timezone")),
-                  slotMinutes: Number(data.get("slotMinutes")),
-                  gridStart: String(data.get("gridStart")),
-                  gridEnd: String(data.get("gridEnd"))
-                });
-                setToast("Updated event");
-              });
-            }}
-          >
-            <input name="name" defaultValue={event.name} />
-            <input name="eventDate" type="date" defaultValue={event.eventDate} />
-            <input name="timezone" defaultValue={event.timezone} />
-            <input name="slotMinutes" type="number" defaultValue={event.slotMinutes} />
-            <input name="gridStart" defaultValue={event.gridStart} />
-            <input name="gridEnd" defaultValue={event.gridEnd} />
-            <button type="submit">Save event</button>
-          </form>
-
-          <h3>Activities</h3>
-          <form
-            className="catalog-form"
-            onSubmit={(submit) => {
-              submit.preventDefault();
-              const form = submit.currentTarget;
-              const data = new FormData(form);
-              void withError(async () => {
-                await createActivity(event.id, {
-                  name: String(data.get("name")),
-                  color: String(data.get("color")),
-                  defaultDurationMin: Number(data.get("defaultDurationMin"))
-                });
-                form.reset();
-                setToast("Created activity");
-              });
-            }}
-          >
-            <input name="name" placeholder="Name" required />
-            <input name="color" type="color" defaultValue="#ffcc80" />
-            <input name="defaultDurationMin" type="number" placeholder="Minutes" required />
-            <button type="submit">Add activity</button>
-          </form>
-          <ul className="catalog-list">
-            {event.activities.map((activity) => (
-              <li key={activity.id}>
-                {activity.name}
-                <button
-                  type="button"
-                  onClick={() =>
-                    void withError(async () => {
-                      await deleteActivity(activity.id);
-                      setToast("Deleted activity");
-                    })
-                  }
-                >
-                  Delete
-                </button>
-              </li>
-            ))}
-          </ul>
-
-          <h3>Time blocks</h3>
-          <form
-            className="catalog-form"
-            onSubmit={(submit) => {
-              submit.preventDefault();
-              const form = submit.currentTarget;
-              const data = new FormData(form);
-              void withError(async () => {
-                await createTimeBlock(event.id, {
-                  label: String(data.get("label")),
-                  startTime: String(data.get("startTime")),
-                  endTime: String(data.get("endTime")),
-                  color: String(data.get("color"))
-                });
-                form.reset();
-                setToast("Created time block");
-              });
-            }}
-          >
-            <input name="label" placeholder="Label" required />
-            <input name="startTime" type="time" required />
-            <input name="endTime" type="time" required />
-            <input name="color" type="color" defaultValue="#e5e7eb" />
-            <button type="submit">Add time block</button>
-          </form>
-          <ul className="catalog-list">
-            {event.timeBlocks.map((block) => (
-              <li key={block.id}>
-                {block.label} {block.startTime}–{block.endTime}
-                <button
-                  type="button"
-                  onClick={() =>
-                    void withError(async () => {
-                      await deleteTimeBlock(block.id);
-                      setToast("Deleted time block");
-                    })
-                  }
-                >
-                  Delete
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
 
       {toast ? <div className="toast">{toast}</div> : null}
     </div>

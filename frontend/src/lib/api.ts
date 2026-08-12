@@ -42,16 +42,34 @@ export type BulkAllocationWrite = {
   warnings: Warning[];
 };
 
+const EVENT_KEY = "room-allocations-demo:eventId";
+
 export const listEvents = (): Promise<EventInfo[]> => request("/api/v1/events");
 
 export const getSchedule = (eventId: string): Promise<ScheduleState> =>
   request(`/api/v1/events/${eventId}/schedule`);
 
-export const loadFirstSchedule = async (): Promise<ScheduleState | null> => {
+export const setActiveEventId = (eventId: string): void => {
+  localStorage.setItem(EVENT_KEY, eventId);
+};
+
+export const loadActiveSchedule = async (): Promise<ScheduleState | null> => {
   const events = await listEvents();
   if (events.length === 0) return null;
-  return getSchedule(events[0].id);
+  const stored = localStorage.getItem(EVENT_KEY);
+  const chosen = events.find((event) => event.id === stored) ?? events[0];
+  setActiveEventId(chosen.id);
+  return getSchedule(chosen.id);
 };
+
+export const createEvent = (body: {
+  name: string;
+  eventDate: string;
+  timezone: string;
+  slotMinutes?: number;
+  gridStart?: string;
+  gridEnd?: string;
+}): Promise<EventInfo> => request("/api/v1/events", { method: "POST", body: JSON.stringify(body) });
 
 export const createAllocation = (
   eventId: string,

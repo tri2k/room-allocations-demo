@@ -14,10 +14,11 @@ import {
   bulkCreateAllocations,
   createAllocation,
   deleteAllocation,
-  loadFirstSchedule,
+  loadActiveSchedule,
   patchAllocation,
   reseed
 } from "./lib/api";
+import AppNav from "./AppNav";
 import { buildBuildingGroups, buildFloorGroups, orderColumns } from "./lib/grid";
 import { buildOverlapSet } from "./lib/overlap";
 import { allocationStartSlot, buildIso, clamp, formatTimeLabel, getSlotCount, slotToTime, timeFromIso, timeToSlot } from "./lib/time";
@@ -52,7 +53,7 @@ function App() {
 
   const reload = async () => {
     try {
-      const next = await loadFirstSchedule();
+      const next = await loadActiveSchedule();
       if (!next) {
         setState(null);
         setBoot("empty");
@@ -91,11 +92,16 @@ function App() {
   if (boot === "empty") {
     return (
       <div className="boot-screen">
-        <h1>No events in the database</h1>
-        <p>Seed the BmMT demo to load the grid.</p>
-        <button className="reset-button" onClick={() => void onReseed()}>
-          Seed demo data
-        </button>
+        <h1>No event to schedule</h1>
+        <p>Create an event, or seed the BmMT demo.</p>
+        <div className="topbar-actions">
+          <a className="reset-button" href="#/event">
+            Create event
+          </a>
+          <button className="reset-button" onClick={() => void onReseed()}>
+            Seed demo data
+          </button>
+        </div>
       </div>
     );
   }
@@ -466,9 +472,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
             <p>Drag from palette, bulk assign by floor. Schedule is saved on the server.</p>
           </div>
           <div className="topbar-actions">
-            <a className="reset-button" href="#/catalog">
-              Catalog
-            </a>
+            <AppNav current="schedule" />
             <button
               onClick={() => setOrientation((previous) => (previous === "normal" ? "transposed" : "normal"))}
               className="reset-button"

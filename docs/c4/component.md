@@ -1,6 +1,6 @@
 # Component (C4 level 3)
 
-Logical components of the Schedule SPA and API. Grid UI lives in [`frontend/src/App.tsx`](../../frontend/src/App.tsx); catalog forms in [`frontend/src/Catalog.tsx`](../../frontend/src/Catalog.tsx).
+Logical components of the Schedule SPA and API. Grid UI lives in [`frontend/src/App.tsx`](../../frontend/src/App.tsx); venue catalog in [`frontend/src/Catalog.tsx`](../../frontend/src/Catalog.tsx); event setup in [`frontend/src/EventPage.tsx`](../../frontend/src/EventPage.tsx).
 
 ```mermaid
 %%{init: {"theme": "neutral"}}%%
@@ -8,6 +8,7 @@ flowchart TB
   subgraph spa [Schedule SPA]
     app["App"]
     catalog["Catalog"]
+    eventPage["Event"]
     palette["ActivityPalette"]
     grid["ScheduleGrid"]
     types["schedule types"]
@@ -32,6 +33,7 @@ flowchart TB
   app --> types
   app --> dndKit
   catalog --> libApi
+  eventPage --> libApi
   libApi --> routers
   routers --> models
   routers --> seedMod
@@ -47,4 +49,5 @@ flowchart TB
 
 - **Normal:** time on Y, rooms on X, building/floor as column headers
 - **Transposed:** rooms on Y, time on X, building/floor as row-spanning bands
-- **Catalog:** hash route `#/catalog` for buildings, floors, rooms, and event metadata
+- **Catalog:** hash route `#/catalog` for buildings, floors, and rooms
+- **Event:** hash route `#/event` for creating/editing an event, its activities, and time blocks

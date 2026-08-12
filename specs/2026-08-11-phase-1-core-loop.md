@@ -241,7 +241,7 @@ Each step should leave the repo runnable.
 
 ### Additions
 - `GET /health` on the API.
-- Catalog is `#/catalog` (buildings, floors, rooms, event metadata, activities, time blocks).
+- Catalog is `#/catalog` (buildings, floors, rooms). Event setup moved to `#/event` after shipping: events are planned objects, not catalog rows.
 
 ### Deferred
 - Hosted deploy

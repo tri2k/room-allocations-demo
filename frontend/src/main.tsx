@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import Catalog from "./Catalog";
+import EventPage from "./EventPage";
 import "./styles.css";
 
 function Root() {
@@ -14,6 +15,7 @@ function Root() {
   }, []);
 
   if (hash.startsWith("#/catalog")) return <Catalog />;
+  if (hash.startsWith("#/event")) return <EventPage />;
   return <App />;
 }
 
