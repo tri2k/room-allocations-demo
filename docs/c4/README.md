@@ -10,7 +10,7 @@ Living C4 model of this repo, drawn in Mermaid. These files describe **the archi
 
 On any commit that changes architecture (new containers, components, persistence, auth, APIs, or major data-flow), update the diagrams in the **same commit**. Git history is the snapshot of architecture over time.
 
-Do not add speculative boxes for Phase 1+ until that code exists. Planned work belongs in [SPEC.md](../../SPEC.md).
+Do not add speculative boxes for Phase 1+ until that code exists. Planned work belongs in [PRODUCT.md](../../PRODUCT.md) and [specs/](../../specs/).
 
 ## Light and dark mode
 

@@ -2,7 +2,7 @@
 
 **v0 — Vision demo** is complete. Frontend-only prototype for pitching the room-scheduling grid.
 
-See [CHANGELOG.md](CHANGELOG.md), [SPEC.md](SPEC.md) section 3, and [C4 diagrams](docs/c4/README.md).
+See [PRODUCT.md](PRODUCT.md), [v0 spec](specs/2026-08-11-v0-vision-demo.md), [CHANGELOG.md](CHANGELOG.md), and [C4 diagrams](docs/c4/README.md).
 
 ## Run locally
 

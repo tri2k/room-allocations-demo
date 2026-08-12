@@ -3,6 +3,7 @@
 ## Unreleased
 
 - C4 architecture diagrams in `docs/c4/` (context, container, component; theme-neutral flowcharts for light and dark mode)
+- Split `SPEC.md` into `PRODUCT.md` + `specs/`; slim `AGENTS.md`; align `GUIDELINES.md`
 
 ## v0 — Vision demo (2026-08-11)
 
