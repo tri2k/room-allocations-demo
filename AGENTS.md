@@ -1,5 +1,18 @@
 # AGENTS.md
 
+## Conventional Commits
+
+- Use [Conventional Commits](https://www.conventionalcommits.org/) for every commit in this repo.
+- Format: `<type>[optional scope]: <description>`
+- Common types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `build`, `ci`.
+- Description is imperative, lowercase unless a proper noun, no trailing period.
+- Add a body when the change needs context (limitations, demo-quality caveats, breaking changes).
+- Breaking changes: `feat!: ...` or a `BREAKING CHANGE:` footer.
+- Examples:
+  - `feat: add floor bulk-assign from palette drop`
+  - `fix: keep allocation duration when moving blocks`
+  - `docs: log v0 vision demo completion`
+
 ## Python Version Guardrail
 
 - The backend standard interpreter is Python 3.13.
