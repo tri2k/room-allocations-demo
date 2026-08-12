@@ -24,6 +24,8 @@ function Catalog() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
+  const [roomBuildingId, setRoomBuildingId] = useState("");
+  const [roomFloorId, setRoomFloorId] = useState("");
 
   const refresh = async () => {
     const nextBuildings = await listBuildings();
@@ -37,6 +39,7 @@ function Catalog() {
   };
 
   const activeBuildings = buildings.filter(isActive);
+  const roomFloors = roomBuildingId ? floors.filter((floor) => floor.buildingId === roomBuildingId) : [];
 
   useEffect(() => {
     void refresh().catch((err: unknown) => {
@@ -188,22 +191,31 @@ function Catalog() {
             submit.preventDefault();
             const form = submit.currentTarget;
             const data = new FormData(form);
-            const floorId = String(data.get("floorId") || "");
             void withError(async () => {
               await createRoom({
-                buildingId: String(data.get("buildingId")),
-                floorId: floorId || null,
+                buildingId: roomBuildingId,
+                floorId: roomFloorId || null,
                 name: String(data.get("name")),
                 roomType: String(data.get("roomType")) as Room["roomType"],
                 capacity: Number(data.get("capacity")),
                 optimalCapacity: Number(data.get("optimalCapacity"))
               });
               form.reset();
+              setRoomBuildingId("");
+              setRoomFloorId("");
               setToast("Created room");
             });
           }}
         >
-          <select name="buildingId" required defaultValue="">
+          <select
+            name="buildingId"
+            required
+            value={roomBuildingId}
+            onChange={(event) => {
+              setRoomBuildingId(event.target.value);
+              setRoomFloorId("");
+            }}
+          >
             <option value="" disabled>
               Building
             </option>
@@ -213,18 +225,18 @@ function Catalog() {
               </option>
             ))}
           </select>
-          <select name="floorId" defaultValue="">
+          <select
+            name="floorId"
+            value={roomFloorId}
+            disabled={!roomBuildingId}
+            onChange={(event) => setRoomFloorId(event.target.value)}
+          >
             <option value="">No floor</option>
-            {floors
-              .filter((floor) => activeBuildings.some((building) => building.id === floor.buildingId))
-              .map((floor) => {
-                const building = buildings.find((item) => item.id === floor.buildingId);
-                return (
-                  <option key={floor.id} value={floor.id}>
-                    {building?.code} F{floor.label}
-                  </option>
-                );
-              })}
+            {roomFloors.map((floor) => (
+              <option key={floor.id} value={floor.id}>
+                F{floor.label}
+              </option>
+            ))}
           </select>
           <input name="name" placeholder="Number (155)" required />
           <select name="roomType" defaultValue="small">

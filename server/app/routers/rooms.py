@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.errors import not_found
+from app.errors import conflict, not_found
 from app.models import Building, Floor, Room
 from app.schemas import RoomCreate, RoomOut, RoomUpdate
 from app.serialize import room_out
@@ -18,6 +18,16 @@ def _room(db: Session, room_id: UUID) -> Room:
     if row is None:
         raise not_found("Room")
     return row
+
+
+def _assert_floor_in_building(db: Session, building_id: UUID, floor_id: UUID | None) -> None:
+    if floor_id is None:
+        return
+    floor = db.get(Floor, floor_id)
+    if floor is None:
+        raise not_found("Floor")
+    if floor.building_id != building_id:
+        raise conflict("Floor does not belong to the selected building")
 
 
 @router.get("/rooms", response_model=list[RoomOut])
@@ -42,8 +52,7 @@ def list_rooms(
 def create_room(body: RoomCreate, db: Session = Depends(get_db)) -> RoomOut:
     if db.get(Building, body.building_id) is None:
         raise not_found("Building")
-    if body.floor_id is not None and db.get(Floor, body.floor_id) is None:
-        raise not_found("Floor")
+    _assert_floor_in_building(db, body.building_id, body.floor_id)
     row = Room(
         building_id=body.building_id,
         floor_id=body.floor_id,
@@ -63,7 +72,13 @@ def create_room(body: RoomCreate, db: Session = Depends(get_db)) -> RoomOut:
 @router.patch("/rooms/{room_id}", response_model=RoomOut)
 def update_room(room_id: UUID, body: RoomUpdate, db: Session = Depends(get_db)) -> RoomOut:
     row = _room(db, room_id)
-    for key, value in body.model_dump(exclude_unset=True).items():
+    data = body.model_dump(exclude_unset=True)
+    building_id = data.get("building_id", row.building_id)
+    floor_id = data["floor_id"] if "floor_id" in data else row.floor_id
+    if "building_id" in data and db.get(Building, building_id) is None:
+        raise not_found("Building")
+    _assert_floor_in_building(db, building_id, floor_id)
+    for key, value in data.items():
         setattr(row, key, value)
     db.commit()
     db.refresh(row)
