@@ -72,13 +72,8 @@ function App() {
   }, []);
 
   const onReseed = async () => {
-    try {
-      await reseed();
-      await reload();
-    } catch (error) {
-      setBoot("error");
-      setBootMessage(error instanceof Error ? error.message : "Reseed failed");
-    }
+    await reseed();
+    await reload();
   };
 
   if (boot === "loading") {
@@ -98,7 +93,15 @@ function App() {
           <a className="reset-button" href="#/event">
             Create event
           </a>
-          <button className="reset-button" onClick={() => void onReseed()}>
+          <button
+            className="reset-button"
+            onClick={() => {
+              void onReseed().catch((error: unknown) => {
+                setBoot("error");
+                setBootMessage(error instanceof Error ? error.message : "Reseed failed");
+              });
+            }}
+          >
             Seed demo data
           </button>
         </div>
@@ -227,12 +230,16 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
   }, [selectedAllocationId]);
 
   const resetToSeed = async () => {
-    await onReseed();
-    setSelectedRoomIds([]);
-    setSelectedAllocationId(null);
-    setCollapsedBuildings(new Set());
-    setCollapsedFloors(new Set());
-    setToast("Reset to seed schedule");
+    try {
+      await onReseed();
+      setSelectedRoomIds([]);
+      setSelectedAllocationId(null);
+      setCollapsedBuildings(new Set());
+      setCollapsedFloors(new Set());
+      setToast("Reset to seed schedule");
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : "Reset failed");
+    }
   };
 
   const replaceAllocation = (allocation: Allocation) => {
