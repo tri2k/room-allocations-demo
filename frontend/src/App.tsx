@@ -569,7 +569,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
           <div className="schedule-wrap">
             <div className="schedule" style={{ minWidth: Math.max(columns.length, headerSpan) * COLUMN_WIDTH + 120 }}>
               {orientation === "normal" ? (
-                <>
+                <div className="schedule-headers">
                   <div className="header-row building-row" style={{ marginLeft: 120 }}>
                     {buildingGroups.map((group) => (
                       <button
@@ -669,7 +669,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                       )
                     )}
                   </div>
-                </>
+                </div>
               ) : null}
 
               {orientation === "normal" ? (
@@ -738,34 +738,41 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                 </div>
               ) : (
                 <div className="transpose-shell">
-                  <div className="transpose-phase-strip" style={{ marginLeft: TRANSPOSE_LABEL_WIDTH, width: transposeWidth }}>
-                    {state.timeBlocks.map((block) => {
-                      const bounds = phaseBounds(block);
-                      return (
-                        <div
-                          key={block.id}
-                          className="transpose-phase-block"
-                          style={{
-                            left: bounds.start * TRANSPOSE_SLOT_WIDTH,
-                            width: Math.max(1, bounds.end - bounds.start) * TRANSPOSE_SLOT_WIDTH,
-                            background: block.color ?? "#e5e7eb"
-                          }}
-                        >
-                          {block.label}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <div className="transpose-headers">
+                    <div className="transpose-corner" style={{ width: TRANSPOSE_LABEL_WIDTH }}>
+                      Time
+                    </div>
+                    <div className="transpose-header-cols" style={{ width: transposeWidth }}>
+                      <div className="transpose-phase-strip" style={{ width: transposeWidth }}>
+                        {state.timeBlocks.map((block) => {
+                          const bounds = phaseBounds(block);
+                          return (
+                            <div
+                              key={block.id}
+                              className="transpose-phase-block"
+                              style={{
+                                left: bounds.start * TRANSPOSE_SLOT_WIDTH,
+                                width: Math.max(1, bounds.end - bounds.start) * TRANSPOSE_SLOT_WIDTH,
+                                background: block.color ?? "#e5e7eb"
+                              }}
+                            >
+                              {block.label}
+                            </div>
+                          );
+                        })}
+                      </div>
 
-                  <div className="transpose-time-header" style={{ marginLeft: TRANSPOSE_LABEL_WIDTH, width: transposeWidth }}>
-                    {Array.from({ length: slotCount }).map((_, slotIndex) => {
-                      const hhmm = slotToTime(state.event.gridStart, state.event.slotMinutes, slotIndex);
-                      return (
-                        <div key={hhmm} className="transpose-time-cell" style={{ width: TRANSPOSE_SLOT_WIDTH }}>
-                          {slotIndex % 2 === 0 ? hhmm : ""}
-                        </div>
-                      );
-                    })}
+                      <div className="transpose-time-header" style={{ width: transposeWidth }}>
+                        {Array.from({ length: slotCount }).map((_, slotIndex) => {
+                          const hhmm = slotToTime(state.event.gridStart, state.event.slotMinutes, slotIndex);
+                          return (
+                            <div key={hhmm} className="transpose-time-cell" style={{ width: TRANSPOSE_SLOT_WIDTH }}>
+                              {slotIndex % 2 === 0 ? hhmm : ""}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
 
                   <div

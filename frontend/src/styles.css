@@ -20,11 +20,14 @@ body {
 }
 
 .app {
+  height: 100vh;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 12px;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .topbar {
@@ -94,6 +97,7 @@ body {
   gap: 12px;
   min-height: 0;
   flex: 1;
+  overflow: hidden;
 }
 
 .palette {
@@ -104,6 +108,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-height: 0;
+  overflow: auto;
 }
 
 .palette h2 {
@@ -132,11 +138,21 @@ body {
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
 }
 
 .schedule {
   width: max-content;
   min-height: 100%;
+}
+
+.schedule-headers {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  background: #fff;
 }
 
 .header-row {
@@ -146,9 +162,8 @@ body {
 
 .building-row,
 .floor-row {
-  position: sticky;
-  left: 0;
-  z-index: 3;
+  position: relative;
+  z-index: 1;
 }
 
 .header-button {
@@ -186,18 +201,22 @@ body {
 }
 
 .room-row {
-  position: sticky;
-  top: 0;
-  z-index: 5;
+  position: relative;
+  z-index: 2;
   background: #fff;
 }
 
 .time-header {
+  position: sticky;
+  left: 0;
+  z-index: 3;
   width: 120px;
+  flex-shrink: 0;
   border: 1px solid #e5e7eb;
   padding: 8px;
   font-weight: 600;
   font-size: 13px;
+  background: #fff;
 }
 
 .room-header {
@@ -242,9 +261,13 @@ body {
 }
 
 .time-gutter {
+  position: sticky;
+  left: 0;
+  z-index: 5;
   width: 120px;
+  flex-shrink: 0;
   border-right: 1px solid #e5e7eb;
-  position: relative;
+  background: #fff;
 }
 
 .time-cell {
@@ -309,7 +332,7 @@ body {
   top: 2px;
   right: auto;
   padding: 6px 20px 6px 12px;
-  z-index: 6;
+  z-index: 2;
 }
 
 .allocation-delete {
@@ -379,13 +402,46 @@ body {
 }
 
 .transpose-shell {
+  position: relative;
   padding-bottom: 8px;
+}
+
+.transpose-headers {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: stretch;
+  background: #fff;
+}
+
+.transpose-corner {
+  position: sticky;
+  left: 0;
+  z-index: 11;
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  box-sizing: border-box;
+  border: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  background: #fff;
+}
+
+.transpose-header-cols {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .transpose-phase-strip {
   position: relative;
   height: 24px;
-  border-left: 1px solid #e5e7eb;
+  border-top: 1px solid #e5e7eb;
   border-right: 1px solid #e5e7eb;
   border-bottom: 1px solid #e5e7eb;
   background: #fff;
@@ -406,6 +462,7 @@ body {
   display: flex;
   height: 28px;
   border-bottom: 1px solid #e5e7eb;
+  background: #fff;
 }
 
 .transpose-time-cell {
@@ -423,6 +480,8 @@ body {
 }
 
 .transpose-sideways {
+  position: sticky;
+  z-index: 8;
   border: 1px solid #e5e7eb;
   border-left: none;
   border-top: none;
@@ -434,11 +493,21 @@ body {
   justify-content: center;
 }
 
+.transpose-sideways.building {
+  left: 0;
+  z-index: 9;
+}
+
 .transpose-sideways.floor {
+  left: 32px;
+  z-index: 8;
   background: #f5f3ff;
 }
 
 .transpose-room-label {
+  position: sticky;
+  left: 64px;
+  z-index: 7;
   width: 100%;
   border: 1px solid #e5e7eb;
   border-left: none;
@@ -447,10 +516,12 @@ body {
   padding: 6px 8px;
   font-size: 12px;
   cursor: pointer;
+  background: #fff;
 }
 
 .transpose-room-track {
   position: relative;
+  z-index: 1;
   display: flex;
   border-bottom: 1px solid #eef2f7;
   border-right: 1px solid #e5e7eb;
