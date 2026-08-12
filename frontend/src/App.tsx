@@ -1,9 +1,10 @@
-import { DndContext, type DragEndEvent, useDraggable, useDroppable } from "@dnd-kit/core";
+import { DndContext, PointerSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import {
   Fragment,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type Dispatch,
   type SetStateAction
@@ -136,6 +137,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
   const [orientation, setOrientation] = useState<"normal" | "transposed">(
     () => (localStorage.getItem(ORIENTATION_KEY) === "transposed" ? "transposed" : "normal")
   );
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const slotCount = useMemo(
     () => getSlotCount(state.event.gridStart, state.event.gridEnd, state.event.slotMinutes),
@@ -535,7 +537,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
   };
 
   return (
-    <DndContext onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="app">
         <header className="topbar">
           <div>
@@ -854,6 +856,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                                   left={startSlot * TRANSPOSE_SLOT_WIDTH}
                                   width={span * TRANSPOSE_SLOT_WIDTH - 2}
                                   height={(merged?.span ?? 1) * TRANSPOSE_ROW_HEIGHT - 2}
+                                  gridExtent={slotCount * TRANSPOSE_SLOT_WIDTH}
                                   overlap={overlapsSet.has(allocation.id)}
                                   selected={selectedAllocationId === allocation.id}
                                   blockTitle={blockTitle(activity, allocation)}
@@ -885,22 +888,53 @@ type PaletteItemProps = {
 };
 
 function PaletteItem({ activity }: PaletteItemProps) {
+  const nodeRef = useRef<HTMLButtonElement | null>(null);
+  const originRef = useRef<{ left: number; top: number } | null>(null);
   const draggable = useDraggable({
     id: `palette:${activity.id}`,
     data: { type: "palette", activityId: activity.id }
   });
 
+  const setRefs = (node: HTMLButtonElement | null) => {
+    nodeRef.current = node;
+    draggable.setNodeRef(node);
+  };
+
+  const listeners = {
+    ...draggable.listeners,
+    onPointerDown: (event: React.PointerEvent<HTMLButtonElement>) => {
+      const rect = event.currentTarget.getBoundingClientRect();
+      originRef.current = { left: rect.left, top: rect.top };
+      draggable.listeners?.onPointerDown?.(event);
+    }
+  };
+
+  const origin = originRef.current;
+  const floating = draggable.isDragging && origin;
+
   return (
     <button
-      ref={draggable.setNodeRef}
-      {...draggable.listeners}
+      ref={setRefs}
+      {...listeners}
       {...draggable.attributes}
-      className="palette-item"
-      style={{
-        background: activity.color,
-        transform: CSS.Translate.toString(draggable.transform),
-        opacity: draggable.isDragging ? 0.6 : 1
-      }}
+      className={`palette-item ${draggable.isDragging ? "is-dragging" : ""}`}
+      style={
+        floating
+          ? {
+              position: "fixed",
+              left: origin.left,
+              top: origin.top,
+              width: nodeRef.current?.offsetWidth,
+              zIndex: 10000,
+              background: activity.color,
+              transform: CSS.Translate.toString(draggable.transform),
+              boxShadow: "0 12px 32px rgba(15, 23, 42, 0.35)",
+              cursor: "grabbing",
+              margin: 0,
+              opacity: 0.95
+            }
+          : { background: activity.color }
+      }
     >
       {activity.name}
     </button>
@@ -972,6 +1006,7 @@ function RoomColumn({
             top={startSlot * slotHeight}
             height={span * slotHeight - 2}
             width={width}
+            gridExtent={slotCount * slotHeight}
             overlap={overlapIds.has(allocation.id)}
             onResize={onResize}
             onDelete={onDelete}
@@ -1013,6 +1048,7 @@ type AllocationCardProps = {
   top: number;
   height: number;
   width: number;
+  gridExtent: number;
   overlap: boolean;
   onResize: (allocationId: string, direction: "start" | "end", deltaSlots: number) => void;
   onDelete: (allocationId: string) => void;
@@ -1027,6 +1063,7 @@ function AllocationCard({
   top,
   height,
   width,
+  gridExtent,
   overlap,
   onResize,
   onDelete,
@@ -1034,36 +1071,118 @@ function AllocationCard({
   onSelect,
   title
 }: AllocationCardProps) {
+  const nodeRef = useRef<HTMLDivElement | null>(null);
+  const originRef = useRef<{ left: number; top: number } | null>(null);
+  const resizeCleanupRef = useRef<(() => void) | null>(null);
+  const [resizePreview, setResizePreview] = useState<{ top: number; height: number } | null>(null);
   const draggable = useDraggable({
     id: `allocation:${allocation.id}`,
-    data: { type: "allocation", allocationId: allocation.id }
+    data: {
+      type: "allocation",
+      allocationId: allocation.id,
+      width,
+      height,
+      horizontal: false
+    }
   });
+
+  useEffect(() => () => resizeCleanupRef.current?.(), []);
+
+  const setRefs = (node: HTMLDivElement | null) => {
+    nodeRef.current = node;
+    draggable.setNodeRef(node);
+  };
+
+  const listeners = {
+    ...draggable.listeners,
+    onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => {
+      if ((event.target as HTMLElement).closest(".resize-handle, .allocation-delete")) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      originRef.current = { left: rect.left, top: rect.top };
+      draggable.listeners?.onPointerDown?.(event);
+    }
+  };
 
   const onHandlePointerDown = (direction: "start" | "end") => (event: React.PointerEvent<HTMLDivElement>) => {
     event.stopPropagation();
     event.preventDefault();
+    resizeCleanupRef.current?.();
+
     const initialY = event.clientY;
-    const onPointerUp = (upEvent: PointerEvent) => {
-      const slots = Math.round((upEvent.clientY - initialY) / SLOT_HEIGHT);
-      if (slots !== 0) onResize(allocation.id, direction, slots);
-      window.removeEventListener("pointerup", onPointerUp);
+    const baseTop = top;
+    const baseHeight = height;
+    const minHeight = SLOT_HEIGHT - 2;
+
+    const onPointerMove = (moveEvent: PointerEvent) => {
+      const deltaY = moveEvent.clientY - initialY;
+      if (direction === "start") {
+        const nextTop = clamp(baseTop + deltaY, 0, baseTop + baseHeight - minHeight);
+        setResizePreview({ top: nextTop, height: baseTop + baseHeight - nextTop });
+      } else {
+        setResizePreview({
+          top: baseTop,
+          height: clamp(baseHeight + deltaY, minHeight, gridExtent - baseTop)
+        });
+      }
     };
-    window.addEventListener("pointerup", onPointerUp);
+
+    const finish = (upEvent: PointerEvent) => {
+      const slots = Math.round((upEvent.clientY - initialY) / SLOT_HEIGHT);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", finish);
+      resizeCleanupRef.current = null;
+      if (slots !== 0) onResize(allocation.id, direction, slots);
+      setResizePreview(null);
+    };
+
+    resizeCleanupRef.current = () => {
+      setResizePreview(null);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", finish);
+      resizeCleanupRef.current = null;
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", finish);
+    window.addEventListener("pointercancel", finish);
+    onPointerMove(event.nativeEvent);
   };
+
+  const origin = originRef.current;
+  const floating = draggable.isDragging && origin;
+  const displayTop = resizePreview?.top ?? top;
+  const displayHeight = resizePreview?.height ?? height;
 
   return (
     <div
-      ref={draggable.setNodeRef}
-      className={`allocation ${overlap ? "overlap" : ""} ${selected ? "selected" : ""}`}
-      style={{
-        top,
-        height,
-        width,
-        background: activity.color,
-        transform: CSS.Translate.toString(draggable.transform),
-        opacity: draggable.isDragging ? 0.75 : 1
-      }}
-      {...draggable.listeners}
+      ref={setRefs}
+      className={`allocation ${overlap ? "overlap" : ""} ${selected ? "selected" : ""} ${draggable.isDragging ? "is-dragging" : ""}`}
+      style={
+        floating
+          ? {
+              position: "fixed",
+              left: origin.left,
+              top: origin.top,
+              width,
+              height: displayHeight,
+              background: activity.color,
+              transform: CSS.Translate.toString(draggable.transform),
+              zIndex: 10000,
+              boxShadow: "0 12px 32px rgba(15, 23, 42, 0.35)",
+              cursor: "grabbing",
+              margin: 0,
+              opacity: 0.95
+            }
+          : {
+              top: displayTop,
+              height: displayHeight,
+              width,
+              background: activity.color
+            }
+      }
+      {...listeners}
       {...draggable.attributes}
       title={title}
       onClick={(event) => {
@@ -1099,6 +1218,7 @@ type AllocationCardHorizontalProps = {
   left: number;
   width: number;
   height: number;
+  gridExtent: number;
   overlap: boolean;
   selected: boolean;
   blockTitle: string;
@@ -1113,6 +1233,7 @@ function AllocationCardHorizontal({
   left,
   width,
   height,
+  gridExtent,
   overlap,
   selected,
   blockTitle,
@@ -1120,36 +1241,112 @@ function AllocationCardHorizontal({
   onDelete,
   onResize
 }: AllocationCardHorizontalProps) {
+  const originRef = useRef<{ left: number; top: number } | null>(null);
+  const resizeCleanupRef = useRef<(() => void) | null>(null);
+  const [resizePreview, setResizePreview] = useState<{ left: number; width: number } | null>(null);
   const draggable = useDraggable({
     id: `allocation:${allocation.id}`,
-    data: { type: "allocation", allocationId: allocation.id }
+    data: {
+      type: "allocation",
+      allocationId: allocation.id,
+      width,
+      height,
+      horizontal: true
+    }
   });
+
+  useEffect(() => () => resizeCleanupRef.current?.(), []);
+
+  const listeners = {
+    ...draggable.listeners,
+    onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => {
+      if ((event.target as HTMLElement).closest(".resize-handle, .allocation-delete")) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      originRef.current = { left: rect.left, top: rect.top };
+      draggable.listeners?.onPointerDown?.(event);
+    }
+  };
 
   const onHandlePointerDown = (direction: "start" | "end") => (event: React.PointerEvent<HTMLDivElement>) => {
     event.stopPropagation();
     event.preventDefault();
+    resizeCleanupRef.current?.();
+
     const initialX = event.clientX;
-    const onPointerUp = (upEvent: PointerEvent) => {
-      const slots = Math.round((upEvent.clientX - initialX) / TRANSPOSE_SLOT_WIDTH);
-      if (slots !== 0) onResize(allocation.id, direction, slots);
-      window.removeEventListener("pointerup", onPointerUp);
+    const baseLeft = left;
+    const baseWidth = width;
+    const minWidth = TRANSPOSE_SLOT_WIDTH - 2;
+
+    const onPointerMove = (moveEvent: PointerEvent) => {
+      const deltaX = moveEvent.clientX - initialX;
+      if (direction === "start") {
+        const nextLeft = clamp(baseLeft + deltaX, 0, baseLeft + baseWidth - minWidth);
+        setResizePreview({ left: nextLeft, width: baseLeft + baseWidth - nextLeft });
+      } else {
+        setResizePreview({
+          left: baseLeft,
+          width: clamp(baseWidth + deltaX, minWidth, gridExtent - baseLeft)
+        });
+      }
     };
-    window.addEventListener("pointerup", onPointerUp);
+
+    const finish = (upEvent: PointerEvent) => {
+      const slots = Math.round((upEvent.clientX - initialX) / TRANSPOSE_SLOT_WIDTH);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", finish);
+      resizeCleanupRef.current = null;
+      if (slots !== 0) onResize(allocation.id, direction, slots);
+      setResizePreview(null);
+    };
+
+    resizeCleanupRef.current = () => {
+      setResizePreview(null);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", finish);
+      resizeCleanupRef.current = null;
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", finish);
+    window.addEventListener("pointercancel", finish);
+    onPointerMove(event.nativeEvent);
   };
+
+  const origin = originRef.current;
+  const floating = draggable.isDragging && origin;
+  const displayLeft = resizePreview?.left ?? left;
+  const displayWidth = resizePreview?.width ?? width;
 
   return (
     <div
       ref={draggable.setNodeRef}
-      className={`allocation horizontal ${overlap ? "overlap" : ""} ${selected ? "selected" : ""}`}
-      style={{
-        left,
-        width,
-        height,
-        background: activity.color,
-        transform: CSS.Translate.toString(draggable.transform),
-        opacity: draggable.isDragging ? 0.75 : 1
-      }}
-      {...draggable.listeners}
+      className={`allocation horizontal ${overlap ? "overlap" : ""} ${selected ? "selected" : ""} ${draggable.isDragging ? "is-dragging" : ""}`}
+      style={
+        floating
+          ? {
+              position: "fixed",
+              left: origin.left,
+              top: origin.top,
+              width: displayWidth,
+              height,
+              background: activity.color,
+              transform: CSS.Translate.toString(draggable.transform),
+              zIndex: 10000,
+              boxShadow: "0 12px 32px rgba(15, 23, 42, 0.35)",
+              cursor: "grabbing",
+              margin: 0,
+              opacity: 0.95
+            }
+          : {
+              left: displayLeft,
+              width: displayWidth,
+              height,
+              background: activity.color
+            }
+      }
+      {...listeners}
       {...draggable.attributes}
       title={blockTitle}
       onClick={(event) => {

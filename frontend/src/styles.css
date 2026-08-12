@@ -302,6 +302,7 @@ body {
   user-select: none;
   z-index: 4;
   overflow: hidden;
+  touch-action: none;
 }
 
 .allocation.horizontal {
