@@ -20,7 +20,14 @@ const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
     }
   });
   if (response.status === 204) return undefined as T;
+  const contentType = response.headers.get("content-type") ?? "";
   const text = await response.text();
+  if (!contentType.includes("application/json")) {
+    throw new ApiError(
+      response.status,
+      `API returned non-JSON (${response.status}). Is the FastAPI server running on port 8000?`
+    );
+  }
   const body = text ? JSON.parse(text) : null;
   if (!response.ok) {
     const detail = typeof body?.detail === "string" ? body.detail : `Request failed (${response.status})`;
