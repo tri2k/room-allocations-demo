@@ -527,6 +527,11 @@ body {
   border-right: 1px solid #e5e7eb;
 }
 
+.transpose-sideways.collapsed {
+  opacity: 0.85;
+  font-style: italic;
+}
+
 .transpose-sideways span {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
@@ -536,6 +541,12 @@ body {
   letter-spacing: 0.02em;
 }
 
+.transpose-sideways .collapse-marker {
+  display: inline;
+  margin: 0;
+  font-style: normal;
+}
+
 .transpose-room-label.selected {
   outline: 2px solid #2563eb;
   outline-offset: -2px;
@@ -543,6 +554,24 @@ body {
 
 .transpose-room-label small {
   color: #334155;
+}
+
+.transpose-room-label-spacer,
+.transpose-room-track-spacer {
+  background: repeating-linear-gradient(
+    -45deg,
+    #f8fafc,
+    #f8fafc 6px,
+    #eef2f7 6px,
+    #eef2f7 12px
+  );
+  border: 1px solid #e5e7eb;
+  border-left: none;
+  border-top: none;
+}
+
+.transpose-room-track-spacer {
+  border-right: 1px solid #e5e7eb;
 }
 
 .slot-cell-horizontal {

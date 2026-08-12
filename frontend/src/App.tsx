@@ -481,48 +481,118 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
       setSelectedRoomIds((selected) => selected.filter((id) => !hiddenRoomIds.has(id)));
     }
   };
+
+  const buildingIdForSlot = (slot: (typeof gridSlots)[number]): string | null => {
+    if (slot.type === "room") return slot.column.building.id;
+    if (slot.id.startsWith("spacer-building-")) return slot.id.slice("spacer-building-".length);
+    if (slot.id.startsWith("spacer-floor-")) {
+      const floorId = slot.id.slice("spacer-floor-".length);
+      return state.floors.find((floor) => floor.id === floorId)?.buildingId ?? null;
+    }
+    return null;
+  };
+
   const transposeBuildingBands = useMemo(() => {
-    const bands: Array<{ id: string; buildingId: string; label: string; start: number; span: number }> = [];
+    const bands: Array<{
+      id: string;
+      buildingId: string;
+      label: string;
+      start: number;
+      span: number;
+      collapsed: boolean;
+    }> = [];
     let index = 0;
-    while (index < columns.length) {
-      const current = columns[index];
+    while (index < gridSlots.length) {
+      const buildingId = buildingIdForSlot(gridSlots[index]);
+      if (!buildingId) {
+        index += 1;
+        continue;
+      }
+      const building = state.buildings.find((entry) => entry.id === buildingId);
       let span = 1;
-      while (index + span < columns.length && columns[index + span].building.id === current.building.id) {
+      while (index + span < gridSlots.length && buildingIdForSlot(gridSlots[index + span]) === buildingId) {
         span += 1;
       }
       bands.push({
-        id: `band-building-${current.building.id}-${index}`,
-        buildingId: current.building.id,
-        label: current.building.code,
+        id: `band-building-${buildingId}-${index}`,
+        buildingId,
+        label: building?.code ?? "?",
         start: index,
-        span
+        span,
+        collapsed: collapsedBuildings.has(buildingId)
       });
       index += span;
     }
     return bands;
-  }, [columns]);
+  }, [gridSlots, state.buildings, state.floors, collapsedBuildings]);
 
   const transposeFloorBands = useMemo(() => {
-    const bands: Array<{ id: string; floorId: string | null; label: string; start: number; span: number }> = [];
+    const bands: Array<{
+      id: string;
+      floorId: string | null;
+      buildingId: string;
+      label: string;
+      start: number;
+      span: number;
+      collapsed: boolean;
+    }> = [];
     let index = 0;
-    while (index < columns.length) {
-      const current = columns[index];
-      const floorId = current.floor?.id ?? null;
+    while (index < gridSlots.length) {
+      const slot = gridSlots[index];
+      const buildingId = buildingIdForSlot(slot);
+      if (!buildingId) {
+        index += 1;
+        continue;
+      }
+
+      if (slot.type === "spacer" && slot.id.startsWith("spacer-building-")) {
+        bands.push({
+          id: `band-floor-building-collapsed-${buildingId}-${index}`,
+          floorId: null,
+          buildingId,
+          label: "Collapsed",
+          start: index,
+          span: 1,
+          collapsed: true
+        });
+        index += 1;
+        continue;
+      }
+
+      const floorId =
+        slot.type === "room"
+          ? slot.column.floor?.id ?? null
+          : slot.id.startsWith("spacer-floor-")
+            ? slot.id.slice("spacer-floor-".length)
+            : null;
       let span = 1;
-      while (index + span < columns.length && (columns[index + span].floor?.id ?? null) === floorId) {
+      while (index + span < gridSlots.length) {
+        const next = gridSlots[index + span];
+        if (buildingIdForSlot(next) !== buildingId) break;
+        if (next.type === "spacer" && next.id.startsWith("spacer-building-")) break;
+        const nextFloorId =
+          next.type === "room"
+            ? next.column.floor?.id ?? null
+            : next.id.startsWith("spacer-floor-")
+              ? next.id.slice("spacer-floor-".length)
+              : null;
+        if (nextFloorId !== floorId) break;
         span += 1;
       }
+      const floor = floorId ? state.floors.find((entry) => entry.id === floorId) : null;
       bands.push({
         id: `band-floor-${floorId ?? "none"}-${index}`,
         floorId,
-        label: floorId ? `F${current.floor?.label}` : "N/A",
+        buildingId,
+        label: floorId ? `F${floor?.label ?? "?"}` : "N/A",
         start: index,
-        span
+        span,
+        collapsed: Boolean(floorId && collapsedFloors.has(floorId))
       });
       index += span;
     }
     return bands;
-  }, [columns]);
+  }, [gridSlots, state.buildings, state.floors, collapsedFloors]);
 
   const gridHeight = slotCount * SLOT_HEIGHT;
   const transposeWidth = slotCount * TRANSPOSE_SLOT_WIDTH;
@@ -786,36 +856,104 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                     className="transpose-grid"
                     style={{
                       gridTemplateColumns: `32px 32px 196px ${transposeWidth}px`,
-                      gridTemplateRows: `repeat(${columns.length}, ${TRANSPOSE_ROW_HEIGHT}px)`
+                      gridTemplateRows: `repeat(${gridSlots.length}, ${TRANSPOSE_ROW_HEIGHT}px)`
                     }}
                   >
                     {transposeBuildingBands.map((band) => (
                       <button
                         key={band.id}
-                        className="transpose-sideways building"
+                        className={`transpose-sideways building ${band.collapsed ? "collapsed" : ""}`}
                         style={{ gridColumn: "1", gridRow: `${band.start + 1} / span ${band.span}` }}
-                        onClick={(event) => selectBuilding(band.buildingId, event.shiftKey)}
-                        title={band.label}
+                        title={
+                          band.collapsed
+                            ? "Click or double-click to expand"
+                            : "Click to select · Double-click to collapse"
+                        }
+                        onClick={(event) => {
+                          if (band.collapsed) {
+                            toggleBuildingCollapsed(band.buildingId);
+                            return;
+                          }
+                          selectBuilding(band.buildingId, event.shiftKey);
+                        }}
+                        onDoubleClick={() => {
+                          if (!band.collapsed) toggleBuildingCollapsed(band.buildingId);
+                        }}
                       >
-                        <span>{band.label}</span>
+                        <span>
+                          <span className="collapse-marker" aria-hidden>
+                            {band.collapsed ? "▸" : "▾"}
+                          </span>
+                          {band.label}
+                        </span>
                       </button>
                     ))}
 
                     {transposeFloorBands.map((band) => (
                       <button
                         key={band.id}
-                        className="transpose-sideways floor"
+                        className={`transpose-sideways floor ${band.collapsed ? "collapsed" : ""}`}
                         style={{ gridColumn: "2", gridRow: `${band.start + 1} / span ${band.span}` }}
+                        title={
+                          band.collapsed
+                            ? band.floorId
+                              ? "Click or double-click to expand"
+                              : "Building collapsed"
+                            : band.floorId
+                              ? "Click to select · Double-click to collapse"
+                              : undefined
+                        }
                         onClick={(event) => {
+                          if (band.collapsed && band.floorId) {
+                            toggleFloorCollapsed(band.floorId);
+                            return;
+                          }
+                          if (band.collapsed && !band.floorId) {
+                            toggleBuildingCollapsed(band.buildingId);
+                            return;
+                          }
                           if (band.floorId) selectFloor(band.floorId, event.shiftKey);
                         }}
-                        title={band.label}
+                        onDoubleClick={() => {
+                          if (band.collapsed) return;
+                          if (band.floorId) toggleFloorCollapsed(band.floorId);
+                        }}
                       >
-                        <span>{band.label}</span>
+                        <span>
+                          {band.floorId || band.collapsed ? (
+                            <span className="collapse-marker" aria-hidden>
+                              {band.collapsed ? "▸" : "▾"}
+                            </span>
+                          ) : null}
+                          {band.label}
+                        </span>
                       </button>
                     ))}
 
-                    {columns.map((column, rowIndex) => {
+                    {gridSlots.map((slot, rowIndex) => {
+                      if (slot.type === "spacer") {
+                        return (
+                          <Fragment key={slot.id}>
+                            <div
+                              className="transpose-room-label-spacer"
+                              style={{ gridColumn: "3", gridRow: `${rowIndex + 1}` }}
+                              aria-hidden
+                            />
+                            <div
+                              className="transpose-room-track-spacer"
+                              style={{
+                                width: transposeWidth,
+                                height: TRANSPOSE_ROW_HEIGHT,
+                                gridColumn: "4",
+                                gridRow: `${rowIndex + 1}`
+                              }}
+                              aria-hidden
+                            />
+                          </Fragment>
+                        );
+                      }
+
+                      const column = slot.column;
                       const roomAllocations = state.allocations.filter((allocation) => allocation.roomId === column.room.id);
                       return (
                         <Fragment key={column.room.id}>
