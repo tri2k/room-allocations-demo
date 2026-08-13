@@ -61,9 +61,10 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | **v0 — Vision demo** | Prove grid UX | **Complete** (2026-08-11). Spec: [specs/2026-08-11-v0-vision-demo.md](specs/2026-08-11-v0-vision-demo.md) |
 | **1 — Core loop** | Persistent single-user product | **Complete** (2026-08-11). Spec: [specs/2026-08-11-phase-1-core-loop.md](specs/2026-08-11-phase-1-core-loop.md) |
 | **2 — Accounts, orgs, private sheets** | Public Google sign-in; org catalog; Event labels; owner-only sheets | Planned. Spec: [specs/2026-08-13-phase-2-accounts-orgs.md](specs/2026-08-13-phase-2-accounts-orgs.md). Ship as **2a–2e** (sign-in → sheets → orgs → invites → public HTTPS) |
-| **3 — Power features** | Templates, proctors, export, capacity | Planned (was Phase 2) |
+| **3 — Power features** | Templates, proctors, export, capacity; candidate home for [catalog history + plan pins](specs/2026-08-13-catalog-history-and-plan-pins.md) | Planned (was Phase 2) |
 | **4 — Polish** | Sheets import, mobile read-only, `team_count` | Planned (was Phase 3) |
 | **Later — Collaboration** | Share a sheet like Google Sheets, then live sync | Unsequenced. Draft: [specs/2026-08-11-phase-2-collaboration.md](specs/2026-08-11-phase-2-collaboration.md) |
+| **Later — Catalog history** | Revision timeline, per-sheet pin, optional sync to latest catalog | Draft: [specs/2026-08-13-catalog-history-and-plan-pins.md](specs/2026-08-13-catalog-history-and-plan-pins.md) |
 
 ## Non-Functional Requirements
 
@@ -89,3 +90,4 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | Event vs sheet | **Decided (Phase 2 spec):** Event is a category; sheet is the plan |
 | Org roles | **Decided (Phase 2 spec):** admin vs regular |
 | Public HTTPS | **Decided:** in Phase 2e. Host vendor TBD |
+| Catalog history / plan pins | **Future.** [specs/2026-08-13-catalog-history-and-plan-pins.md](specs/2026-08-13-catalog-history-and-plan-pins.md) |

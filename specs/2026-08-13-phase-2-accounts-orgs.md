@@ -360,6 +360,8 @@ Not on the catalog page: invites, Event create, sheet list. Reset/reseed stays a
 
 Regulars can still deactivate (they can edit catalog). That only changes what the picker offers next; it does not rewrite everyone else’s room lists.
 
+**Catalog history and plan pins** (revision timeline, per-sheet pin, optional sync to latest catalog) are **not Phase 2**. Full design: [2026-08-13-catalog-history-and-plan-pins.md](2026-08-13-catalog-history-and-plan-pins.md). Phase 2 interim: sheets store room ids; grid **displays** from **current** catalog until that spec ships.
+
 ### Open questions
 
 | Question | Status |
@@ -377,6 +379,7 @@ Regulars can still deactivate (they can edit catalog). That only changes what th
 | New sheet room picker | **Decided:** owner chooses **rooms**; picker UX later. Default none selected |
 | Event vs sheet clock | **Decided:** Event stores defaults; copy onto the sheet at create; sheet can override; Event edits do not rewrite existing sheets |
 | Sheet title at create | **Decided:** yes; default “Untitled” |
+| Catalog history + plan pin/sync | **Future.** Spec: [specs/2026-08-13-catalog-history-and-plan-pins.md](2026-08-13-catalog-history-and-plan-pins.md). Phase 2 interim: live display by room id |
 
 ## Implementation plan
 
