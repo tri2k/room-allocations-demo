@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from datetime import datetime
 from uuid import UUID
 
@@ -14,15 +15,19 @@ def has_overlap(
     start_at: datetime,
     end_at: datetime,
     exclude_id: UUID | None = None,
+    exclude_ids: Iterable[UUID] | None = None,
 ) -> bool:
+    excluded = set(exclude_ids or ())
+    if exclude_id is not None:
+        excluded.add(exclude_id)
     query = select(Allocation.id).where(
         Allocation.event_id == event_id,
         Allocation.room_id == room_id,
         Allocation.start_at < end_at,
         Allocation.end_at > start_at,
     )
-    if exclude_id is not None:
-        query = query.where(Allocation.id != exclude_id)
+    if excluded:
+        query = query.where(Allocation.id.notin_(excluded))
     return db.scalar(query) is not None
 
 

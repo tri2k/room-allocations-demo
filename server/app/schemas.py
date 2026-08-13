@@ -1,9 +1,20 @@
 from datetime import date, datetime, time
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic.alias_generators import to_camel
+
+SlotMinutes = Literal[5, 15, 30]
+
+
+def _require_timezone(value: str) -> str:
+    try:
+        ZoneInfo(value)
+    except ZoneInfoNotFoundError as exc:
+        raise ValueError(f"Unknown timezone: {value}") from exc
+    return value
 
 
 class APIModel(BaseModel):
@@ -91,22 +102,40 @@ class EventCreate(APIModel):
     name: str
     event_date: date
     timezone: str
-    slot_minutes: int = 15
+    slot_minutes: SlotMinutes = 15
     grid_start: time = time(7, 0)
     grid_end: time = time(16, 15)
     included_building_ids: list[UUID] | None = None
     team_count: int | None = None
+
+    @field_validator("timezone")
+    @classmethod
+    def timezone_ok(cls, value: str) -> str:
+        return _require_timezone(value)
+
+    @model_validator(mode="after")
+    def grid_order(self) -> "EventCreate":
+        if self.grid_end <= self.grid_start:
+            raise ValueError("gridEnd must be after gridStart")
+        return self
 
 
 class EventUpdate(APIModel):
     name: str | None = None
     event_date: date | None = None
     timezone: str | None = None
-    slot_minutes: int | None = None
+    slot_minutes: SlotMinutes | None = None
     grid_start: time | None = None
     grid_end: time | None = None
     included_building_ids: list[UUID] | None = None
     team_count: int | None = None
+
+    @field_validator("timezone")
+    @classmethod
+    def timezone_ok(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        return _require_timezone(value)
 
 
 class ActivityCreate(APIModel):
@@ -141,6 +170,12 @@ class TimeBlockCreate(APIModel):
     color: str | None = None
     linked_activity_id: UUID | None = None
     sort_order: int = 0
+
+    @model_validator(mode="after")
+    def time_order(self) -> "TimeBlockCreate":
+        if self.end_time <= self.start_time:
+            raise ValueError("endTime must be after startTime")
+        return self
 
 
 class TimeBlockUpdate(APIModel):
@@ -231,6 +266,28 @@ class BulkAllocationOut(APIModel):
     created: list[UUID]
     skipped: list[BulkSkipped]
     warnings: list[WarningOut] = Field(default_factory=list)
+
+
+class AllocationPatchItem(APIModel):
+    id: UUID
+    room_id: UUID | None = None
+    activity_id: UUID | None = None
+    start_at: datetime | None = None
+    end_at: datetime | None = None
+    notes: str | None = None
+
+
+class BulkAllocationPatch(APIModel):
+    items: list[AllocationPatchItem] = Field(min_length=1)
+
+
+class BulkAllocationPatchOut(APIModel):
+    allocations: list[AllocationOut]
+    warnings: list[WarningOut] = Field(default_factory=list)
+
+
+class BulkAllocationDelete(APIModel):
+    ids: list[UUID] = Field(min_length=1)
 
 
 class ScheduleEventOut(APIModel):

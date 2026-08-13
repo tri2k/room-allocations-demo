@@ -76,39 +76,3 @@ export const resolveMemberIndex = (offsetPx: number, cellSize: number, span: num
 
 export const orderedRoomIds = (gridSlots: GridSlot[]): string[] =>
   gridSlots.filter((slot): slot is Extract<GridSlot, { type: "room" }> => slot.type === "room").map((slot) => slot.column.room.id);
-
-/**
- * Order group room moves so a member vacates a destination before a sibling lands there.
- * Parallel patches 409 when a merged run slides into its own rooms.
- */
-export const orderGroupRoomPatches = (current: Allocation[], next: Allocation[]): Allocation[] => {
-  const nextById = new Map(next.map((allocation) => [allocation.id, allocation]));
-  const currentById = new Map(current.map((allocation) => [allocation.id, allocation]));
-  const occupant = new Map(current.map((allocation) => [allocation.roomId, allocation.id]));
-  const remaining = new Set(current.map((allocation) => allocation.id));
-  const ordered: Allocation[] = [];
-
-  while (remaining.size > 0) {
-    const ready = [...remaining].filter((id) => {
-      const dest = nextById.get(id)?.roomId;
-      if (!dest) return true;
-      const blocker = occupant.get(dest);
-      return blocker === undefined || blocker === id || !remaining.has(blocker);
-    });
-    if (ready.length === 0) {
-      for (const id of remaining) {
-        const item = nextById.get(id);
-        if (item) ordered.push(item);
-      }
-      break;
-    }
-    for (const id of ready) {
-      remaining.delete(id);
-      const cur = currentById.get(id);
-      if (cur) occupant.delete(cur.roomId);
-      const item = nextById.get(id);
-      if (item) ordered.push(item);
-    }
-  }
-  return ordered;
-};

@@ -4,11 +4,13 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.booking import get_active_building
 from app.db import get_db
 from app.errors import not_found
 from app.models import Building, Floor
 from app.schemas import BuildingCreate, BuildingOut, BuildingUpdate, FloorCreate, FloorOut
 from app.serialize import building_out, floor_out
+from app.write import commit_or_conflict
 
 router = APIRouter(prefix="/api/v1", tags=["buildings"])
 
@@ -30,7 +32,7 @@ def list_buildings(db: Session = Depends(get_db)) -> list[BuildingOut]:
 def create_building(body: BuildingCreate, db: Session = Depends(get_db)) -> BuildingOut:
     row = Building(code=body.code, name=body.name, address=body.address, tags=body.tags)
     db.add(row)
-    db.commit()
+    commit_or_conflict(db)
     db.refresh(row)
     return building_out(row)
 
@@ -46,7 +48,7 @@ def update_building(building_id: UUID, body: BuildingUpdate, db: Session = Depen
     data = body.model_dump(exclude_unset=True)
     for key, value in data.items():
         setattr(row, key, value)
-    db.commit()
+    commit_or_conflict(db)
     db.refresh(row)
     return building_out(row)
 
@@ -69,9 +71,9 @@ def list_floors(building_id: UUID, db: Session = Depends(get_db)) -> list[FloorO
 
 @router.post("/buildings/{building_id}/floors", response_model=FloorOut, status_code=201)
 def create_floor(building_id: UUID, body: FloorCreate, db: Session = Depends(get_db)) -> FloorOut:
-    _building(db, building_id)
+    get_active_building(db, building_id)
     row = Floor(building_id=building_id, label=body.label, sort_order=body.sort_order)
     db.add(row)
-    db.commit()
+    commit_or_conflict(db)
     db.refresh(row)
     return floor_out(row)

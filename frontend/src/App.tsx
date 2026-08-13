@@ -13,16 +13,15 @@ import {
   ApiError,
   bulkCreateAllocations,
   createAllocation,
-  deleteAllocation,
+  deleteAllocations,
   loadActiveSchedule,
-  patchAllocation,
+  patchAllocations,
   reseed
 } from "./lib/api";
 import AppNav from "./AppNav";
 import { buildBuildingGroups, buildFloorGroups, buildGridSlots, orderColumns } from "./lib/grid";
 import {
   buildMergeMeta,
-  orderGroupRoomPatches,
   orderedRoomIds,
   resolveMemberIndex,
   runMemberIds,
@@ -386,45 +385,24 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
     const previous = members;
     replaceAllocations(nextMembers);
     setAllocationSelection(nextMembers.map((allocation) => allocation.id));
-    void persistAllocationPatches(previous, orderGroupRoomPatches(previous, nextMembers), (error) => {
-      if (error instanceof ApiError && error.status === 409) setToast("Move blocked (overlap)");
-      else setToast(error instanceof Error ? error.message : "Move failed");
-    });
-  };
-
-  const persistAllocationPatches = async (
-    previous: Allocation[],
-    orderedNext: Allocation[],
-    onError: (error: unknown) => void
-  ) => {
-    const applied: Allocation[] = [];
-    try {
-      for (const allocation of orderedNext) {
-        const result = await patchAllocation(allocation.id, {
-          roomId: allocation.roomId,
-          startAt: allocation.startAt,
-          endAt: allocation.endAt
-        });
-        applied.push(result.allocation);
+    void (async () => {
+      try {
+        const result = await patchAllocations(
+          state.event.id,
+          nextMembers.map((allocation) => ({
+            id: allocation.id,
+            roomId: allocation.roomId,
+            startAt: allocation.startAt,
+            endAt: allocation.endAt
+          }))
+        );
+        replaceAllocations(result.allocations);
+      } catch (error) {
+        replaceAllocations(previous);
+        if (error instanceof ApiError && error.status === 409) setToast("Move blocked (overlap)");
+        else setToast(error instanceof Error ? error.message : "Move failed");
       }
-      replaceAllocations(applied);
-    } catch (error) {
-      for (const allocation of [...applied].reverse()) {
-        const orig = previous.find((entry) => entry.id === allocation.id);
-        if (!orig) continue;
-        try {
-          await patchAllocation(orig.id, {
-            roomId: orig.roomId,
-            startAt: orig.startAt,
-            endAt: orig.endAt
-          });
-        } catch {
-          /* keep restoring the rest */
-        }
-      }
-      replaceAllocations(previous);
-      onError(error);
-    }
+    })();
   };
 
   const onResize = (allocationId: string, direction: "start" | "end", deltaSlots: number) => {
@@ -460,10 +438,23 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
 
     replaceAllocations(nextMembers);
     setAllocationSelection(nextMembers.map((allocation) => allocation.id));
-    void persistAllocationPatches(previous, nextMembers, (error) => {
-      if (error instanceof ApiError && error.status === 409) setToast("Resize blocked (overlap)");
-      else setToast(error instanceof Error ? error.message : "Resize failed");
-    });
+    void (async () => {
+      try {
+        const result = await patchAllocations(
+          state.event.id,
+          nextMembers.map((allocation) => ({
+            id: allocation.id,
+            startAt: allocation.startAt,
+            endAt: allocation.endAt
+          }))
+        );
+        replaceAllocations(result.allocations);
+      } catch (error) {
+        replaceAllocations(previous);
+        if (error instanceof ApiError && error.status === 409) setToast("Resize blocked (overlap)");
+        else setToast(error instanceof Error ? error.message : "Resize failed");
+      }
+    })();
   };
 
   const removeAllocations = async (allocationIds: string[]) => {
@@ -477,7 +468,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
     );
     setAllocationSelection([]);
     try {
-      await Promise.all(ids.map((id) => deleteAllocation(id)));
+      await deleteAllocations(state.event.id, ids);
       setToast(ids.length === 1 ? "Deleted allocation" : `Deleted ${ids.length} allocations`);
     } catch (error) {
       setState((current) => (current ? { ...current, allocations: previous } : current));

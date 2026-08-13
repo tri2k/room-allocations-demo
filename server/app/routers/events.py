@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.db import get_db
-from app.errors import conflict, not_found
+from app.errors import conflict, not_found, unprocessable
 from app.models import Activity, Allocation, Building, Event, Floor, Room, TimeBlock
 from app.schemas import (
     ActivityCreate,
@@ -31,6 +31,8 @@ from app.serialize import (
     schedule_event_out,
     time_block_out,
 )
+from app.timeutil import retarget_dt
+from app.write import commit_or_conflict
 
 router = APIRouter(prefix="/api/v1", tags=["events"])
 
@@ -56,6 +58,16 @@ def _time_block(db: Session, time_block_id: UUID) -> TimeBlock:
     return row
 
 
+def _assert_linked_activity(db: Session, event_id: UUID, linked_activity_id: UUID | None) -> None:
+    if linked_activity_id is None:
+        return
+    activity = db.get(Activity, linked_activity_id)
+    if activity is None:
+        raise not_found("Activity")
+    if activity.event_id != event_id:
+        raise conflict("linkedActivityId must belong to this event")
+
+
 @router.get("/events", response_model=list[EventOut])
 def list_events(db: Session = Depends(get_db)) -> list[EventOut]:
     rows = db.scalars(select(Event).order_by(Event.event_date, Event.name)).all()
@@ -66,7 +78,7 @@ def list_events(db: Session = Depends(get_db)) -> list[EventOut]:
 def create_event(body: EventCreate, db: Session = Depends(get_db)) -> EventOut:
     row = Event(**body.model_dump())
     db.add(row)
-    db.commit()
+    commit_or_conflict(db)
     db.refresh(row)
     return event_out(row)
 
@@ -85,10 +97,25 @@ def get_event(event_id: UUID, db: Session = Depends(get_db)) -> EventDetailOut:
 
 @router.patch("/events/{event_id}", response_model=EventOut)
 def update_event(event_id: UUID, body: EventUpdate, db: Session = Depends(get_db)) -> EventOut:
-    row = _event(db, event_id)
-    for key, value in body.model_dump(exclude_unset=True).items():
+    row = db.scalar(
+        select(Event).where(Event.id == event_id).options(selectinload(Event.allocations))
+    )
+    if row is None:
+        raise not_found("Event")
+    old_date = row.event_date
+    old_tz = row.timezone
+    data = body.model_dump(exclude_unset=True)
+    grid_start = data.get("grid_start", row.grid_start)
+    grid_end = data.get("grid_end", row.grid_end)
+    if grid_end <= grid_start:
+        raise unprocessable("gridEnd must be after gridStart")
+    for key, value in data.items():
         setattr(row, key, value)
-    db.commit()
+    if row.event_date != old_date or row.timezone != old_tz:
+        for allocation in row.allocations:
+            allocation.start_at = retarget_dt(allocation.start_at, old_tz, row.event_date, row.timezone)
+            allocation.end_at = retarget_dt(allocation.end_at, old_tz, row.event_date, row.timezone)
+    commit_or_conflict(db)
     db.refresh(row)
     return event_out(row)
 
@@ -150,7 +177,7 @@ def create_activity(event_id: UUID, body: ActivityCreate, db: Session = Depends(
     _event(db, event_id)
     row = Activity(event_id=event_id, **body.model_dump())
     db.add(row)
-    db.commit()
+    commit_or_conflict(db)
     db.refresh(row)
     return activity_out(row)
 
@@ -160,7 +187,7 @@ def update_activity(activity_id: UUID, body: ActivityUpdate, db: Session = Depen
     row = _activity(db, activity_id)
     for key, value in body.model_dump(exclude_unset=True).items():
         setattr(row, key, value)
-    db.commit()
+    commit_or_conflict(db)
     db.refresh(row)
     return activity_out(row)
 
@@ -185,9 +212,10 @@ def list_time_blocks(event_id: UUID, db: Session = Depends(get_db)) -> list[Time
 @router.post("/events/{event_id}/time-blocks", response_model=TimeBlockOut, status_code=201)
 def create_time_block(event_id: UUID, body: TimeBlockCreate, db: Session = Depends(get_db)) -> TimeBlockOut:
     _event(db, event_id)
+    _assert_linked_activity(db, event_id, body.linked_activity_id)
     row = TimeBlock(event_id=event_id, **body.model_dump())
     db.add(row)
-    db.commit()
+    commit_or_conflict(db)
     db.refresh(row)
     return time_block_out(row)
 
@@ -195,9 +223,16 @@ def create_time_block(event_id: UUID, body: TimeBlockCreate, db: Session = Depen
 @router.patch("/time-blocks/{time_block_id}", response_model=TimeBlockOut)
 def update_time_block(time_block_id: UUID, body: TimeBlockUpdate, db: Session = Depends(get_db)) -> TimeBlockOut:
     row = _time_block(db, time_block_id)
-    for key, value in body.model_dump(exclude_unset=True).items():
+    data = body.model_dump(exclude_unset=True)
+    start_time = data.get("start_time", row.start_time)
+    end_time = data.get("end_time", row.end_time)
+    if end_time <= start_time:
+        raise unprocessable("endTime must be after startTime")
+    if "linked_activity_id" in data:
+        _assert_linked_activity(db, row.event_id, data["linked_activity_id"])
+    for key, value in data.items():
         setattr(row, key, value)
-    db.commit()
+    commit_or_conflict(db)
     db.refresh(row)
     return time_block_out(row)
 

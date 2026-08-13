@@ -4,11 +4,13 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.booking import get_active_building
 from app.db import get_db
 from app.errors import conflict, not_found
-from app.models import Building, Floor, Room
+from app.models import Floor, Room
 from app.schemas import RoomCreate, RoomOut, RoomUpdate
 from app.serialize import room_out
+from app.write import commit_or_conflict
 
 router = APIRouter(prefix="/api/v1", tags=["rooms"])
 
@@ -50,8 +52,7 @@ def list_rooms(
 
 @router.post("/rooms", response_model=RoomOut, status_code=201)
 def create_room(body: RoomCreate, db: Session = Depends(get_db)) -> RoomOut:
-    if db.get(Building, body.building_id) is None:
-        raise not_found("Building")
+    get_active_building(db, body.building_id)
     _assert_floor_in_building(db, body.building_id, body.floor_id)
     row = Room(
         building_id=body.building_id,
@@ -64,7 +65,7 @@ def create_room(body: RoomCreate, db: Session = Depends(get_db)) -> RoomOut:
         sort_order=body.sort_order,
     )
     db.add(row)
-    db.commit()
+    commit_or_conflict(db)
     db.refresh(row)
     return room_out(row)
 
@@ -75,12 +76,12 @@ def update_room(room_id: UUID, body: RoomUpdate, db: Session = Depends(get_db)) 
     data = body.model_dump(exclude_unset=True)
     building_id = data.get("building_id", row.building_id)
     floor_id = data["floor_id"] if "floor_id" in data else row.floor_id
-    if "building_id" in data and db.get(Building, building_id) is None:
-        raise not_found("Building")
+    if "building_id" in data:
+        get_active_building(db, building_id)
     _assert_floor_in_building(db, building_id, floor_id)
     for key, value in data.items():
         setattr(row, key, value)
-    db.commit()
+    commit_or_conflict(db)
     db.refresh(row)
     return room_out(row)
 

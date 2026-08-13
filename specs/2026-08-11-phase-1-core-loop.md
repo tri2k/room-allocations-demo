@@ -241,10 +241,10 @@ Each step should leave the repo runnable.
 ### Additions
 - `GET /health` on the API.
 - Catalog is `#/catalog` (buildings, floors, rooms). Event setup moved to `#/event` after shipping: events are planned objects, not catalog rows.
+- `POST /events/{eventId}/allocations/bulk-patch` and `POST /events/{eventId}/allocations/bulk-delete` for atomic group edit.
 
 ### Deferred
 - Hosted deploy
-- Soft-delete ghost allocations (inactive rooms with lingering bookings that block overlaps)
 - GUIDELINES extras (Zustand, Tailwind, pnpm, TanStack, tests)
 
 ### Post-ship UI fixes (2026-08-12)
@@ -255,6 +255,12 @@ Each step should leave the repo runnable.
 ### Post-ship: merged-block group edit (2026-08-13)
 - Click selects the full merged run; Alt-click selects one room; move/resize/delete apply to the selection
 - Partial selection expands the run visually; closes the v0 leader-only edit limitation
+
+### Post-ship: API and data integrity (2026-08-13)
+- Group persist is atomic (`bulk-patch` / `bulk-delete`); unique catalog keys are 409; inactive rooms/buildings are not bookable
+- Alembic `0002_defer_overlap` makes `allocations_no_overlap` `DEFERRABLE INITIALLY DEFERRED` so one transaction can shift a run
+- Event date/timezone changes retarget allocation wall-clock times; invalid timezone, slot minutes, and inverted grid/time-block ranges are 422
+- Floor delete allowed when only inactive rooms remain (FK SET NULL)
 
 ---
 
@@ -356,5 +362,5 @@ ALTER TABLE allocations ADD CONSTRAINT allocations_no_overlap
     event_id WITH =,
     room_id WITH =,
     tstzrange(start_at, end_at) WITH &&
-  );
+  ) DEFERRABLE INITIALLY DEFERRED;
 ```

@@ -22,9 +22,16 @@
 - Catalog room form: floor dropdown scoped to selected building; API rejects floor/building mismatch
 - Schedule: **Clear selection** button and `Escape` to deselect allocation or bulk-selected rooms
 
-### Still open
+### API and data integrity (2026-08-13)
 
-- Soft-deleted rooms may leave hidden allocations that still block overlaps on the API
+- Atomic `POST /events/{id}/allocations/bulk-patch` and `.../bulk-delete` so merged-block group move/resize/delete cannot 409 sibling rooms or persist a partial set
+- Overlap exclusion constraint is `DEFERRABLE INITIALLY DEFERRED` so a single transaction can shift/swap rooms
+- Unique catalog keys (building code, floor label, room name) return 409 instead of 500
+- Reject bookings on inactive rooms or rooms in inactive buildings; bulk create skips them as `inactive`
+- Changing event date or timezone retargets allocation wall-clock times onto the new day/zone
+- Validate timezone, `slotMinutes` (5/15/30), grid range, and time-block range (422) instead of 500 or unloadable events
+- Allocation PATCH cannot attach an activity from another event; floor delete is allowed when remaining rooms are inactive
+- Closes the open ghost-booking note from 2026-08-12
 
 ### Merged-block group edit (2026-08-13)
 
@@ -35,8 +42,7 @@
 
 ### Regression fixes (2026-08-13)
 
-- Slide a merged run into neighboring rooms without 409: patch members in vacate-first order and roll back on failure
-- Group resize uses the same sequential persist + rollback so a 409 on one room cannot leave siblings saved
+- Slide/resize a merged run without 409 or a partial persist (atomic `bulk-patch`; supersedes the vacate-first sequential PATCH in #2)
 - Alt-click on an expanded per-room card selects that room instead of hit-testing the merged span
 - Collapsed building/floor headers expand on a single click; a following double-click does not snap them shut
 - Do not re-render selection on allocation pointer-down so dnd-kit can start a move
