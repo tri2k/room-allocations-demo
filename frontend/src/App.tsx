@@ -226,6 +226,11 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
   const selectAllocationFromCard = (allocationId: string, event: AllocationSelectEvent) => {
     const run = runMemberIds(mergedNormalMeta, allocationId);
     if (event.altKey && run.length > 1) {
+      // Expanded cards are one room wide — hit-testing the run would map every click to the leader.
+      if (shouldExpandRun(run, selectedAllocationIdsRef.current)) {
+        setAllocationSelection([allocationId]);
+        return;
+      }
       const rect = event.currentTarget.getBoundingClientRect();
       const offset = event.horizontal ? event.clientY - rect.top : event.clientX - rect.left;
       const cell = event.horizontal ? TRANSPOSE_ROW_HEIGHT : COLUMN_WIDTH;
