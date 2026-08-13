@@ -53,3 +53,17 @@ Frontend `npm run build` / `npm run preview` still apply inside `frontend/`.
 - Allocations are one row per room; merged blocks are display-only
 - JSON is camelCase; SQL is snake_case
 - Overlap on one room is HTTP 409 (bulk reports `skipped`)
+
+## Cursor Cloud specific instructions
+
+Cloud VMs here do not ship `python3-venv` apt packages; use **`uv`** (`~/.local/bin/uv`) to create/refresh `server/.venv` and install `server/requirements.txt`. Frontend uses **npm** + `frontend/package-lock.json` (not pnpm).
+
+**Must-run services for E2E:** Postgres (`docker compose up -d postgres`), FastAPI (`cd server && source .venv/bin/activate && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`), Vite (`cd frontend && npm run dev -- --host 0.0.0.0 --port 5173`). Vite proxies `/api` → `127.0.0.1:8000`.
+
+**Gotchas**
+
+- `ERR_CONNECTION_REFUSED` on `:5173` almost always means Vite is not running (or `frontend/node_modules` was never installed). Fastest checks: `curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:5173/` and whether a `vite`/`npm run dev` process exists.
+- Docker needs a running `dockerd` (fuse-overlayfs storage). Prefer `sudo docker …` unless the agent user is already in the `docker` group for the current session.
+- After compose comes up, wait until the `postgres` healthcheck is healthy before `alembic upgrade head` / `python -m scripts.seed`.
+- Copy `server/.env.example` → `server/.env` once (`ENABLE_DEV_RESEED=true` for Reset). `.env` is gitignored.
+- No lint/test scripts are defined yet (see Stack above). Sanity checks: `cd frontend && npm run build`, `curl http://127.0.0.1:8000/health`, and UI against `#/`, `#/catalog`, `#/event`.
