@@ -47,7 +47,7 @@ Organization
 
 **User.** Created on first Google sign-in (or earlier as an email-only row for seed/invites). Stable id is Google `sub` once they have signed in. Invite matching uses **verified** Google email.
 
-**Platform superuser.** Not an org role. Emails listed in `PLATFORM_SUPERUSER_EMAILS`. Can create orgs and appoint the **first** org admin by email when the org is created. Does not manage ongoing org membership or role changes after that. May look up a user by exact email for org bootstrap only. Cannot browse all users as a directory.
+**Platform superuser.** Not an org role. Emails listed in `PLATFORM_SUPERUSER_EMAILS`. **Phase 2 scope:** create orgs and appoint the **first** org admin by email when the org is created. Does not manage ongoing org membership or role changes in this phase. May look up a user by exact email for org bootstrap only. Cannot browse all users as a directory. **Later (not Phase 2):** superuser capabilities will likely expand (e.g. org recovery when all admins are gone, support tooling) — see open questions.
 
 ### Org admin lifecycle
 
@@ -61,7 +61,7 @@ Who becomes an org admin, and who stays one, is an **org responsibility**. The p
 - **Join-code approval** with role `admin` when accepting a pending request.
 - **Promote** an existing member from `regular` → `admin` on `#/org`.
 
-**3. Demoting admins (org admins only).** Any org admin can demote **another** member from `admin` → `regular`. An admin **cannot** demote themselves — another admin must do it. API returns **403** if the target membership is the caller’s own. There is no platform rule that an org must keep at least one admin — if every admin is demoted by peers, removed, or leaves, the org may have no one who can invite, create Events, or manage roles until a superuser intervenes manually (out of scope for Phase 2 self-service recovery).
+**3. Demoting admins (org admins only).** Any org admin can demote **another** member from `admin` → `regular`. An admin **cannot** demote themselves — another admin must do it. API returns **403** if the target membership is the caller’s own. There is no platform rule that an org must keep at least one admin — if every admin is demoted by peers, removed, or leaves, the org may have no one who can invite, create Events, or manage roles. Phase 2 has no self-service recovery; expanded superuser tooling for cases like this is a **future** concern (not Phase 2).
 
 **4. Removing members.** Org admins can remove a member from the org entirely (not just demote). Removed users lose catalog/Event access; their private sheets remain owned by them but are inaccessible until they rejoin.
 
@@ -288,6 +288,7 @@ Do **not** put a public URL in front of 2a–2d. Those builds are still local (o
 - Global user directory, public org directory
 - CRDT / offline merge
 - Calling real Google from CI
+- Expanded platform superuser tooling beyond org bootstrap (recovery, support, cross-org ops) — likely later; Phase 2 `#/super` is create org + first admin only
 
 ### Frontend
 
@@ -417,6 +418,7 @@ Regulars can still deactivate (they can edit catalog). That only changes what th
 | Catalog history + plan pin/sync | **Future.** Spec: [specs/2026-08-13-catalog-history-and-plan-pins.md](2026-08-13-catalog-history-and-plan-pins.md). Phase 2 interim: live display by room id |
 | Multi-day events / day tabs | **Deferred.** Phase 2: one `plan_date` per sheet; multi-day = multiple sheets on the same Event unless we add day tabs later |
 | Org admin promotions | **Decided:** org admins invite/approve/promote to admin; can demote other admins to regular; cannot demote self; no platform approval after bootstrap |
+| Platform superuser beyond bootstrap | **Future (not Phase 2).** Likely expand later (e.g. appoint admin on org with zero admins, support actions). Phase 2: create org + first admin only |
 
 ## Implementation plan
 

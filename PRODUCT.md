@@ -89,5 +89,6 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | Auth vendor | **Decided (Phase 2 spec):** Google OAuth only |
 | Event vs sheet | **Decided (Phase 2 spec):** Event is a category; sheet is the plan |
 | Org roles | **Decided (Phase 2 spec):** admin vs regular; org admins promote/demote; superuser appoints first admin only |
+| Platform superuser scope | **Phase 2:** create org + first admin only. **Future:** broader superuser tooling likely (recovery, support) — not scoped yet |
 | Public HTTPS | **Decided:** in Phase 2e. Host vendor TBD |
 | Catalog history / plan pins | **Future.** [specs/2026-08-13-catalog-history-and-plan-pins.md](specs/2026-08-13-catalog-history-and-plan-pins.md) |
