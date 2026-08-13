@@ -80,7 +80,6 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | Question | Status |
 | -------- | ------ |
 | Slot granularity | **Decided:** 15 min default; per-sheet in Phase 2 (per-event in Phase 1 code) |
-| Multi-day events | **Deferred (Phase 4 or Later).** Long term: one grid per day with day tabs on a sheet. **Phase 2–3:** one `plan_date` per sheet; multi-day workaround = multiple sheets on the same Event. **Org setting (when multi-day ships):** `default_plan_days` on the org, default **1**, prefills Event create for admins; BMT stays at 1 |
 | v0 deploy | **Decided:** static host |
 | Phase 1 hosted deploy | **Decided:** local-only |
 | Registration / team counts | **Decided:** later (Phase 4); not on Event |
@@ -88,6 +87,7 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | Adopt GUIDELINES frontend extras (Zustand, Tailwind, pnpm, …) | **Decided (Phase 1 spec):** no; keep v0 UI stack |
 | Auth vendor | **Decided (Phase 2 spec):** Google OAuth only |
 | Event vs sheet | **Decided (Phase 2 spec):** Event is a category; sheet is the plan |
+| Multi-day events | **Decided:** no plans for the foreseeable future. One sheet = one day; use another sheet on the same Event for another day |
 | Org roles | **Decided (Phase 2 spec):** admin vs regular; org admins promote/demote; superuser appoints first admin only |
 | Platform superuser scope | **Phase 2:** create org + first admin only. **Future:** broader superuser tooling likely (recovery, support) — not scoped yet |
 | Public HTTPS | **Decided:** in Phase 2e. Host vendor TBD |
