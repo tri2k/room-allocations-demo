@@ -98,7 +98,7 @@ Resolved in [PRODUCT.md](../PRODUCT.md) (15-min slots, one day, static host).
 - Visual merge of adjacent rooms with the same activity and time range (both orientations)
 - Toast on create/skip/delete/reset
 
-Known limitation of that merge: edits apply to the leader allocation only. See [docs/known-bugs-v0.md](../docs/known-bugs-v0.md).
+Known limitation of that merge was leader-only edits; fixed later by group select (click = whole run, Alt-click = one room). See [CHANGELOG.md](../CHANGELOG.md).
 
 ### Deferred
 

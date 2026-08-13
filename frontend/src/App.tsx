@@ -20,6 +20,14 @@ import {
 } from "./lib/api";
 import AppNav from "./AppNav";
 import { buildBuildingGroups, buildFloorGroups, buildGridSlots, orderColumns } from "./lib/grid";
+import {
+  buildMergeMeta,
+  orderedRoomIds,
+  resolveMemberIndex,
+  runMemberIds,
+  shouldExpandRun,
+  type MergeMeta
+} from "./lib/merge";
 import { buildOverlapSet } from "./lib/overlap";
 import { allocationStartSlot, buildIso, clamp, formatTimeLabel, getSlotCount, slotToTime, timeFromIso, timeToSlot } from "./lib/time";
 import type { Activity, Allocation, Room, ScheduleState, TimeBlock } from "./types/schedule";
@@ -41,9 +49,12 @@ const roomTint = (type: Room["roomType"]): string => {
   return "#d4edda";
 };
 
-type MergeMeta = {
-  isLeader: boolean;
-  span: number;
+type AllocationSelectEvent = {
+  altKey: boolean;
+  clientX: number;
+  clientY: number;
+  currentTarget: HTMLElement;
+  horizontal: boolean;
 };
 
 function App() {
@@ -133,7 +144,8 @@ type ScheduleBoardProps = {
 
 function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps) {
   const [selectedRoomIds, setSelectedRoomIds] = useState<HeaderSelection["roomIds"]>([]);
-  const [selectedAllocationId, setSelectedAllocationId] = useState<string | null>(null);
+  const [selectedAllocationIds, setSelectedAllocationIds] = useState<string[]>([]);
+  const selectedAllocationIdsRef = useRef<string[]>([]);
   const [collapsedBuildings, setCollapsedBuildings] = useState<Set<string>>(new Set());
   const [collapsedFloors, setCollapsedFloors] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<string>("");
@@ -141,6 +153,8 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
     () => (localStorage.getItem(ORIENTATION_KEY) === "transposed" ? "transposed" : "normal")
   );
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  selectedAllocationIdsRef.current = selectedAllocationIds;
 
   const slotCount = useMemo(
     () => getSlotCount(state.event.gridStart, state.event.gridEnd, state.event.slotMinutes),
@@ -162,49 +176,11 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
     () => new Map(state.activities.map((activity) => [activity.id, activity])),
     [state.activities]
   );
-  const mergedNormalMeta = useMemo(() => {
-    const meta = new Map<string, MergeMeta>();
-    const slotRoomIds = gridSlots.map((slot) => (slot.type === "room" ? slot.column.room.id : null));
-    const roomIndexById = new Map<string, number>();
-    slotRoomIds.forEach((roomId, index) => {
-      if (roomId) roomIndexById.set(roomId, index);
-    });
-    const roomKeyToAllocation = new Map<string, Map<string, Allocation>>();
-
-    for (const roomId of slotRoomIds) {
-      if (roomId) roomKeyToAllocation.set(roomId, new Map());
-    }
-    for (const allocation of state.allocations) {
-      if (!roomIndexById.has(allocation.roomId)) continue;
-      const key = `${allocation.activityId}|${allocation.startAt}|${allocation.endAt}`;
-      roomKeyToAllocation.get(allocation.roomId)?.set(key, allocation);
-    }
-
-    for (const allocation of state.allocations) {
-      const baseIndex = roomIndexById.get(allocation.roomId);
-      if (baseIndex === undefined) continue;
-      const key = `${allocation.activityId}|${allocation.startAt}|${allocation.endAt}`;
-
-      const leftRoomId = slotRoomIds[baseIndex - 1];
-      if (leftRoomId && roomKeyToAllocation.get(leftRoomId)?.has(key)) {
-        meta.set(allocation.id, { isLeader: false, span: 0 });
-        continue;
-      }
-
-      let span = 1;
-      let cursor = baseIndex + 1;
-      while (cursor < slotRoomIds.length) {
-        const nextRoomId = slotRoomIds[cursor];
-        if (!nextRoomId) break;
-        if (!roomKeyToAllocation.get(nextRoomId)?.has(key)) break;
-        span += 1;
-        cursor += 1;
-      }
-      meta.set(allocation.id, { isLeader: true, span });
-    }
-
-    return meta;
-  }, [gridSlots, state.allocations]);
+  const mergedNormalMeta = useMemo(
+    () => buildMergeMeta(gridSlots, state.allocations),
+    [gridSlots, state.allocations]
+  );
+  const roomOrder = useMemo(() => orderedRoomIds(gridSlots), [gridSlots]);
 
   useEffect(() => {
     if (!toast) return;
@@ -216,38 +192,16 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
     localStorage.setItem(ORIENTATION_KEY, orientation);
   }, [orientation]);
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
-
-      if (event.key === "Escape") {
-        if (selectedAllocationId) {
-          event.preventDefault();
-          setSelectedAllocationId(null);
-          return;
-        }
-        if (selectedRoomIds.length > 0) {
-          event.preventDefault();
-          setSelectedRoomIds([]);
-        }
-        return;
-      }
-
-      if (!selectedAllocationId) return;
-      if (event.key !== "Delete" && event.key !== "Backspace") return;
-      event.preventDefault();
-      void removeAllocation(selectedAllocationId);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selectedAllocationId, selectedRoomIds]);
+  const setAllocationSelection = (ids: string[]) => {
+    selectedAllocationIdsRef.current = ids;
+    setSelectedAllocationIds(ids);
+  };
 
   const resetToSeed = async () => {
     try {
       await onReseed();
       setSelectedRoomIds([]);
-      setSelectedAllocationId(null);
+      setAllocationSelection([]);
       setCollapsedBuildings(new Set());
       setCollapsedFloors(new Set());
       setToast("Reset to seed schedule");
@@ -256,15 +210,38 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
     }
   };
 
-  const replaceAllocation = (allocation: Allocation) => {
+  const replaceAllocations = (nextAllocations: Allocation[]) => {
+    const byId = new Map(nextAllocations.map((allocation) => [allocation.id, allocation]));
     setState((previous) =>
       previous
         ? {
             ...previous,
-            allocations: previous.allocations.map((entry) => (entry.id === allocation.id ? allocation : entry))
+            allocations: previous.allocations.map((entry) => byId.get(entry.id) ?? entry)
           }
         : previous
     );
+  };
+
+  const selectAllocationFromCard = (allocationId: string, event: AllocationSelectEvent) => {
+    const run = runMemberIds(mergedNormalMeta, allocationId);
+    if (event.altKey && run.length > 1) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const offset = event.horizontal ? event.clientY - rect.top : event.clientX - rect.left;
+      const cell = event.horizontal ? TRANSPOSE_ROW_HEIGHT : COLUMN_WIDTH;
+      const index = resolveMemberIndex(offset, cell, run.length);
+      setAllocationSelection([run[index] ?? allocationId]);
+      return;
+    }
+    setAllocationSelection(run);
+  };
+
+  const clearAllocationSelection = () => setAllocationSelection([]);
+
+  /** Prefer current selection when it includes this id; else the full merged run (or solo). */
+  const idsForEdit = (allocationId: string): string[] => {
+    const selected = selectedAllocationIdsRef.current;
+    if (selected.includes(allocationId)) return selected;
+    return runMemberIds(mergedNormalMeta, allocationId);
   };
 
   const handleCreateFromPalette = async (activity: Activity, targetRoomIds: string[], startSlot: number) => {
@@ -335,6 +312,12 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
     const source = state.allocations.find((allocation) => allocation.id === dragData.allocationId);
     if (!source) return;
 
+    const editIds = idsForEdit(source.id);
+    const members = editIds
+      .map((id) => state.allocations.find((allocation) => allocation.id === id))
+      .filter((allocation): allocation is Allocation => Boolean(allocation));
+    if (members.length === 0) return;
+
     const durationSlots = Math.max(
       1,
       allocationStartSlot(state.event.eventDate, state.event.gridStart, state.event.slotMinutes, source.endAt) -
@@ -347,14 +330,48 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
       slotToTime(state.event.gridStart, state.event.slotMinutes, clampedStart + durationSlots)
     );
 
-    const next = { ...source, roomId, startAt, endAt };
-    replaceAllocation(next);
+    const sourceRoomIndex = roomOrder.indexOf(source.roomId);
+    const dropRoomIndex = roomOrder.indexOf(roomId);
+    if (sourceRoomIndex < 0 || dropRoomIndex < 0) return;
+    const roomDelta = dropRoomIndex - sourceRoomIndex;
+
+    const nextMembers: Allocation[] = [];
+    for (const member of members) {
+      const memberIndex = roomOrder.indexOf(member.roomId);
+      if (memberIndex < 0) {
+        setToast("Move blocked (room not visible)");
+        return;
+      }
+      const nextRoomIndex = memberIndex + roomDelta;
+      if (nextRoomIndex < 0 || nextRoomIndex >= roomOrder.length) {
+        setToast("Move blocked (off grid)");
+        return;
+      }
+      nextMembers.push({
+        ...member,
+        roomId: roomOrder[nextRoomIndex],
+        startAt,
+        endAt
+      });
+    }
+
+    const previous = members;
+    replaceAllocations(nextMembers);
+    setAllocationSelection(nextMembers.map((allocation) => allocation.id));
     void (async () => {
       try {
-        const result = await patchAllocation(source.id, { roomId, startAt, endAt });
-        replaceAllocation(result.allocation);
+        const results = await Promise.all(
+          nextMembers.map((allocation) =>
+            patchAllocation(allocation.id, {
+              roomId: allocation.roomId,
+              startAt: allocation.startAt,
+              endAt: allocation.endAt
+            })
+          )
+        );
+        replaceAllocations(results.map((result) => result.allocation));
       } catch (error) {
-        replaceAllocation(source);
+        replaceAllocations(previous);
         if (error instanceof ApiError && error.status === 409) setToast("Move blocked (overlap)");
         else setToast(error instanceof Error ? error.message : "Move failed");
       }
@@ -362,57 +379,99 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
   };
 
   const onResize = (allocationId: string, direction: "start" | "end", deltaSlots: number) => {
-    const allocation = state.allocations.find((entry) => entry.id === allocationId);
-    if (!allocation) return;
+    const editIds = idsForEdit(allocationId);
+    const members = editIds
+      .map((id) => state.allocations.find((entry) => entry.id === id))
+      .filter((allocation): allocation is Allocation => Boolean(allocation));
+    if (members.length === 0) return;
 
-    const startSlot = allocationStartSlot(
-      state.event.eventDate,
-      state.event.gridStart,
-      state.event.slotMinutes,
-      allocation.startAt
-    );
-    const endSlot = allocationStartSlot(
-      state.event.eventDate,
-      state.event.gridStart,
-      state.event.slotMinutes,
-      allocation.endAt
-    );
-    const nextStart = direction === "start" ? clamp(startSlot + deltaSlots, 0, endSlot - 1) : startSlot;
-    const nextEnd = direction === "end" ? clamp(endSlot + deltaSlots, nextStart + 1, slotCount) : endSlot;
-    const next = {
-      ...allocation,
-      startAt: buildIso(state.event.eventDate, slotToTime(state.event.gridStart, state.event.slotMinutes, nextStart)),
-      endAt: buildIso(state.event.eventDate, slotToTime(state.event.gridStart, state.event.slotMinutes, nextEnd))
-    };
-    replaceAllocation(next);
+    const previous = members;
+    const nextMembers: Allocation[] = [];
+    for (const allocation of members) {
+      const startSlot = allocationStartSlot(
+        state.event.eventDate,
+        state.event.gridStart,
+        state.event.slotMinutes,
+        allocation.startAt
+      );
+      const endSlot = allocationStartSlot(
+        state.event.eventDate,
+        state.event.gridStart,
+        state.event.slotMinutes,
+        allocation.endAt
+      );
+      const nextStart = direction === "start" ? clamp(startSlot + deltaSlots, 0, endSlot - 1) : startSlot;
+      const nextEnd = direction === "end" ? clamp(endSlot + deltaSlots, nextStart + 1, slotCount) : endSlot;
+      nextMembers.push({
+        ...allocation,
+        startAt: buildIso(state.event.eventDate, slotToTime(state.event.gridStart, state.event.slotMinutes, nextStart)),
+        endAt: buildIso(state.event.eventDate, slotToTime(state.event.gridStart, state.event.slotMinutes, nextEnd))
+      });
+    }
+
+    replaceAllocations(nextMembers);
+    setAllocationSelection(nextMembers.map((allocation) => allocation.id));
     void (async () => {
       try {
-        const result = await patchAllocation(allocation.id, { startAt: next.startAt, endAt: next.endAt });
-        replaceAllocation(result.allocation);
+        const results = await Promise.all(
+          nextMembers.map((allocation) =>
+            patchAllocation(allocation.id, { startAt: allocation.startAt, endAt: allocation.endAt })
+          )
+        );
+        replaceAllocations(results.map((result) => result.allocation));
       } catch (error) {
-        replaceAllocation(allocation);
+        replaceAllocations(previous);
         if (error instanceof ApiError && error.status === 409) setToast("Resize blocked (overlap)");
         else setToast(error instanceof Error ? error.message : "Resize failed");
       }
     })();
   };
 
-  const removeAllocation = async (allocationId: string) => {
+  const removeAllocations = async (allocationIds: string[]) => {
+    const ids = Array.from(new Set(allocationIds));
+    if (ids.length === 0) return;
     const previous = state.allocations;
     setState((current) =>
       current
-        ? { ...current, allocations: current.allocations.filter((allocation) => allocation.id !== allocationId) }
+        ? { ...current, allocations: current.allocations.filter((allocation) => !ids.includes(allocation.id)) }
         : current
     );
-    setSelectedAllocationId((current) => (current === allocationId ? null : current));
+    setAllocationSelection([]);
     try {
-      await deleteAllocation(allocationId);
-      setToast("Deleted allocation");
+      await Promise.all(ids.map((id) => deleteAllocation(id)));
+      setToast(ids.length === 1 ? "Deleted allocation" : `Deleted ${ids.length} allocations`);
     } catch (error) {
       setState((current) => (current ? { ...current, allocations: previous } : current));
       setToast(error instanceof Error ? error.message : "Delete failed");
     }
   };
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+
+      if (event.key === "Escape") {
+        if (selectedAllocationIdsRef.current.length > 0) {
+          event.preventDefault();
+          setAllocationSelection([]);
+          return;
+        }
+        if (selectedRoomIds.length > 0) {
+          event.preventDefault();
+          setSelectedRoomIds([]);
+        }
+        return;
+      }
+
+      if (selectedAllocationIdsRef.current.length === 0) return;
+      if (event.key !== "Delete" && event.key !== "Backspace") return;
+      event.preventDefault();
+      void removeAllocations(selectedAllocationIdsRef.current);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [selectedRoomIds, state.allocations]);
 
   const selectFloor = (floorId: string, append: boolean) => {
     const roomIds = state.rooms.filter((room) => room.floorId === floorId).map((room) => room.id);
@@ -827,9 +886,10 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                           gridStart={state.event.gridStart}
                           slotMinutes={state.event.slotMinutes}
                           onResize={onResize}
-                          onDelete={(id) => void removeAllocation(id)}
-                          selectedAllocationId={selectedAllocationId}
-                          onSelectAllocation={setSelectedAllocationId}
+                          onDelete={(id) => void removeAllocations(idsForEdit(id))}
+                          selectedAllocationIds={selectedAllocationIds}
+                          onSelectAllocation={selectAllocationFromCard}
+                          onClearAllocationSelection={clearAllocationSelection}
                           blockTitle={blockTitle}
                           mergeMeta={mergedNormalMeta}
                         />
@@ -1002,7 +1062,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                               gridColumn: "4",
                               gridRow: `${rowIndex + 1}`
                             }}
-                            onClick={() => setSelectedAllocationId(null)}
+                            onClick={() => clearAllocationSelection()}
                           >
                             {Array.from({ length: slotCount }).map((_, slotIndex) => (
                               <DroppableCellHorizontal
@@ -1015,8 +1075,10 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                             {roomAllocations.map((allocation) => {
                               const activity = activitiesById.get(allocation.activityId);
                               if (!activity) return null;
+                              const runIds = runMemberIds(mergedNormalMeta, allocation.id);
+                              const expanded = shouldExpandRun(runIds, selectedAllocationIds);
                               const merged = mergedNormalMeta.get(allocation.id);
-                              if (merged && !merged.isLeader) return null;
+                              if (merged && !merged.isLeader && !expanded) return null;
                               const startSlot = allocationStartSlot(
                                 state.event.eventDate,
                                 state.event.gridStart,
@@ -1024,6 +1086,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                                 allocation.startAt
                               );
                               const span = getBlockSpan(allocation);
+                              const roomSpan = expanded ? 1 : (merged?.span ?? 1);
                               return (
                                 <AllocationCardHorizontal
                                   key={allocation.id}
@@ -1031,13 +1094,17 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                                   activity={activity}
                                   left={startSlot * TRANSPOSE_SLOT_WIDTH}
                                   width={span * TRANSPOSE_SLOT_WIDTH - 2}
-                                  height={(merged?.span ?? 1) * TRANSPOSE_ROW_HEIGHT - 2}
+                                  height={roomSpan * TRANSPOSE_ROW_HEIGHT - 2}
                                   gridExtent={slotCount * TRANSPOSE_SLOT_WIDTH}
                                   overlap={overlapsSet.has(allocation.id)}
-                                  selected={selectedAllocationId === allocation.id}
-                                  blockTitle={blockTitle(activity, allocation)}
-                                  onSelect={setSelectedAllocationId}
-                                  onDelete={(id) => void removeAllocation(id)}
+                                  selected={selectedAllocationIds.includes(allocation.id)}
+                                  blockTitle={
+                                    runIds.length > 1
+                                      ? `${blockTitle(activity, allocation)} · Click all · Alt-click one room`
+                                      : blockTitle(activity, allocation)
+                                  }
+                                  onSelect={(id, selectEvent) => selectAllocationFromCard(id, selectEvent)}
+                                  onDelete={(id) => void removeAllocations(idsForEdit(id))}
                                   onResize={onResize}
                                 />
                               );
@@ -1130,8 +1197,9 @@ type RoomColumnProps = {
   slotMinutes: number;
   onResize: (allocationId: string, direction: "start" | "end", deltaSlots: number) => void;
   onDelete: (allocationId: string) => void;
-  selectedAllocationId: string | null;
-  onSelectAllocation: (allocationId: string | null) => void;
+  selectedAllocationIds: string[];
+  onSelectAllocation: (allocationId: string, event: AllocationSelectEvent) => void;
+  onClearAllocationSelection: () => void;
   blockTitle: (activity: Activity, allocation: Allocation) => string;
   mergeMeta: Map<string, MergeMeta>;
 };
@@ -1149,8 +1217,9 @@ function RoomColumn({
   slotMinutes,
   onResize,
   onDelete,
-  selectedAllocationId,
+  selectedAllocationIds,
   onSelectAllocation,
+  onClearAllocationSelection,
   blockTitle,
   mergeMeta
 }: RoomColumnProps) {
@@ -1158,7 +1227,7 @@ function RoomColumn({
     <div
       className={`room-column ${selected ? "selected" : ""}`}
       style={{ width: COLUMN_WIDTH }}
-      onClick={() => onSelectAllocation(null)}
+      onClick={() => onClearAllocationSelection()}
     >
       {Array.from({ length: slotCount }).map((_, slotIndex) => (
         <DroppableCell key={`${roomId}:${slotIndex}`} roomId={roomId} slotIndex={slotIndex} slotHeight={slotHeight} />
@@ -1167,12 +1236,19 @@ function RoomColumn({
       {allocations.map((allocation) => {
         const activity = activitiesById.get(allocation.activityId);
         if (!activity) return null;
+        const runIds = runMemberIds(mergeMeta, allocation.id);
+        const expanded = shouldExpandRun(runIds, selectedAllocationIds);
         const merged = mergeMeta.get(allocation.id);
-        if (merged && !merged.isLeader) return null;
+        if (merged && !merged.isLeader && !expanded) return null;
         const startSlot = allocationStartSlot(eventDate, gridStart, slotMinutes, allocation.startAt);
         const endSlot = allocationStartSlot(eventDate, gridStart, slotMinutes, allocation.endAt);
         const span = Math.max(1, endSlot - startSlot);
-        const width = ((merged?.span ?? 1) * COLUMN_WIDTH) - 4;
+        const roomSpan = expanded ? 1 : (merged?.span ?? 1);
+        const width = roomSpan * COLUMN_WIDTH - 4;
+        const title =
+          runIds.length > 1
+            ? `${blockTitle(activity, allocation)} · Click all · Alt-click one room`
+            : blockTitle(activity, allocation);
 
         return (
           <AllocationCard
@@ -1186,9 +1262,9 @@ function RoomColumn({
             overlap={overlapIds.has(allocation.id)}
             onResize={onResize}
             onDelete={onDelete}
-            selected={selectedAllocationId === allocation.id}
+            selected={selectedAllocationIds.includes(allocation.id)}
             onSelect={onSelectAllocation}
-            title={blockTitle(activity, allocation)}
+            title={title}
           />
         );
       })}
@@ -1229,7 +1305,7 @@ type AllocationCardProps = {
   onResize: (allocationId: string, direction: "start" | "end", deltaSlots: number) => void;
   onDelete: (allocationId: string) => void;
   selected: boolean;
-  onSelect: (allocationId: string | null) => void;
+  onSelect: (allocationId: string, event: AllocationSelectEvent) => void;
   title: string;
 };
 
@@ -1269,10 +1345,19 @@ function AllocationCard({
     draggable.setNodeRef(node);
   };
 
+  const toSelectEvent = (event: React.PointerEvent | React.MouseEvent): AllocationSelectEvent => ({
+    altKey: event.altKey,
+    clientX: event.clientX,
+    clientY: event.clientY,
+    currentTarget: event.currentTarget as HTMLElement,
+    horizontal: false
+  });
+
   const listeners = {
     ...draggable.listeners,
     onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => {
       if ((event.target as HTMLElement).closest(".resize-handle, .allocation-delete")) return;
+      onSelect(allocation.id, toSelectEvent(event));
       const rect = event.currentTarget.getBoundingClientRect();
       originRef.current = { left: rect.left, top: rect.top };
       draggable.listeners?.onPointerDown?.(event);
@@ -1282,6 +1367,7 @@ function AllocationCard({
   const onHandlePointerDown = (direction: "start" | "end") => (event: React.PointerEvent<HTMLDivElement>) => {
     event.stopPropagation();
     event.preventDefault();
+    onSelect(allocation.id, toSelectEvent(event));
     resizeCleanupRef.current?.();
 
     const initialY = event.clientY;
@@ -1363,7 +1449,7 @@ function AllocationCard({
       title={title}
       onClick={(event) => {
         event.stopPropagation();
-        onSelect(allocation.id);
+        onSelect(allocation.id, toSelectEvent(event));
       }}
     >
       <div className="resize-handle top" onPointerDown={onHandlePointerDown("start")} />
@@ -1372,7 +1458,7 @@ function AllocationCard({
         type="button"
         onPointerDown={(event) => {
           event.stopPropagation();
-          onSelect(allocation.id);
+          onSelect(allocation.id, toSelectEvent(event));
         }}
         onClick={(event) => {
           event.stopPropagation();
@@ -1398,7 +1484,7 @@ type AllocationCardHorizontalProps = {
   overlap: boolean;
   selected: boolean;
   blockTitle: string;
-  onSelect: (allocationId: string | null) => void;
+  onSelect: (allocationId: string, event: AllocationSelectEvent) => void;
   onDelete: (allocationId: string) => void;
   onResize: (allocationId: string, direction: "start" | "end", deltaSlots: number) => void;
 };
@@ -1433,10 +1519,19 @@ function AllocationCardHorizontal({
 
   useEffect(() => () => resizeCleanupRef.current?.(), []);
 
+  const toSelectEvent = (event: React.PointerEvent | React.MouseEvent): AllocationSelectEvent => ({
+    altKey: event.altKey,
+    clientX: event.clientX,
+    clientY: event.clientY,
+    currentTarget: event.currentTarget as HTMLElement,
+    horizontal: true
+  });
+
   const listeners = {
     ...draggable.listeners,
     onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => {
       if ((event.target as HTMLElement).closest(".resize-handle, .allocation-delete")) return;
+      onSelect(allocation.id, toSelectEvent(event));
       const rect = event.currentTarget.getBoundingClientRect();
       originRef.current = { left: rect.left, top: rect.top };
       draggable.listeners?.onPointerDown?.(event);
@@ -1446,6 +1541,7 @@ function AllocationCardHorizontal({
   const onHandlePointerDown = (direction: "start" | "end") => (event: React.PointerEvent<HTMLDivElement>) => {
     event.stopPropagation();
     event.preventDefault();
+    onSelect(allocation.id, toSelectEvent(event));
     resizeCleanupRef.current?.();
 
     const initialX = event.clientX;
@@ -1527,7 +1623,7 @@ function AllocationCardHorizontal({
       title={blockTitle}
       onClick={(event) => {
         event.stopPropagation();
-        onSelect(allocation.id);
+        onSelect(allocation.id, toSelectEvent(event));
       }}
     >
       <div className="resize-handle left" onPointerDown={onHandlePointerDown("start")} />
@@ -1536,7 +1632,7 @@ function AllocationCardHorizontal({
         type="button"
         onPointerDown={(event) => {
           event.stopPropagation();
-          onSelect(allocation.id);
+          onSelect(allocation.id, toSelectEvent(event));
         }}
         onClick={(event) => {
           event.stopPropagation();

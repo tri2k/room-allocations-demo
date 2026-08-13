@@ -192,7 +192,6 @@ ENABLE_DEV_RESEED=true
 
 - Auth, orgs, roles, WebSockets ([collaboration spec](2026-08-11-phase-2-collaboration.md), unsequenced)
 - Proctors, CSV/PDF export, capacity dashboard (Phase 2); Sheets import (Phase 3)
-- Fixing v0 merged-block leader-only edits
 - Fixing v0 collapse/sticky-header/selection bugs (unless a bug makes API wiring impossible)
 - Tailwind, Zustand, pnpm, TanStack Router, Vitest/Playwright, ESLint/Prettier
 - Multi-event picker UX beyond “use the first event”
@@ -245,7 +244,6 @@ Each step should leave the repo runnable.
 
 ### Deferred
 - Hosted deploy
-- Merged-block leader-only edits ([docs/known-bugs-v0.md](../docs/known-bugs-v0.md))
 - Soft-delete ghost allocations (inactive rooms with lingering bookings that block overlaps)
 - GUIDELINES extras (Zustand, Tailwind, pnpm, TanStack, tests)
 
@@ -253,6 +251,10 @@ Each step should leave the repo runnable.
 - Collapse expand/collapse and transpose collapse parity
 - Sticky headers and time gutter; transpose merge stacking over grid lines
 - Drag/resize interaction polish; Reset failure handling; catalog reactivate; room floor scoping; clear selection
+
+### Post-ship: merged-block group edit (2026-08-13)
+- Click selects the full merged run; Alt-click selects one room; move/resize/delete apply to the selection
+- Partial selection expands the run visually; closes the v0 leader-only edit limitation
 
 ---
 
