@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Product plan: Phase 2 is accounts, not power features (2026-08-13)
+
+- Next phase is Google OAuth, orgs, Event-as-label, and owner-only allocations sheets, ending in a public HTTPS demo
+- Spec: [specs/2026-08-13-phase-2-accounts-orgs.md](specs/2026-08-13-phase-2-accounts-orgs.md), shipped as testable subphases 2a–2e
+- Power features and polish slip to Phase 3 and 4; live sheet sharing stays later ([collaboration draft](specs/2026-08-11-phase-2-collaboration.md))
+- Docs only; no application code in this change
+
+
 ### Phase 1 core loop (shipped 2026-08-11)
 
 - FastAPI + PostgreSQL persistence, SPA wired to `/api/v1`, catalog forms

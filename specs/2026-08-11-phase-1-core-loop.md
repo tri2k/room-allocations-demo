@@ -190,8 +190,8 @@ ENABLE_DEV_RESEED=true
 
 ## Not in Scope
 
-- Auth, orgs, roles, WebSockets ([collaboration spec](2026-08-11-phase-2-collaboration.md), unsequenced)
-- Proctors, CSV/PDF export, capacity dashboard (Phase 2); Sheets import (Phase 3)
+- Auth, orgs, roles, sheets ([Phase 2 spec](2026-08-13-phase-2-accounts-orgs.md)); WebSockets ([collaboration spec](2026-08-11-phase-2-collaboration.md), later)
+- Proctors, CSV/PDF export, capacity dashboard (Phase 3); Sheets import (Phase 4)
 - Fixing v0 collapse/sticky-header/selection bugs (unless a bug makes API wiring impossible)
 - Tailwind, Zustand, pnpm, TanStack Router, Vitest/Playwright, ESLint/Prettier
 - Multi-event picker UX beyond “use the first event”

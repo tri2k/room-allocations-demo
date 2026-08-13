@@ -103,8 +103,8 @@ Known limitation of that merge was leader-only edits; fixed later by group selec
 ### Deferred
 
 - Persistence and catalog CRUD → [phase-1 draft](2026-08-11-phase-1-core-loop.md)
-- Collaboration → unsequenced; [draft spec](2026-08-11-phase-2-collaboration.md)
-- Proctors, export → Phase 2; Sheets import → Phase 3
+- Accounts / orgs / private sheets → [Phase 2](2026-08-13-phase-2-accounts-orgs.md); live sheet sharing → [collaboration draft](2026-08-11-phase-2-collaboration.md)
+- Proctors, export → Phase 3; Sheets import → Phase 4
 
 ### Seed
 
