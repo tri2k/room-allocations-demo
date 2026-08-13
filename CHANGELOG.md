@@ -38,7 +38,8 @@
 - Slide a merged run into neighboring rooms without 409: patch members in vacate-first order and roll back on failure
 - Group resize uses the same sequential persist + rollback so a 409 on one room cannot leave siblings saved
 - Alt-click on an expanded per-room card selects that room instead of hit-testing the merged span
-- Collapsed building/floor headers expand on a single click; ignore the second click of a double-click so they do not snap shut
+- Collapsed building/floor headers expand on a single click; a following double-click does not snap them shut
+- Do not re-render selection on allocation pointer-down so dnd-kit can start a move
 
 ## v0 — Vision demo (2026-08-11)
 

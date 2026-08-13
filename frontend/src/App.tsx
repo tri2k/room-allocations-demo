@@ -56,6 +56,8 @@ type AllocationSelectEvent = {
   clientY: number;
   currentTarget: HTMLElement;
   horizontal: boolean;
+  /** When false, only the selection ref updates (avoids re-render mid-drag). */
+  commit?: boolean;
 };
 
 function App() {
@@ -147,6 +149,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
   const [selectedRoomIds, setSelectedRoomIds] = useState<HeaderSelection["roomIds"]>([]);
   const [selectedAllocationIds, setSelectedAllocationIds] = useState<string[]>([]);
   const selectedAllocationIdsRef = useRef<string[]>([]);
+  const skipHeaderCollapseRef = useRef(false);
   const [collapsedBuildings, setCollapsedBuildings] = useState<Set<string>>(new Set());
   const [collapsedFloors, setCollapsedFloors] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<string>("");
@@ -223,22 +226,41 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
     );
   };
 
-  const selectAllocationFromCard = (allocationId: string, event: AllocationSelectEvent) => {
+  const allocationIdsFromCard = (allocationId: string, event: AllocationSelectEvent): string[] => {
     const run = runMemberIds(mergedNormalMeta, allocationId);
     if (event.altKey && run.length > 1) {
       // Expanded cards are one room wide — hit-testing the run would map every click to the leader.
       if (shouldExpandRun(run, selectedAllocationIdsRef.current)) {
-        setAllocationSelection([allocationId]);
-        return;
+        return [allocationId];
       }
       const rect = event.currentTarget.getBoundingClientRect();
       const offset = event.horizontal ? event.clientY - rect.top : event.clientX - rect.left;
       const cell = event.horizontal ? TRANSPOSE_ROW_HEIGHT : COLUMN_WIDTH;
       const index = resolveMemberIndex(offset, cell, run.length);
-      setAllocationSelection([run[index] ?? allocationId]);
+      return [run[index] ?? allocationId];
+    }
+    return run;
+  };
+
+  const selectAllocationFromCard = (allocationId: string, event: AllocationSelectEvent) => {
+    const ids = allocationIdsFromCard(allocationId, event);
+    selectedAllocationIdsRef.current = ids;
+    if (event.commit !== false) setSelectedAllocationIds(ids);
+  };
+
+  const markExpandedFromCollapsedClick = () => {
+    skipHeaderCollapseRef.current = true;
+    window.setTimeout(() => {
+      skipHeaderCollapseRef.current = false;
+    }, 500);
+  };
+
+  const onHeaderDoubleClickCollapse = (collapse: () => void) => {
+    if (skipHeaderCollapseRef.current) {
+      skipHeaderCollapseRef.current = false;
       return;
     }
-    setAllocationSelection(run);
+    collapse();
   };
 
   const clearAllocationSelection = () => setAllocationSelection([]);
@@ -755,15 +777,17 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                         style={{ width: group.span * COLUMN_WIDTH }}
                         title={group.collapsed ? "Click to expand" : "Click to select · Double-click to collapse"}
                         onClick={(event) => {
-                          if (event.detail > 1) return;
                           if (group.collapsed) {
+                            markExpandedFromCollapsedClick();
                             toggleBuildingCollapsed(group.building.id);
                             return;
                           }
                           selectBuilding(group.building.id, event.shiftKey);
                         }}
                         onDoubleClick={() => {
-                          if (!group.collapsed) toggleBuildingCollapsed(group.building.id);
+                          onHeaderDoubleClickCollapse(() => {
+                            if (!group.collapsed) toggleBuildingCollapsed(group.building.id);
+                          });
                         }}
                       >
                         <span className="collapse-marker" aria-hidden>
@@ -790,20 +814,23 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                               : undefined
                         }
                         onClick={(event) => {
-                          if (event.detail > 1) return;
                           if (group.collapsed && group.floorId) {
+                            markExpandedFromCollapsedClick();
                             toggleFloorCollapsed(group.floorId);
                             return;
                           }
                           if (group.collapsed && !group.floorId) {
+                            markExpandedFromCollapsedClick();
                             toggleBuildingCollapsed(group.buildingId);
                             return;
                           }
                           if (group.floorId) selectFloor(group.floorId, event.shiftKey);
                         }}
                         onDoubleClick={() => {
-                          if (group.collapsed) return;
-                          if (group.floorId) toggleFloorCollapsed(group.floorId);
+                          onHeaderDoubleClickCollapse(() => {
+                            if (group.collapsed) return;
+                            if (group.floorId) toggleFloorCollapsed(group.floorId);
+                          });
                         }}
                       >
                         {group.floorId ? (
@@ -973,15 +1000,17 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                             : "Click to select · Double-click to collapse"
                         }
                         onClick={(event) => {
-                          if (event.detail > 1) return;
                           if (band.collapsed) {
+                            markExpandedFromCollapsedClick();
                             toggleBuildingCollapsed(band.buildingId);
                             return;
                           }
                           selectBuilding(band.buildingId, event.shiftKey);
                         }}
                         onDoubleClick={() => {
-                          if (!band.collapsed) toggleBuildingCollapsed(band.buildingId);
+                          onHeaderDoubleClickCollapse(() => {
+                            if (!band.collapsed) toggleBuildingCollapsed(band.buildingId);
+                          });
                         }}
                       >
                         <span>
@@ -1008,20 +1037,23 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                               : undefined
                         }
                         onClick={(event) => {
-                          if (event.detail > 1) return;
                           if (band.collapsed && band.floorId) {
+                            markExpandedFromCollapsedClick();
                             toggleFloorCollapsed(band.floorId);
                             return;
                           }
                           if (band.collapsed && !band.floorId) {
+                            markExpandedFromCollapsedClick();
                             toggleBuildingCollapsed(band.buildingId);
                             return;
                           }
                           if (band.floorId) selectFloor(band.floorId, event.shiftKey);
                         }}
                         onDoubleClick={() => {
-                          if (band.collapsed) return;
-                          if (band.floorId) toggleFloorCollapsed(band.floorId);
+                          onHeaderDoubleClickCollapse(() => {
+                            if (band.collapsed) return;
+                            if (band.floorId) toggleFloorCollapsed(band.floorId);
+                          });
                         }}
                       >
                         <span>
@@ -1378,7 +1410,7 @@ function AllocationCard({
     ...draggable.listeners,
     onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => {
       if ((event.target as HTMLElement).closest(".resize-handle, .allocation-delete")) return;
-      onSelect(allocation.id, toSelectEvent(event));
+      onSelect(allocation.id, { ...toSelectEvent(event), commit: false });
       const rect = event.currentTarget.getBoundingClientRect();
       originRef.current = { left: rect.left, top: rect.top };
       draggable.listeners?.onPointerDown?.(event);
@@ -1552,7 +1584,7 @@ function AllocationCardHorizontal({
     ...draggable.listeners,
     onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => {
       if ((event.target as HTMLElement).closest(".resize-handle, .allocation-delete")) return;
-      onSelect(allocation.id, toSelectEvent(event));
+      onSelect(allocation.id, { ...toSelectEvent(event), commit: false });
       const rect = event.currentTarget.getBoundingClientRect();
       originRef.current = { left: rect.left, top: rect.top };
       draggable.listeners?.onPointerDown?.(event);
