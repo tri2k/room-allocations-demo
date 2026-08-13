@@ -49,11 +49,27 @@ Organization
 
 **Platform superuser.** Not an org role. Emails listed in `PLATFORM_SUPERUSER_EMAILS`. Can create orgs and appoint the first org admin by email. May look up a user by exact email for that purpose. Cannot browse all users as a directory.
 
-**Event.** Label in an org: this plan is for this occasion. Does not store timezone, slot size, grid hours, activities, or time blocks.
+**Event.** Occasion label in an org (`name`, optional `event_date`) plus **default clock settings** for new sheets: timezone, grid start, grid end, slot granularity. Those defaults **copy onto a sheet at create**; later Event edits do not rewrite existing sheets. Event does not own rooms, activities, or allocations. Event page details later.
 
-**Sheet.** One private plan for one Event. Owner has full control of structure (grid, activities, Lunch bands, allocations). New sheet: empty allocations; defaults such as 15-minute slots, 07:00–16:15, empty activity and time-block lists (not copied from the Event).
+**Sheet.** One private plan for one Event. After create, the owner can still change rooms, activities, and clock settings. Allocations (blocks on the grid) are the planning work, not part of setup.
 
-Rooms and buildings stay **separate catalog rows** (room still belongs to one building for label `DWIN155` and for grouping headers). The sheet owner **picks rooms** (`included_room_ids`). Grid columns are exactly those rooms, not “every room in a building.” A “select all in Dwinelle” control may exist as a shortcut; it still stores room ids. Events do not own buildings or rooms. Catalog deactivate does not rewrite other people’s room picks.
+### New sheet setup
+
+Forget the Phase 1 “one Event is the grid.” Flow:
+
+1. Pick an Event → **New sheet**.
+2. **Pick rooms** from the org catalog (picker UX later). Stored as `included_room_ids`. Buildings/rooms stay separate rows; columns are the rooms they checked.
+3. **Create activities** they will place on rooms (Puzzle, Indiv, …). Color and default duration belong here. Whether Lunch / Check-in are activities vs labeled timeline bands is an open detail (see below).
+4. **Clock:** start time, end time, slot granularity. Prefill from the Event defaults; they can change them. Timezone prefill from the Event too (needed to stamp allocation times).
+5. Land on the **empty grid** (those rooms × that clock, palette filled). Placing blocks is not setup.
+
+**Also at create (easy to miss):** a **title** (default “Untitled”, editable). Calendar **date** comes from the Event’s `event_date` if set; if Event has no date, the sheet needs a date at create.
+
+**Not setup:** allocations, sharing, proctors, export, catalog edits (that is `#/catalog`).
+
+**Optional vs required to finish:** at least one room (otherwise there are no columns). Activities may be empty (add later). Clock always has Event defaults so it is never blank.
+
+Open for later discussion: room picker UX; Event page (what admins edit besides name/date/clock defaults); Lunch/Check-in as palette activities vs gutter bands.
 
 ### Permissions
 
@@ -135,7 +151,7 @@ Do **not** put a public URL in front of 2a–2d. Those builds are still local (o
 
 - `sheets` table: `title`, `event_id`, `owner_id`, `timezone`, `slot_minutes`, `grid_start`, `grid_end`, `included_room_ids`.
 - Move `activities`, `time_blocks`, `allocations` from Event to sheet. Overlap exclusion: `(sheet_id, room_id, tstzrange)`.
-- Strip Event down to `name` + optional `event_date` (keep a temporary global Event list until 2c).
+- Strip Event to `name`, optional `event_date`, plus default timezone / grid start / grid end / slot minutes (copied onto new sheets, not live-bound).
 - `GET /api/v1/sheets/{id}/schedule` is what the grid loads (Event label + catalog + this sheet).
 - UI: Event list → **your** sheets + new sheet → grid. Sheet settings replace today’s Event page for grid/activities/time blocks.
 - New sheet defaults: 15 min, 07:00–16:15, empty palette and time blocks, empty allocations, **no rooms selected** until the owner picks.
@@ -282,7 +298,7 @@ After Google sign-in, pick the first matching state:
 
 Home after login if they have exactly one org: **Event list**, not the grid. Opening BmMT 2026 shows their empty sheet list.
 
-**4. First sheet they create.** Empty plan: default 15 min / 07:00–16:15, **no** activities, **no** Lunch bands, **no** allocations, **no** room columns until they pick rooms. Title default “Untitled.”
+**4. First sheet they create.** Setup: pick rooms → activities → clock (prefilled from Event). Then an empty grid. No allocations yet. Title default “Untitled.”
 
 **5. New org admin** (superuser created an empty org, appointed them). Same as (3) but they **can** Create Event and invite. Catalog and Event list may both be empty until they add rooms and an Event. Still no sheets until they make one.
 
@@ -358,7 +374,9 @@ Regulars can still deactivate (they can edit catalog). That only changes what th
 | Dedicated admin app / see all sheets | **Decided:** no; `#/org` for members/invites only |
 | Catalog UI | **Decided:** keep Phase 1 forms; scope to org; both roles can edit |
 | Deactivate room/building | **Decided:** retire from the picker only; do not strip rooms from sheets that already included them |
-| New sheet room picker | **Decided:** owner chooses **rooms** (not whole buildings); default none selected. Optional “select all in this building” still stores room ids |
+| New sheet room picker | **Decided:** owner chooses **rooms**; picker UX later. Default none selected |
+| Event vs sheet clock | **Decided:** Event stores defaults; copy onto the sheet at create; sheet can override; Event edits do not rewrite existing sheets |
+| Sheet title at create | **Decided:** yes; default “Untitled” |
 
 ## Implementation plan
 

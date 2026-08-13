@@ -20,7 +20,7 @@ Hierarchy: **Org → Building → Floor → Room**, and **Org → Event → Shee
 | Building | Physical hall, e.g. Dwinelle (`DWIN`) | Belongs to one org; contains floors and rooms |
 | Floor | Grouping unit for bulk assign, e.g. `1`, `Basement` | Belongs to one building; contains rooms |
 | Room | Bookable space with type and capacity | Belongs to one building; optional floor |
-| Event | Category for an occasion (“this plan is for BmMT 2026”) | Belongs to one org. Name + optional date only. Does not own the grid |
+| Event | Category for an occasion (“this plan is for BmMT 2026”) plus default clock settings for new sheets | Belongs to one org. Defaults copy onto a sheet at create; Event does not own the grid |
 | Sheet | One private plan for an Event | Owned by one user. Owns grid settings, activities, time blocks, allocations |
 | Activity | Named colored block (Puzzle, Indiv, …) with default duration | Belongs to a sheet |
 | TimeBlock | Phase on that sheet’s timeline (Check-in, Lunch, …) | Belongs to a sheet; may hint-snap to an activity |
