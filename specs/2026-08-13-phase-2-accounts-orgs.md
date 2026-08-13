@@ -153,8 +153,8 @@ Do **not** put a public URL in front of 2a–2d. Those builds are still local (o
 - Move `activities`, `time_blocks`, `allocations` from Event to sheet. Overlap exclusion: `(sheet_id, room_id, tstzrange)`.
 - Strip Event to `name`, optional `event_date`, plus default timezone / grid start / grid end / slot minutes (copied onto new sheets, not live-bound).
 - `GET /api/v1/sheets/{id}/schedule` is what the grid loads (Event label + catalog + this sheet).
-- UI: Event list → **your** sheets + new sheet → grid. Sheet settings replace today’s Event page for grid/activities/time blocks.
-- New sheet defaults: 15 min, 07:00–16:15, empty palette and time blocks, empty allocations, **no rooms selected** until the owner picks.
+- UI: Event list → **your** sheets → **New sheet** setup (rooms → activities → clock from Event defaults) → grid.
+- New sheet: title Untitled; rooms from picker; activities from setup; clock copied from Event then editable; allocations empty.
 - Migration: each existing Event becomes one sheet owned by the seed-owner user; copy current children and grid fields onto that sheet.
 
 **Out.** Orgs, admin vs regular, invites, public deploy. Any logged-in user can still create Events (2c restricts that). Catalog is still global.
