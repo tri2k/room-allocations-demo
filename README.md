@@ -2,7 +2,7 @@
 
 Local single-user room scheduler: a Vite grid plus a FastAPI / PostgreSQL API.
 
-See [PRODUCT.md](PRODUCT.md), [Phase 1 spec](specs/2026-08-11-phase-1-core-loop.md), [CHANGELOG.md](CHANGELOG.md), and [C4 diagrams](docs/c4/README.md).
+See [PRODUCT.md](PRODUCT.md), [Phase 1 spec](specs/2026-08-11-phase-1-core-loop.md), [Phase 2 spec](specs/2026-08-13-phase-2-accounts-orgs.md) (planned), [CHANGELOG.md](CHANGELOG.md), and [C4 diagrams](docs/c4/README.md).
 
 ## Run locally
 
