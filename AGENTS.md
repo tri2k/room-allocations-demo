@@ -62,7 +62,7 @@ Cloud VMs here do not ship `python3-venv` apt packages; use **`uv`** (`~/.local/
 
 **Gotchas**
 
-- `ERR_CONNECTION_REFUSED` on `:5173` almost always means Vite is not running (or `frontend/node_modules` was never installed). Fastest checks: `curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:5173/` and whether a `vite`/`npm run dev` process exists.
+- `ERR_CONNECTION_REFUSED` on `:5173` almost always means Vite is not running (or `frontend/node_modules` was never installed). Fastest checks: `curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:5173/` and whether a `vite`/`npm run dev` process exists. In this VM `localhost` resolves to `::1` first; start Vite with `--host ::` (not only `0.0.0.0`) so IPv6 previews do not refuse.
 - Docker needs a running `dockerd` (fuse-overlayfs storage). Prefer `sudo docker …` unless the agent user is already in the `docker` group for the current session.
 - After compose comes up, wait until the `postgres` healthcheck is healthy before `alembic upgrade head` / `python -m scripts.seed`.
 - Copy `server/.env.example` → `server/.env` once (`ENABLE_DEV_RESEED=true` for Reset). `.env` is gitignored.
