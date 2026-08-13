@@ -33,6 +33,14 @@
 - Partial selection expands the run into per-room cards until the full run is selected again
 - Closes the v0 leader-only edit bug in [docs/known-bugs-v0.md](docs/known-bugs-v0.md)
 
+### Regression fixes (2026-08-13)
+
+- Slide a merged run into neighboring rooms without 409: patch members in vacate-first order and roll back on failure
+- Group resize uses the same sequential persist + rollback so a 409 on one room cannot leave siblings saved
+- Alt-click on an expanded per-room card selects that room instead of hit-testing the merged span
+- Collapsed building/floor headers expand on a single click; a following double-click does not snap them shut
+- Do not re-render selection on allocation pointer-down so dnd-kit can start a move
+
 ## v0 — Vision demo (2026-08-11)
 
 **Status: complete.** Frontend-only prototype that proves the grid UX against the BmMT spreadsheet workflow.
