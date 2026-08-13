@@ -253,6 +253,41 @@ Suggested hash routes (keep the current router style; no new router library):
 - `#/sheets/{sheetId}` — grid (replaces loading “the” Event schedule)
 - Event-settings UI today that edits grid/activities/time blocks moves to the sheet
 
+### First login and empty states
+
+A **sheet list** is “your room-allocation plans for this Event.” It is not a list of other people’s plans. A brand-new member has **zero sheets**. We do **not** auto-create a blank sheet on login.
+
+After Google sign-in, pick the first matching state:
+
+**1. No org yet** (signed in, not invited, or invite email did not match).
+
+- No catalog, no Events, no sheets.
+- Copy: you are not in an organization yet. Paste a join code, or wait for an admin to invite this Google email.
+- Nav: identity + sign out only.
+
+**2. Join request pending.**
+
+- Same emptiness as (1), plus: request sent to {org name}, waiting for an admin.
+
+**3. Just landed in an org as regular** (invite attached on first login, or request approved). Typical BMT add.
+
+| They see | What is there |
+| -------- | ------------- |
+| Catalog | Yes — the org’s rooms (Dwinelle, …). Shared. They may edit. |
+| Event list | Yes — labels the admin created (e.g. BmMT 2026). Read-only. No Create Event. |
+| Sheet list for an Event | **Empty.** “No plans yet” + **New sheet**. Not the seed demo grid, not anyone else’s sheets. |
+| Grid | Nothing until they create or open a sheet. |
+
+Home after login if they have exactly one org: **Event list**, not the grid. Opening BmMT 2026 shows their empty sheet list.
+
+**4. First sheet they create.** Empty plan: default 15 min / 07:00–16:15, **no** activities, **no** Lunch bands, **no** allocations. They add Puzzle etc. themselves. Title default “Untitled.”
+
+**5. New org admin** (superuser created an empty org, appointed them). Same as (3) but they **can** Create Event and invite. Catalog and Event list may both be empty until they add rooms and an Event. Still no sheets until they make one.
+
+**6. Seed / demo owner only.** Reseed may create one demo sheet **for `SEED_OWNER_EMAIL`**. Newly invited people never inherit that sheet.
+
+If they belong to **multiple orgs**, show an org picker first; each org has its own catalog, Events, and sheet lists.
+
 ### Open questions
 
 | Question | Status |
@@ -262,6 +297,8 @@ Suggested hash routes (keep the current router style; no new router library):
 | Copy/fork an existing sheet | **Out** until someone asks |
 | `team_count` | Stays later (Phase 4); do not put it back on Event |
 | Superuser UI vs env+API only in 2c | **Decided:** API/seed in 2c, UI in 2d |
+| Auto-create a sheet on first login | **Decided:** no; empty sheet list + New sheet |
+| Home after login (one org) | **Decided:** Event list, not the grid |
 
 ## Implementation plan
 
