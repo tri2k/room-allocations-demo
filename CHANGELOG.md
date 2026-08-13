@@ -24,8 +24,14 @@
 
 ### Still open
 
-- Merged blocks only edit the leader allocation ([docs/known-bugs-v0.md](docs/known-bugs-v0.md))
 - Soft-deleted rooms may leave hidden allocations that still block overlaps on the API
+
+### Merged-block group edit (2026-08-13)
+
+- Click a merged bar to select the whole run; Alt-click to select one room by pointer position
+- Move, resize, and delete apply to the selection set (keyboard Delete/Backspace included)
+- Partial selection expands the run into per-room cards until the full run is selected again
+- Closes the v0 leader-only edit bug in [docs/known-bugs-v0.md](docs/known-bugs-v0.md)
 
 ## v0 — Vision demo (2026-08-11)
 
