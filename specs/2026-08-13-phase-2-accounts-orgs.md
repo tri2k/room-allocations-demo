@@ -61,7 +61,7 @@ Who becomes an org admin, and who stays one, is an **org responsibility**. The p
 - **Join-code approval** with role `admin` when accepting a pending request.
 - **Promote** an existing member from `regular` → `admin` on `#/org`.
 
-**3. Demoting admins (org admins only).** Any org admin can set another member’s role to `regular` (`admin` → `regular`). Admins can also demote themselves. There is no platform rule that an org must keep at least one admin — if every admin demotes themselves or leaves, the org may have no one who can invite, create Events, or manage roles until a superuser intervenes manually (out of scope for Phase 2 self-service recovery).
+**3. Demoting admins (org admins only).** Any org admin can demote **another** member from `admin` → `regular`. An admin **cannot** demote themselves — another admin must do it. API returns **403** if the target membership is the caller’s own. There is no platform rule that an org must keep at least one admin — if every admin is demoted by peers, removed, or leaves, the org may have no one who can invite, create Events, or manage roles until a superuser intervenes manually (out of scope for Phase 2 self-service recovery).
 
 **4. Removing members.** Org admins can remove a member from the org entirely (not just demote). Removed users lose catalog/Event access; their private sheets remain owned by them but are inaccessible until they rejoin.
 
@@ -124,7 +124,7 @@ Do **not** add `GET /users?q=`.
 
 1. **Email invite.** Org admin types a full email and a role (`admin` or `regular`). No typeahead over all users. Inviting as `admin` is how most future admins join. (Superuser appoints the **first** admin only when creating an org on `#/super`, not via ongoing org invites.)
 2. **Join code.** Admin copies a link/code. Signed-in user requests access. Admin sees **pending requests for this org only** and approves as `admin` or `regular`.
-3. **Role change (existing members).** On `#/org`, an org admin sets any member’s role to `admin` or `regular` (promote or demote). See [Org admin lifecycle](#org-admin-lifecycle).
+3. **Role change (existing members).** On `#/org`, an org admin sets another member’s role to `admin` or `regular` (promote or demote). Cannot change your own role. See [Org admin lifecycle](#org-admin-lifecycle).
 
 Search, if any, is over this org’s members and pending requests.
 
@@ -250,8 +250,9 @@ Do **not** put a public URL in front of 2a–2d. Those builds are still local (o
 4. Superuser creates second org + admin via `#/super`.
 5. New regular does not receive seed-owner demo sheet.
 6. Admin promotes a regular to admin; demoted admin becomes regular and loses invite/Event-create powers.
+7. Admin attempting to demote themselves → 403 (UI disables or hides self-demotion).
 
-**Done when** all six pass on localhost.
+**Done when** all seven pass on localhost.
 
 ---
 
@@ -355,7 +356,7 @@ Today the nav is Schedule | Event | Catalog. Phase 2 nav for someone in an org:
 
 **`#/org` (org admin only).** This is the “admin screen”:
 
-- Member list for **this org only** (name, email, role). Promote `regular` → `admin`, demote `admin` → `regular`, or remove from org. Not a search of all platform users.
+- Member list for **this org only** (name, email, role). Promote `regular` → `admin`, demote another `admin` → `regular`, or remove another member from org. Cannot demote or change your own role. Not a search of all platform users.
 - Invite: type a full email, pick `admin` or `regular`, always “Invite sent.”
 - Join code: show / copy / rotate.
 - Pending join requests: approve as admin or regular, or deny.
@@ -415,7 +416,7 @@ Regulars can still deactivate (they can edit catalog). That only changes what th
 | Sheet title at create | **Decided:** yes; default “Untitled” |
 | Catalog history + plan pin/sync | **Future.** Spec: [specs/2026-08-13-catalog-history-and-plan-pins.md](2026-08-13-catalog-history-and-plan-pins.md). Phase 2 interim: live display by room id |
 | Multi-day events / day tabs | **Deferred.** Phase 2: one `plan_date` per sheet; multi-day = multiple sheets on the same Event unless we add day tabs later |
-| Org admin promotions | **Decided:** org admins invite/approve/promote to admin; can demote other admins to regular; no platform approval after bootstrap |
+| Org admin promotions | **Decided:** org admins invite/approve/promote to admin; can demote other admins to regular; cannot demote self; no platform approval after bootstrap |
 
 ## Implementation plan
 
@@ -434,7 +435,7 @@ Phase 2 is complete when **all** of 2a–2e “done when” lists pass, and:
 - [ ] Stakeholders can open a public HTTPS URL and sign in with Google
 - [ ] Unauthenticated API mutation is impossible
 - [ ] Org regular cannot create Events, invite, or change member roles
-- [ ] Org admin can promote regular → admin and demote admin → regular
+- [ ] Org admin can promote regular → admin and demote another admin → regular; cannot demote themselves
 - [ ] Org regular can edit catalog and fully edit **their** sheets
 - [ ] New sheet setup: pick rooms (≥1), optional activities, clock from Event defaults, then grid
 - [ ] Sheets store `included_room_ids`; grid shows current catalog for those rooms (interim)
