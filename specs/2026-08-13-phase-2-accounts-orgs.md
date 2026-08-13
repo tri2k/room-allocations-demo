@@ -53,7 +53,7 @@ Organization
 
 **Sheet.** One private plan for one Event. Owner has full control of structure (grid, activities, Lunch bands, allocations). New sheet: empty allocations; defaults such as 15-minute slots, 07:00–16:15, empty activity and time-block lists (not copied from the Event).
 
-Rooms still come from the org catalog. The sheet owner **picks buildings** (`included_building_ids`); that is what appears on their grid. Events do not own buildings. Catalog deactivate does not rewrite other people’s picks.
+Rooms and buildings stay **separate catalog rows** (room still belongs to one building for label `DWIN155` and for grouping headers). The sheet owner **picks rooms** (`included_room_ids`). Grid columns are exactly those rooms, not “every room in a building.” A “select all in Dwinelle” control may exist as a shortcut; it still stores room ids. Events do not own buildings or rooms. Catalog deactivate does not rewrite other people’s room picks.
 
 ### Permissions
 
@@ -133,12 +133,12 @@ Do **not** put a public URL in front of 2a–2d. Those builds are still local (o
 
 **In.**
 
-- `sheets` table: `title`, `event_id`, `owner_id`, `timezone`, `slot_minutes`, `grid_start`, `grid_end`, optional `included_building_ids`.
+- `sheets` table: `title`, `event_id`, `owner_id`, `timezone`, `slot_minutes`, `grid_start`, `grid_end`, `included_room_ids`.
 - Move `activities`, `time_blocks`, `allocations` from Event to sheet. Overlap exclusion: `(sheet_id, room_id, tstzrange)`.
 - Strip Event down to `name` + optional `event_date` (keep a temporary global Event list until 2c).
 - `GET /api/v1/sheets/{id}/schedule` is what the grid loads (Event label + catalog + this sheet).
 - UI: Event list → **your** sheets + new sheet → grid. Sheet settings replace today’s Event page for grid/activities/time blocks.
-- New sheet defaults: 15 min, 07:00–16:15, empty palette and time blocks, empty allocations, **no buildings selected** until the owner picks.
+- New sheet defaults: 15 min, 07:00–16:15, empty palette and time blocks, empty allocations, **no rooms selected** until the owner picks.
 - Migration: each existing Event becomes one sheet owned by the seed-owner user; copy current children and grid fields onto that sheet.
 
 **Out.** Orgs, admin vs regular, invites, public deploy. Any logged-in user can still create Events (2c restricts that). Catalog is still global.
@@ -282,7 +282,7 @@ After Google sign-in, pick the first matching state:
 
 Home after login if they have exactly one org: **Event list**, not the grid. Opening BmMT 2026 shows their empty sheet list.
 
-**4. First sheet they create.** Empty plan: default 15 min / 07:00–16:15, **no** activities, **no** Lunch bands, **no** allocations, **no** building columns until they pick buildings. Title default “Untitled.”
+**4. First sheet they create.** Empty plan: default 15 min / 07:00–16:15, **no** activities, **no** Lunch bands, **no** allocations, **no** room columns until they pick rooms. Title default “Untitled.”
 
 **5. New org admin** (superuser created an empty org, appointed them). Same as (3) but they **can** Create Event and invite. Catalog and Event list may both be empty until they add rooms and an Event. Still no sheets until they make one.
 
@@ -338,11 +338,11 @@ What actually changes:
 
 Not on the catalog page: invites, Event create, sheet list. Reset/reseed stays a dev control, not a catalog button; off in production.
 
-**Which rooms appear on a plan** is a **sheet** choice, not Catalog deactivate. When creating or editing a sheet, the owner picks buildings from the org catalog (Phase 1’s `included_building_ids`, now on the sheet). The grid columns are the rooms in those buildings. Another member’s sheet is unaffected. Default for a new sheet: no buildings selected until they pick (empty grid + picker), so they only see what they need.
+**Which rooms appear on a plan** is a **sheet** choice, not Catalog deactivate. Buildings and rooms stay separate entities. The owner picks **rooms** (checkboxes, listed under their building for readability). The grid columns are exactly those rooms. Picking Dwinelle as a building does not auto-include every Dwinelle room unless they use an optional “select all in this building” shortcut, which still saves individual room ids. Another member’s sheet is unaffected. Default for a new sheet: no rooms selected (empty grid + picker).
 
-**Deactivate / reactivate** is catalog retirement, not a plan filter. Buildings and rooms stay in the Catalog list as Inactive. They drop out of the **picker** for sheets that do not already include them. They do **not** strip columns off sheets that already selected that building. Reactivate puts them back in the picker. Floors are still hard-deleted only when they have no rooms.
+**Deactivate / reactivate** is catalog retirement, not a plan filter. Inactive rooms (or all rooms in an inactive building) drop out of the **picker**. They do **not** strip columns off sheets that already included those room ids. Reactivate puts them back in the picker. Floors are still hard-deleted only when they have no rooms.
 
-Regulars can still deactivate (they can edit catalog). That only changes what is offered next time someone picks buildings; it does not rewrite everyone else’s plans.
+Regulars can still deactivate (they can edit catalog). That only changes what the picker offers next; it does not rewrite everyone else’s room lists.
 
 ### Open questions
 
@@ -357,8 +357,8 @@ Regulars can still deactivate (they can edit catalog). That only changes what is
 | Home after login (one org) | **Decided:** Event list, not the grid |
 | Dedicated admin app / see all sheets | **Decided:** no; `#/org` for members/invites only |
 | Catalog UI | **Decided:** keep Phase 1 forms; scope to org; both roles can edit |
-| Deactivate room/building | **Decided:** retire from the picker only; do not strip columns from sheets that already included that building |
-| New sheet building picker | **Decided:** owner chooses buildings; default none selected (empty grid until they pick) |
+| Deactivate room/building | **Decided:** retire from the picker only; do not strip rooms from sheets that already included them |
+| New sheet room picker | **Decided:** owner chooses **rooms** (not whole buildings); default none selected. Optional “select all in this building” still stores room ids |
 
 ## Implementation plan
 
