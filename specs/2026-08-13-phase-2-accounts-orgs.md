@@ -284,6 +284,7 @@ Do **not** put a public URL in front of 2a–2d. Those builds are still local (o
 - Share button / extra people on a sheet / live sync / presence / audit log — [collaboration spec](2026-08-11-phase-2-collaboration.md)
 - Templates, proctors, CSV/PDF export, capacity dashboard (Phase 3)
 - Sheets import, mobile read-only, `team_count` (Phase 4)
+- Multi-day / day tabs / org `default_plan_days` (Phase 4 or Later)
 - Passwords, Clerk, magic links, non-Google identity
 - Global user directory, public org directory
 - CRDT / offline merge
@@ -416,7 +417,7 @@ Regulars can still deactivate (they can edit catalog). That only changes what th
 | Event vs sheet clock | **Decided:** Event stores defaults; copy onto the sheet at create; sheet can override; Event edits do not rewrite existing sheets |
 | Sheet title at create | **Decided:** yes; default “Untitled” |
 | Catalog history + plan pin/sync | **Future.** Spec: [specs/2026-08-13-catalog-history-and-plan-pins.md](2026-08-13-catalog-history-and-plan-pins.md). Phase 2 interim: live display by room id |
-| Multi-day events / day tabs | **Deferred.** Phase 2: one `plan_date` per sheet; multi-day = multiple sheets on the same Event unless we add day tabs later |
+| Multi-day events / day tabs | **Deferred (Phase 4 or Later).** Phase 2–3: one `plan_date` per sheet; multi-day workaround = multiple sheets per Event. When built: day tabs on a sheet + org `default_plan_days` (default **1**) to prefill Event create. Not needed for BMT |
 | Org admin promotions | **Decided:** org admins invite/approve/promote to admin; can demote other admins to regular; cannot demote self; no platform approval after bootstrap |
 | Platform superuser beyond bootstrap | **Future (not Phase 2).** Likely expand later (e.g. appoint admin on org with zero admins, support actions). Phase 2: create org + first admin only |
 
