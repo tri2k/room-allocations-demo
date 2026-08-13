@@ -321,6 +321,23 @@ That is how BMT comes into existence. After that, BMT’s org admin uses `#/org`
 
 **What an org admin’s first login looks like** (BMT already seeded): Event list with BmMT 2026, Catalog full of rooms, **their** sheet list empty, plus Org in the nav. Same empty plans as a regular; extra powers are Create Event and Org.
 
+### Catalog UI (vs Phase 1)
+
+Keep Phase 1’s `#/catalog`: three lists (buildings, floors, rooms), add forms, deactivate/reactivate, floor dropdown scoped to building. Do not restyle it. Activities and time blocks stay off this page (they already live on `#/event` in Phase 1; in Phase 2 they live on the **sheet**).
+
+What actually changes:
+
+| | Phase 1 | Phase 2 |
+| --- | --- | --- |
+| Whose rooms | Global (the whole database) | The **active org** only |
+| Who can edit | Anyone who can load the app | Org **admin and regular** (same forms). Not outsiders, not superuser-unless-member |
+| Building `code` unique | Globally (`DWIN` once) | Per org (BMT and another org may both have `DWIN`) |
+| Empty catalog | After a wipe / before seed | New org: empty lists + the same Add buttons. No-org users never see this page |
+| Two people editing | N/A (one local planner) | Last write wins; no live updates. Refresh to see the other person’s change |
+| Nav around it | Schedule \| Event \| Catalog | Events \| Catalog \| (Org if admin) |
+
+Not on the catalog page: invites, Event create, sheet list, “which buildings appear on a sheet” (`included_building_ids` is a **sheet** filter). Reset/reseed stays a dev control, not a catalog button; off in production.
+
 ### Open questions
 
 | Question | Status |
