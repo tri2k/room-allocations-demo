@@ -338,6 +338,14 @@ What actually changes:
 
 Not on the catalog page: invites, Event create, sheet list, “which buildings appear on a sheet” (`included_building_ids` is a **sheet** filter). Reset/reseed stays a dev control, not a catalog button; off in production.
 
+**Deactivate / reactivate** (same as Phase 1, org-wide). Buildings and rooms are soft-hidden (`is_active = false`), not deleted. Catalog still lists them as Inactive with Reactivate. Floors are hard-deleted only when they have no rooms (unchanged).
+
+On every sheet in that org, a deactivated room/building **drops out of the grid columns**. Allocations that pointed at it stay in the database; they are not shown until the room is reactivated (then those blocks come back on sheets that had them). Two planners’ drafts are all affected — this is shared catalog, not a per-sheet hide.
+
+Regulars can deactivate, because they can edit the catalog. That can hide Dwinelle from everyone’s grids; reactivate undoes it.
+
+Phase 1 quirk (still true until we fix it): hidden allocations can still 409 if you book the same room on that sheet. 2b should either keep showing a 409 or drop overlap for inactive rooms — default: **keep 409** so reactivate cannot create a silent double-book.
+
 ### Open questions
 
 | Question | Status |
@@ -350,6 +358,7 @@ Not on the catalog page: invites, Event create, sheet list, “which buildings a
 | Auto-create a sheet on first login | **Decided:** no; empty sheet list + New sheet |
 | Home after login (one org) | **Decided:** Event list, not the grid |
 | Dedicated admin app / see all sheets | **Decided:** no; `#/org` for members/invites only |
+| Catalog UI | **Decided:** keep Phase 1 forms; scope to org; both roles can edit |
 
 ## Implementation plan
 
