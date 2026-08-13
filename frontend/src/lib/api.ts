@@ -30,7 +30,12 @@ const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
   }
   const body = text ? JSON.parse(text) : null;
   if (!response.ok) {
-    throw new ApiError(response.status, formatDetail(body?.detail, response.status));
+    const detail = formatDetail(body?.detail, response.status);
+    const message =
+      response.status === 404 && detail === "Not Found"
+        ? "API route missing. Restart the FastAPI server so it matches this frontend."
+        : detail;
+    throw new ApiError(response.status, message);
   }
   return body as T;
 };

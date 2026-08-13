@@ -1,4 +1,4 @@
-import { DndContext, PointerSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { DndContext, PointerSensor, pointerWithin, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import {
   Fragment,
@@ -21,7 +21,10 @@ import {
 import AppNav from "./AppNav";
 import { buildBuildingGroups, buildFloorGroups, buildGridSlots, orderColumns } from "./lib/grid";
 import {
+  barrierKey,
   buildMergeMeta,
+  collectBarrierSeparatedGroup,
+  computeMoveDeltas,
   orderedRoomIds,
   resolveMemberIndex,
   runMemberIds,
@@ -155,6 +158,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
   const [orientation, setOrientation] = useState<"normal" | "transposed">(
     () => (localStorage.getItem(ORIENTATION_KEY) === "transposed" ? "transposed" : "normal")
   );
+  const [mergeSplitBarriers, setMergeSplitBarriers] = useState<Set<string>>(() => new Set());
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   selectedAllocationIdsRef.current = selectedAllocationIds;
@@ -180,10 +184,56 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
     [state.activities]
   );
   const mergedNormalMeta = useMemo(
-    () => buildMergeMeta(gridSlots, state.allocations),
-    [gridSlots, state.allocations]
+    () => buildMergeMeta(gridSlots, state.allocations, mergeSplitBarriers),
+    [gridSlots, state.allocations, mergeSplitBarriers]
   );
   const roomOrder = useMemo(() => orderedRoomIds(gridSlots), [gridSlots]);
+
+  const splitMergeRun = (memberIds: string[]) => {
+    if (memberIds.length <= 1) return;
+    setMergeSplitBarriers((previous) => {
+      const next = new Set(previous);
+      for (let index = 0; index < memberIds.length - 1; index += 1) {
+        next.add(barrierKey(memberIds[index], memberIds[index + 1]));
+      }
+      return next;
+    });
+    setAllocationSelection([]);
+  };
+
+  const mergeBarrierGroup = (allocationId: string) => {
+    const group = collectBarrierSeparatedGroup(
+      allocationId,
+      gridSlots,
+      state.allocations,
+      mergeSplitBarriers
+    );
+    if (!group || group.length <= 1) return;
+    setMergeSplitBarriers((previous) => {
+      const next = new Set(previous);
+      for (let index = 0; index < group.length - 1; index += 1) {
+        next.delete(barrierKey(group[index].id, group[index + 1].id));
+      }
+      return next;
+    });
+  };
+
+  const mergeToggleFor = (allocationId: string): { mode: "split" | "merge"; onClick: () => void } | undefined => {
+    const merged = mergedNormalMeta.get(allocationId);
+    if (merged?.isLeader && merged.span > 1) {
+      return { mode: "split", onClick: () => splitMergeRun(merged.memberIds) };
+    }
+    const group = collectBarrierSeparatedGroup(
+      allocationId,
+      gridSlots,
+      state.allocations,
+      mergeSplitBarriers
+    );
+    if (group && group[0].id === allocationId) {
+      return { mode: "merge", onClick: () => mergeBarrierGroup(allocationId) };
+    }
+    return undefined;
+  };
 
   useEffect(() => {
     if (!toast) return;
@@ -207,6 +257,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
       setAllocationSelection([]);
       setCollapsedBuildings(new Set());
       setCollapsedFloors(new Set());
+      setMergeSplitBarriers(new Set());
       setToast("Reset to seed schedule");
     } catch (error) {
       setToast(error instanceof Error ? error.message : "Reset failed");
@@ -318,10 +369,6 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
 
   const handleDragEnd = (event: DragEndEvent) => {
     const overId = String(event.over?.id ?? "");
-    if (!overId.startsWith("cell:")) return;
-
-    const [, roomId, slotRaw] = overId.split(":");
-    const slotIndex = Number(slotRaw);
     const dragData = event.active.data.current as
       | { type: "palette"; activityId: string }
       | { type: "allocation"; allocationId: string }
@@ -329,10 +376,12 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
     if (!dragData) return;
 
     if (dragData.type === "palette") {
+      if (!overId.startsWith("cell:")) return;
+      const [, roomId, slotRaw] = overId.split(":");
       const activity = activitiesById.get(dragData.activityId);
       if (!activity) return;
       const targetRoomIds = selectedRoomIds.length > 0 ? selectedRoomIds : [roomId];
-      void handleCreateFromPalette(activity, targetRoomIds, slotIndex);
+      void handleCreateFromPalette(activity, targetRoomIds, Number(slotRaw));
       return;
     }
 
@@ -350,17 +399,36 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
       allocationStartSlot(state.event.eventDate, state.event.gridStart, state.event.slotMinutes, source.endAt) -
         allocationStartSlot(state.event.eventDate, state.event.gridStart, state.event.slotMinutes, source.startAt)
     );
-    const clampedStart = clamp(slotIndex, 0, slotCount - durationSlots);
+    const sourceStart = allocationStartSlot(
+      state.event.eventDate,
+      state.event.gridStart,
+      state.event.slotMinutes,
+      source.startAt
+    );
+
+    const memberIndexes = members
+      .map((member) => roomOrder.indexOf(member.roomId))
+      .filter((index) => index >= 0);
+    if (memberIndexes.length === 0) return;
+
+    const dropRoomIndex = overId.startsWith("cell:") ? roomOrder.indexOf(overId.split(":")[1]) : null;
+    const { slotDelta, roomDelta } = computeMoveDeltas({
+      orientation,
+      pointerDelta: event.delta,
+      dropRoomIndex: dropRoomIndex === -1 ? null : dropRoomIndex,
+      memberRoomIndexes: memberIndexes,
+      slotSize: orientation === "normal" ? SLOT_HEIGHT : TRANSPOSE_SLOT_WIDTH,
+      roomSize: orientation === "normal" ? COLUMN_WIDTH : TRANSPOSE_ROW_HEIGHT
+    });
+
+    if (slotDelta === 0 && roomDelta === 0) return;
+
+    const clampedStart = clamp(sourceStart + slotDelta, 0, slotCount - durationSlots);
     const startAt = buildIso(state.event.eventDate, slotToTime(state.event.gridStart, state.event.slotMinutes, clampedStart));
     const endAt = buildIso(
       state.event.eventDate,
       slotToTime(state.event.gridStart, state.event.slotMinutes, clampedStart + durationSlots)
     );
-
-    const sourceRoomIndex = roomOrder.indexOf(source.roomId);
-    const dropRoomIndex = roomOrder.indexOf(roomId);
-    if (sourceRoomIndex < 0 || dropRoomIndex < 0) return;
-    const roomDelta = dropRoomIndex - sourceRoomIndex;
 
     const nextMembers: Allocation[] = [];
     for (const member of members) {
@@ -381,6 +449,14 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
         endAt
       });
     }
+
+    const unchanged = nextMembers.every(
+      (allocation, index) =>
+        allocation.roomId === members[index].roomId &&
+        allocation.startAt === members[index].startAt &&
+        allocation.endAt === members[index].endAt
+    );
+    if (unchanged) return;
 
     const previous = members;
     replaceAllocations(nextMembers);
@@ -461,6 +537,14 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
     const ids = Array.from(new Set(allocationIds));
     if (ids.length === 0) return;
     const previous = state.allocations;
+    setMergeSplitBarriers((current) => {
+      const next = new Set<string>();
+      for (const barrier of current) {
+        const [leftId, rightId] = barrier.split("|");
+        if (!ids.includes(leftId) && !ids.includes(rightId)) next.add(barrier);
+      }
+      return next;
+    });
     setState((current) =>
       current
         ? { ...current, allocations: current.allocations.filter((allocation) => !ids.includes(allocation.id)) }
@@ -717,7 +801,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
   };
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragEnd={handleDragEnd}>
       <div className="app">
         <header className="topbar">
           <div>
@@ -929,6 +1013,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                           onClearAllocationSelection={clearAllocationSelection}
                           blockTitle={blockTitle}
                           mergeMeta={mergedNormalMeta}
+                          mergeToggleFor={mergeToggleFor}
                         />
                       )
                     )}
@@ -1150,6 +1235,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                                   onSelect={(id, selectEvent) => selectAllocationFromCard(id, selectEvent)}
                                   onDelete={(id) => void removeAllocations(idsForEdit(id))}
                                   onResize={onResize}
+                                  mergeToggle={mergeToggleFor(allocation.id)}
                                 />
                               );
                             })}
@@ -1246,6 +1332,7 @@ type RoomColumnProps = {
   onClearAllocationSelection: () => void;
   blockTitle: (activity: Activity, allocation: Allocation) => string;
   mergeMeta: Map<string, MergeMeta>;
+  mergeToggleFor: (allocationId: string) => { mode: "split" | "merge"; onClick: () => void } | undefined;
 };
 
 function RoomColumn({
@@ -1265,7 +1352,8 @@ function RoomColumn({
   onSelectAllocation,
   onClearAllocationSelection,
   blockTitle,
-  mergeMeta
+  mergeMeta,
+  mergeToggleFor
 }: RoomColumnProps) {
   return (
     <div
@@ -1291,7 +1379,7 @@ function RoomColumn({
         const width = roomSpan * COLUMN_WIDTH - 4;
         const title =
           runIds.length > 1
-            ? `${blockTitle(activity, allocation)} · Click all · Alt-click one room`
+            ? `${blockTitle(activity, allocation)} · Click all · Alt-click one room · Split to keep rooms separate`
             : blockTitle(activity, allocation);
 
         return (
@@ -1309,6 +1397,7 @@ function RoomColumn({
             selected={selectedAllocationIds.includes(allocation.id)}
             onSelect={onSelectAllocation}
             title={title}
+            mergeToggle={mergeToggleFor(allocation.id)}
           />
         );
       })}
@@ -1351,6 +1440,7 @@ type AllocationCardProps = {
   selected: boolean;
   onSelect: (allocationId: string, event: AllocationSelectEvent) => void;
   title: string;
+  mergeToggle?: { mode: "split" | "merge"; onClick: () => void };
 };
 
 function AllocationCard({
@@ -1365,7 +1455,8 @@ function AllocationCard({
   onDelete,
   selected,
   onSelect,
-  title
+  title,
+  mergeToggle
 }: AllocationCardProps) {
   const nodeRef = useRef<HTMLDivElement | null>(null);
   const originRef = useRef<{ left: number; top: number } | null>(null);
@@ -1400,7 +1491,7 @@ function AllocationCard({
   const listeners = {
     ...draggable.listeners,
     onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => {
-      if ((event.target as HTMLElement).closest(".resize-handle, .allocation-delete")) return;
+      if ((event.target as HTMLElement).closest(".resize-handle, .allocation-delete, .allocation-merge-toggle")) return;
       onSelect(allocation.id, { ...toSelectEvent(event), commit: false });
       const rect = event.currentTarget.getBoundingClientRect();
       originRef.current = { left: rect.left, top: rect.top };
@@ -1497,6 +1588,20 @@ function AllocationCard({
       }}
     >
       <div className="resize-handle top" onPointerDown={onHandlePointerDown("start")} />
+      {mergeToggle ? (
+        <button
+          className="allocation-merge-toggle"
+          type="button"
+          title={mergeToggle.mode === "split" ? "Split into separate rooms" : "Merge into one block"}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            mergeToggle.onClick();
+          }}
+        >
+          {mergeToggle.mode === "split" ? "⫽" : "⊞"}
+        </button>
+      ) : null}
       <button
         className="allocation-delete"
         type="button"
@@ -1531,6 +1636,7 @@ type AllocationCardHorizontalProps = {
   onSelect: (allocationId: string, event: AllocationSelectEvent) => void;
   onDelete: (allocationId: string) => void;
   onResize: (allocationId: string, direction: "start" | "end", deltaSlots: number) => void;
+  mergeToggle?: { mode: "split" | "merge"; onClick: () => void };
 };
 
 function AllocationCardHorizontal({
@@ -1545,7 +1651,8 @@ function AllocationCardHorizontal({
   blockTitle,
   onSelect,
   onDelete,
-  onResize
+  onResize,
+  mergeToggle
 }: AllocationCardHorizontalProps) {
   const originRef = useRef<{ left: number; top: number } | null>(null);
   const resizeCleanupRef = useRef<(() => void) | null>(null);
@@ -1574,7 +1681,7 @@ function AllocationCardHorizontal({
   const listeners = {
     ...draggable.listeners,
     onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => {
-      if ((event.target as HTMLElement).closest(".resize-handle, .allocation-delete")) return;
+      if ((event.target as HTMLElement).closest(".resize-handle, .allocation-delete, .allocation-merge-toggle")) return;
       onSelect(allocation.id, { ...toSelectEvent(event), commit: false });
       const rect = event.currentTarget.getBoundingClientRect();
       originRef.current = { left: rect.left, top: rect.top };
@@ -1671,6 +1778,20 @@ function AllocationCardHorizontal({
       }}
     >
       <div className="resize-handle left" onPointerDown={onHandlePointerDown("start")} />
+      {mergeToggle ? (
+        <button
+          className="allocation-merge-toggle"
+          type="button"
+          title={mergeToggle.mode === "split" ? "Split into separate rooms" : "Merge into one block"}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            mergeToggle.onClick();
+          }}
+        >
+          {mergeToggle.mode === "split" ? "⫽" : "⊞"}
+        </button>
+      ) : null}
       <button
         className="allocation-delete"
         type="button"
