@@ -53,7 +53,7 @@ Organization
 
 **Sheet.** One private plan for one Event. Owner has full control of structure (grid, activities, Lunch bands, allocations). New sheet: empty allocations; defaults such as 15-minute slots, 07:00–16:15, empty activity and time-block lists (not copied from the Event).
 
-Rooms still come from the org catalog. A sheet may filter with `included_building_ids`. Events do not own buildings.
+Rooms still come from the org catalog. The sheet owner **picks buildings** (`included_building_ids`); that is what appears on their grid. Events do not own buildings. Catalog deactivate does not rewrite other people’s picks.
 
 ### Permissions
 
@@ -138,7 +138,7 @@ Do **not** put a public URL in front of 2a–2d. Those builds are still local (o
 - Strip Event down to `name` + optional `event_date` (keep a temporary global Event list until 2c).
 - `GET /api/v1/sheets/{id}/schedule` is what the grid loads (Event label + catalog + this sheet).
 - UI: Event list → **your** sheets + new sheet → grid. Sheet settings replace today’s Event page for grid/activities/time blocks.
-- New sheet defaults: 15 min, 07:00–16:15, empty palette and time blocks, empty allocations.
+- New sheet defaults: 15 min, 07:00–16:15, empty palette and time blocks, empty allocations, **no buildings selected** until the owner picks.
 - Migration: each existing Event becomes one sheet owned by the seed-owner user; copy current children and grid fields onto that sheet.
 
 **Out.** Orgs, admin vs regular, invites, public deploy. Any logged-in user can still create Events (2c restricts that). Catalog is still global.
@@ -282,7 +282,7 @@ After Google sign-in, pick the first matching state:
 
 Home after login if they have exactly one org: **Event list**, not the grid. Opening BmMT 2026 shows their empty sheet list.
 
-**4. First sheet they create.** Empty plan: default 15 min / 07:00–16:15, **no** activities, **no** Lunch bands, **no** allocations. They add Puzzle etc. themselves. Title default “Untitled.”
+**4. First sheet they create.** Empty plan: default 15 min / 07:00–16:15, **no** activities, **no** Lunch bands, **no** allocations, **no** building columns until they pick buildings. Title default “Untitled.”
 
 **5. New org admin** (superuser created an empty org, appointed them). Same as (3) but they **can** Create Event and invite. Catalog and Event list may both be empty until they add rooms and an Event. Still no sheets until they make one.
 
@@ -336,15 +336,13 @@ What actually changes:
 | Two people editing | N/A (one local planner) | Last write wins; no live updates. Refresh to see the other person’s change |
 | Nav around it | Schedule \| Event \| Catalog | Events \| Catalog \| (Org if admin) |
 
-Not on the catalog page: invites, Event create, sheet list, “which buildings appear on a sheet” (`included_building_ids` is a **sheet** filter). Reset/reseed stays a dev control, not a catalog button; off in production.
+Not on the catalog page: invites, Event create, sheet list. Reset/reseed stays a dev control, not a catalog button; off in production.
 
-**Deactivate / reactivate** (same as Phase 1, org-wide). Buildings and rooms are soft-hidden (`is_active = false`), not deleted. Catalog still lists them as Inactive with Reactivate. Floors are hard-deleted only when they have no rooms (unchanged).
+**Which rooms appear on a plan** is a **sheet** choice, not Catalog deactivate. When creating or editing a sheet, the owner picks buildings from the org catalog (Phase 1’s `included_building_ids`, now on the sheet). The grid columns are the rooms in those buildings. Another member’s sheet is unaffected. Default for a new sheet: no buildings selected until they pick (empty grid + picker), so they only see what they need.
 
-On every sheet in that org, a deactivated room/building **drops out of the grid columns**. Allocations that pointed at it stay in the database; they are not shown until the room is reactivated (then those blocks come back on sheets that had them). Two planners’ drafts are all affected — this is shared catalog, not a per-sheet hide.
+**Deactivate / reactivate** is catalog retirement, not a plan filter. Buildings and rooms stay in the Catalog list as Inactive. They drop out of the **picker** for sheets that do not already include them. They do **not** strip columns off sheets that already selected that building. Reactivate puts them back in the picker. Floors are still hard-deleted only when they have no rooms.
 
-Regulars can deactivate, because they can edit the catalog. That can hide Dwinelle from everyone’s grids; reactivate undoes it.
-
-Phase 1 quirk (still true until we fix it): hidden allocations can still 409 if you book the same room on that sheet. 2b should either keep showing a 409 or drop overlap for inactive rooms — default: **keep 409** so reactivate cannot create a silent double-book.
+Regulars can still deactivate (they can edit catalog). That only changes what is offered next time someone picks buildings; it does not rewrite everyone else’s plans.
 
 ### Open questions
 
@@ -359,6 +357,8 @@ Phase 1 quirk (still true until we fix it): hidden allocations can still 409 if 
 | Home after login (one org) | **Decided:** Event list, not the grid |
 | Dedicated admin app / see all sheets | **Decided:** no; `#/org` for members/invites only |
 | Catalog UI | **Decided:** keep Phase 1 forms; scope to org; both roles can edit |
+| Deactivate room/building | **Decided:** retire from the picker only; do not strip columns from sheets that already included that building |
+| New sheet building picker | **Decided:** owner chooses buildings; default none selected (empty grid until they pick) |
 
 ## Implementation plan
 
