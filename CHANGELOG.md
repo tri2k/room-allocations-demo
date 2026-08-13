@@ -36,6 +36,7 @@
 ### Regression fixes (2026-08-13)
 
 - Slide a merged run into neighboring rooms without 409: patch members in vacate-first order and roll back on failure
+- Group resize uses the same sequential persist + rollback so a 409 on one room cannot leave siblings saved
 - Collapsed building/floor headers expand on a single click; ignore the second click of a double-click so they do not snap shut
 
 ## v0 — Vision demo (2026-08-11)

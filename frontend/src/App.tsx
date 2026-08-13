@@ -433,20 +433,10 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
 
     replaceAllocations(nextMembers);
     setAllocationSelection(nextMembers.map((allocation) => allocation.id));
-    void (async () => {
-      try {
-        const results = await Promise.all(
-          nextMembers.map((allocation) =>
-            patchAllocation(allocation.id, { startAt: allocation.startAt, endAt: allocation.endAt })
-          )
-        );
-        replaceAllocations(results.map((result) => result.allocation));
-      } catch (error) {
-        replaceAllocations(previous);
-        if (error instanceof ApiError && error.status === 409) setToast("Resize blocked (overlap)");
-        else setToast(error instanceof Error ? error.message : "Resize failed");
-      }
-    })();
+    void persistAllocationPatches(previous, nextMembers, (error) => {
+      if (error instanceof ApiError && error.status === 409) setToast("Resize blocked (overlap)");
+      else setToast(error instanceof Error ? error.message : "Resize failed");
+    });
   };
 
   const removeAllocations = async (allocationIds: string[]) => {
