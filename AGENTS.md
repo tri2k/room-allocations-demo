@@ -52,7 +52,8 @@ Frontend `npm run build` / `npm run preview` still apply inside `frontend/`.
 - Frontend HTTP only through `frontend/src/lib/api.ts`
 - Allocations are one row per room; merged blocks are display-only
 - JSON is camelCase; SQL is snake_case
-- Overlap on one room is HTTP 409 (bulk reports `skipped`)
+- Overlap on one room is HTTP 409 (bulk create reports `skipped`)
+- Group edit of allocations uses atomic `bulk-patch` / `bulk-delete`
 
 ## Cursor Cloud specific instructions
 

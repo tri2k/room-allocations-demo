@@ -9,6 +9,7 @@ from app.errors import conflict, not_found
 from app.models import Floor, Room
 from app.schemas import FloorOut, FloorUpdate
 from app.serialize import floor_out
+from app.write import commit_or_conflict
 
 router = APIRouter(prefix="/api/v1", tags=["floors"])
 
@@ -25,7 +26,7 @@ def update_floor(floor_id: UUID, body: FloorUpdate, db: Session = Depends(get_db
     row = _floor(db, floor_id)
     for key, value in body.model_dump(exclude_unset=True).items():
         setattr(row, key, value)
-    db.commit()
+    commit_or_conflict(db)
     db.refresh(row)
     return floor_out(row)
 
@@ -33,8 +34,13 @@ def update_floor(floor_id: UUID, body: FloorUpdate, db: Session = Depends(get_db
 @router.delete("/floors/{floor_id}", status_code=204)
 def delete_floor(floor_id: UUID, db: Session = Depends(get_db)) -> None:
     row = _floor(db, floor_id)
-    room_count = db.scalar(select(func.count()).select_from(Room).where(Room.floor_id == floor_id)) or 0
-    if room_count > 0:
+    active_count = (
+        db.scalar(
+            select(func.count()).select_from(Room).where(Room.floor_id == floor_id, Room.is_active.is_(True))
+        )
+        or 0
+    )
+    if active_count > 0:
         raise conflict("Cannot delete a floor that still has rooms")
     db.delete(row)
     db.commit()

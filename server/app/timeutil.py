@@ -1,4 +1,4 @@
-from datetime import datetime, time
+from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
 
 from app.models import Event
@@ -17,3 +17,9 @@ def parse_event_dt(value: datetime, event: Event) -> datetime:
 
 def format_event_dt(value: datetime, event: Event) -> str:
     return value.astimezone(ZoneInfo(event.timezone)).isoformat()
+
+
+def retarget_dt(value: datetime, old_timezone: str, new_date: date, new_timezone: str) -> datetime:
+    """Keep the wall-clock time, move it onto new_date in new_timezone."""
+    wall = value.astimezone(ZoneInfo(old_timezone)).time()
+    return datetime.combine(new_date, wall, tzinfo=ZoneInfo(new_timezone))

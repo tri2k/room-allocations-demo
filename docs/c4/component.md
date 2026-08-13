@@ -43,7 +43,7 @@ flowchart TB
 
 ## Data in memory
 
-`ScheduleState` is still the SPA model: event metadata, buildings, floors, rooms, activities, time blocks, and allocations. It is loaded from `GET /api/v1/events/{id}/schedule` and mutated through allocation endpoints. Allocations remain one row per room even when adjacent rooms are drawn as one merged block.
+`ScheduleState` is still the SPA model: event metadata, buildings, floors, rooms, activities, time blocks, and allocations. It is loaded from `GET /api/v1/events/{id}/schedule` and mutated through allocation endpoints. Allocations remain one row per room even when adjacent rooms are drawn as one merged block. Group move, resize, and delete persist in one request (`POST .../allocations/bulk-patch` and `POST .../allocations/bulk-delete`) so sibling rooms in a merged run cannot 409 each other or persist only some of the edits.
 
 ## UI modes
 

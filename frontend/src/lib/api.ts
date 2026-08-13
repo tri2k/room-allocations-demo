@@ -30,10 +30,18 @@ const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
   }
   const body = text ? JSON.parse(text) : null;
   if (!response.ok) {
-    const detail = typeof body?.detail === "string" ? body.detail : `Request failed (${response.status})`;
-    throw new ApiError(response.status, detail);
+    throw new ApiError(response.status, formatDetail(body?.detail, response.status));
   }
   return body as T;
+};
+
+const formatDetail = (detail: unknown, status: number): string => {
+  if (typeof detail === "string" && detail.length > 0) return detail;
+  if (Array.isArray(detail) && detail.length > 0) {
+    const first = detail[0] as { msg?: unknown };
+    if (typeof first?.msg === "string" && first.msg.length > 0) return first.msg;
+  }
+  return `Request failed (${status})`;
 };
 
 export type Warning = { code: string; message: string };
@@ -96,8 +104,23 @@ export const patchAllocation = (
 ): Promise<AllocationWrite> =>
   request(`/api/v1/allocations/${allocationId}`, { method: "PATCH", body: JSON.stringify(body) });
 
+export const patchAllocations = (
+  eventId: string,
+  items: Array<{ id: string; roomId?: string; startAt?: string; endAt?: string; notes?: string }>
+): Promise<{ allocations: Allocation[]; warnings: Warning[] }> =>
+  request(`/api/v1/events/${eventId}/allocations/bulk-patch`, {
+    method: "POST",
+    body: JSON.stringify({ items })
+  });
+
 export const deleteAllocation = (allocationId: string): Promise<void> =>
   request(`/api/v1/allocations/${allocationId}`, { method: "DELETE" });
+
+export const deleteAllocations = (eventId: string, ids: string[]): Promise<void> =>
+  request(`/api/v1/events/${eventId}/allocations/bulk-delete`, {
+    method: "POST",
+    body: JSON.stringify({ ids })
+  });
 
 export const reseed = (): Promise<EventInfo> => request("/api/v1/dev/reseed", { method: "POST" });
 
