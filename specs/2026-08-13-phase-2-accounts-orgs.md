@@ -23,7 +23,7 @@ Stakeholders need Google sign-in, an org that owns the room catalog, Events as l
 | Sheet | The plan: grid settings, activities, time blocks, allocations, title, owner | Same flexibility as a spreadsheet |
 | Sheet privacy | Owner only; **no Share button** | Co-edit like Google Sheets is a later phase |
 | Many sheets | No uniqueness on `(event_id, owner_id)` | Multiple private drafts per person per Event |
-| Org roles | `admin` vs `regular` only | Admin: invites + create Events. Regular: catalog edits + own sheets. Both plan on their own sheets |
+| Org roles | `admin` vs `regular` only | Admin: invites + create Events + member roles. Regular: catalog edits + own sheets. Both plan on their own sheets |
 | Catalog | Org-owned; **admin and regular can edit** | Rooms change slowly; last-write-wins is enough |
 | Invites | Exact email, or join-code + request | Org admins must not search all platform users |
 | Overlap | Per **sheet**, not per Event | Two drafts may both book DWIN155 at 9:00 |
@@ -47,7 +47,27 @@ Organization
 
 **User.** Created on first Google sign-in (or earlier as an email-only row for seed/invites). Stable id is Google `sub` once they have signed in. Invite matching uses **verified** Google email.
 
-**Platform superuser.** Not an org role. Emails listed in `PLATFORM_SUPERUSER_EMAILS`. Can create orgs and appoint the first org admin by email. May look up a user by exact email for that purpose. Cannot browse all users as a directory.
+**Platform superuser.** Not an org role. Emails listed in `PLATFORM_SUPERUSER_EMAILS`. Can create orgs and appoint the **first** org admin by email when the org is created. Does not manage ongoing org membership or role changes after that. May look up a user by exact email for org bootstrap only. Cannot browse all users as a directory.
+
+### Org admin lifecycle
+
+Who becomes an org admin, and who stays one, is an **org responsibility**. The platform does not vet or approve promotions after bootstrap.
+
+**1. Bootstrap (once per org).** A platform superuser creates the org on `#/super` and appoints the **first** admin by exact email. That person becomes `admin` on first Google sign-in (or immediately if they already have an account). Superuser does not invite ongoing members or change roles afterward.
+
+**2. Adding admins (org admins only).** An existing org admin can create more admins in three ways:
+
+- **Email invite** with role `admin` (same flow as inviting a regular).
+- **Join-code approval** with role `admin` when accepting a pending request.
+- **Promote** an existing member from `regular` → `admin` on `#/org`.
+
+**3. Demoting admins (org admins only).** Any org admin can set another member’s role to `regular` (`admin` → `regular`). Admins can also demote themselves. There is no platform rule that an org must keep at least one admin — if every admin demotes themselves or leaves, the org may have no one who can invite, create Events, or manage roles until a superuser intervenes manually (out of scope for Phase 2 self-service recovery).
+
+**4. Removing members.** Org admins can remove a member from the org entirely (not just demote). Removed users lose catalog/Event access; their private sheets remain owned by them but are inaccessible until they rejoin.
+
+**5. What regulars cannot do.** Regular members cannot invite, approve join requests, rotate join codes, create Events, or change anyone’s role.
+
+Trust model: orgs are expected to appoint trustworthy admins. The product does not enforce admin count, approval workflows, or superuser sign-off on promotions.
 
 **Event.** Occasion label in an org (`name`, optional `event_date`) plus **default clock settings** for new sheets: timezone, grid start, grid end, slot granularity. Those defaults **copy onto a sheet at create**; later Event edits do not rewrite existing sheets. Event does not own rooms, activities, or allocations. Event page details later.
 
@@ -77,6 +97,8 @@ Open for later discussion: room picker UX; Event page (what admins edit besides 
 | ------ | ------------------ | --------- | ----------- | --------- |
 | Create org; appoint first admin by email | Yes | No | No | No |
 | Invite / join requests / rotate join code | No | Yes | No | No |
+| Promote member to admin; demote admin to regular | No | Yes | No | No |
+| Remove member from org | No | Yes | No | No |
 | List/read Events in the org | No* | Yes | Yes | No |
 | Create / rename / archive Event | No* | Yes | No | No |
 | Edit catalog (buildings, floors, rooms) | No* | Yes | Yes | No |
@@ -100,8 +122,9 @@ Non-owners requesting a sheet (or its allocations) get **404**, not 403, so ids 
 
 Do **not** add `GET /users?q=`.
 
-1. **Email invite.** Org admin types a full email and a role (`admin` or `regular`). No typeahead over all users. (Superuser appoints the **first** admin only when creating an org on `#/super`, not via ongoing org invites.)
+1. **Email invite.** Org admin types a full email and a role (`admin` or `regular`). No typeahead over all users. Inviting as `admin` is how most future admins join. (Superuser appoints the **first** admin only when creating an org on `#/super`, not via ongoing org invites.)
 2. **Join code.** Admin copies a link/code. Signed-in user requests access. Admin sees **pending requests for this org only** and approves as `admin` or `regular`.
+3. **Role change (existing members).** On `#/org`, an org admin sets any member’s role to `admin` or `regular` (promote or demote). See [Org admin lifecycle](#org-admin-lifecycle).
 
 Search, if any, is over this org’s members and pending requests.
 
@@ -213,7 +236,7 @@ Do **not** put a public URL in front of 2a–2d. Those builds are still local (o
 
 - Email invite API + `#/org` UI: always “Invite sent”; pending invite attaches on first Google login with verified email.
 - Join code link + request-access flow; admin pending inbox (org-only); approve as `admin` or `regular`.
-- `#/org`: member list, invite, join code copy/rotate, pending requests.
+- `#/org`: member list, invite, join code copy/rotate, pending requests, **promote/demote** roles (`regular` ↔ `admin`), remove member.
 - `#/super`: create org, appoint first admin by email.
 - Post-invite empty state for new regular: Event list, empty sheet list, catalog visible (per First login section).
 
@@ -226,8 +249,9 @@ Do **not** put a public URL in front of 2a–2d. Those builds are still local (o
 3. No API lists platform-wide users; member search is org-only.
 4. Superuser creates second org + admin via `#/super`.
 5. New regular does not receive seed-owner demo sheet.
+6. Admin promotes a regular to admin; demoted admin becomes regular and loses invite/Event-create powers.
 
-**Done when** all five pass on localhost.
+**Done when** all six pass on localhost.
 
 ---
 
@@ -331,7 +355,7 @@ Today the nav is Schedule | Event | Catalog. Phase 2 nav for someone in an org:
 
 **`#/org` (org admin only).** This is the “admin screen”:
 
-- Member list for **this org only** (name, email, role). Change role or remove. Not a search of all platform users.
+- Member list for **this org only** (name, email, role). Promote `regular` → `admin`, demote `admin` → `regular`, or remove from org. Not a search of all platform users.
 - Invite: type a full email, pick `admin` or `regular`, always “Invite sent.”
 - Join code: show / copy / rotate.
 - Pending join requests: approve as admin or regular, or deny.
@@ -343,7 +367,7 @@ Regulars who hit `#/org` get 404 or are sent back to Events.
 - Create an organization (name).
 - Appoint first org admin by exact email.
 
-That is how BMT comes into existence. After that, BMT’s org admin uses `#/org`. Superuser does not see BMT members or sheets unless they are also a member.
+That is how BMT comes into existence. After that, **only org admins** create additional admins (invite, join approval, or promote). Superuser does not see BMT members or sheets unless they are also a member.
 
 **What an org admin’s first login looks like** (BMT already seeded): Event list with BmMT 2026, Catalog full of rooms, **their** sheet list empty, plus Org in the nav. Same empty plans as a regular; extra powers are Create Event and Org.
 
@@ -391,6 +415,7 @@ Regulars can still deactivate (they can edit catalog). That only changes what th
 | Sheet title at create | **Decided:** yes; default “Untitled” |
 | Catalog history + plan pin/sync | **Future.** Spec: [specs/2026-08-13-catalog-history-and-plan-pins.md](2026-08-13-catalog-history-and-plan-pins.md). Phase 2 interim: live display by room id |
 | Multi-day events / day tabs | **Deferred.** Phase 2: one `plan_date` per sheet; multi-day = multiple sheets on the same Event unless we add day tabs later |
+| Org admin promotions | **Decided:** org admins invite/approve/promote to admin; can demote other admins to regular; no platform approval after bootstrap |
 
 ## Implementation plan
 
@@ -408,7 +433,8 @@ Phase 2 is complete when **all** of 2a–2e “done when” lists pass, and:
 
 - [ ] Stakeholders can open a public HTTPS URL and sign in with Google
 - [ ] Unauthenticated API mutation is impossible
-- [ ] Org regular cannot create Events or invite
+- [ ] Org regular cannot create Events, invite, or change member roles
+- [ ] Org admin can promote regular → admin and demote admin → regular
 - [ ] Org regular can edit catalog and fully edit **their** sheets
 - [ ] New sheet setup: pick rooms (≥1), optional activities, clock from Event defaults, then grid
 - [ ] Sheets store `included_room_ids`; grid shows current catalog for those rooms (interim)

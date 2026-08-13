@@ -80,7 +80,7 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | Question | Status |
 | -------- | ------ |
 | Slot granularity | **Decided:** 15 min default; per-sheet in Phase 2 (per-event in Phase 1 code) |
-| Multi-day events | **Decided:** one grid per day, day tabs |
+| Multi-day events | **Decided (long term):** one grid per day, day tabs. **Phase 2:** one `plan_date` per sheet; multi-day = multiple sheets on the same Event until day tabs ship |
 | v0 deploy | **Decided:** static host |
 | Phase 1 hosted deploy | **Decided:** local-only |
 | Registration / team counts | **Decided:** later (Phase 4); not on Event |
@@ -88,6 +88,6 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | Adopt GUIDELINES frontend extras (Zustand, Tailwind, pnpm, …) | **Decided (Phase 1 spec):** no; keep v0 UI stack |
 | Auth vendor | **Decided (Phase 2 spec):** Google OAuth only |
 | Event vs sheet | **Decided (Phase 2 spec):** Event is a category; sheet is the plan |
-| Org roles | **Decided (Phase 2 spec):** admin vs regular |
+| Org roles | **Decided (Phase 2 spec):** admin vs regular; org admins promote/demote; superuser appoints first admin only |
 | Public HTTPS | **Decided:** in Phase 2e. Host vendor TBD |
 | Catalog history / plan pins | **Future.** [specs/2026-08-13-catalog-history-and-plan-pins.md](specs/2026-08-13-catalog-history-and-plan-pins.md) |
