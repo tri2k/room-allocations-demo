@@ -248,9 +248,11 @@ Suggested hash routes (keep the current router style; no new router library):
 - `#/login`
 - `#/orgs` (or auto-select if exactly one)
 - `#/catalog` — org catalog
-- `#/events` — Event labels (admin create control hidden for regulars)
+- `#/events` — Event labels (admin: Create Event; regulars: list only)
 - `#/events/{eventId}/sheets` — **your** sheets
 - `#/sheets/{sheetId}` — grid (replaces loading “the” Event schedule)
+- `#/org` — members, invites, join code, pending requests (org admin only)
+- `#/super` — create org, appoint first admin (platform superuser only)
 - Event-settings UI today that edits grid/activities/time blocks moves to the sheet
 
 ### First login and empty states
@@ -288,6 +290,37 @@ Home after login if they have exactly one org: **Event list**, not the grid. Ope
 
 If they belong to **multiple orgs**, show an org picker first; each org has its own catalog, Events, and sheet lists.
 
+### Admin screens
+
+There is **no** separate admin app and **no** screen that lists everyone’s sheets. An org admin uses the same Events / Catalog / grid as a regular, plus extra controls. Being admin does not open other people’s plans.
+
+Today the nav is Schedule | Event | Catalog. Phase 2 nav for someone in an org:
+
+| Nav | Regular | Org admin |
+| --- | ------- | --------- |
+| Events | List of Event labels; open one → **their** sheet list | Same, plus **Create Event**; rename/archive an Event |
+| Catalog | Buildings / floors / rooms (edit) | Same (not admin-only) |
+| Org | Hidden | Members and invites (`#/org`) |
+| Grid | Only via their own sheet | Only via their own sheet |
+
+**`#/org` (org admin only).** This is the “admin screen”:
+
+- Member list for **this org only** (name, email, role). Change role or remove. Not a search of all platform users.
+- Invite: type a full email, pick `admin` or `regular`, always “Invite sent.”
+- Join code: show / copy / rotate.
+- Pending join requests: approve as admin or regular, or deny.
+
+Regulars who hit `#/org` get 404 or are sent back to Events.
+
+**Platform superuser** (your email in `PLATFORM_SUPERUSER_EMAILS`) is a different, small screen (`#/super` or similar), not `#/org`:
+
+- Create an organization (name).
+- Appoint first org admin by exact email.
+
+That is how BMT comes into existence. After that, BMT’s org admin uses `#/org`. Superuser does not see BMT members or sheets unless they are also a member.
+
+**What an org admin’s first login looks like** (BMT already seeded): Event list with BmMT 2026, Catalog full of rooms, **their** sheet list empty, plus Org in the nav. Same empty plans as a regular; extra powers are Create Event and Org.
+
 ### Open questions
 
 | Question | Status |
@@ -299,6 +332,7 @@ If they belong to **multiple orgs**, show an org picker first; each org has its 
 | Superuser UI vs env+API only in 2c | **Decided:** API/seed in 2c, UI in 2d |
 | Auto-create a sheet on first login | **Decided:** no; empty sheet list + New sheet |
 | Home after login (one org) | **Decided:** Event list, not the grid |
+| Dedicated admin app / see all sheets | **Decided:** no; `#/org` for members/invites only |
 
 ## Implementation plan
 
