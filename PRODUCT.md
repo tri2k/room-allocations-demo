@@ -38,7 +38,7 @@ As-built types for v0: [specs/2026-08-11-v0-vision-demo.md](specs/2026-08-11-v0-
 
 As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **current commit**, not a future target.
 
-**Phase 2 (next):** Google OAuth, public HTTPS, orgs. Org owns the catalog. Event is a label. Each user owns private sheets. No Share button and no live sync yet. Rooms are still not owned by Events — sheets book rooms from the org catalog; the sheet owner picks which **rooms** appear as columns.
+**Phase 2 (next):** Google OAuth, public HTTPS, orgs. Org owns the catalog. Event is a label with default clock settings for new sheets. Each user owns private sheets (room pick list, activities, clock, allocations). No Share button and no live sync yet.
 
 **Later:** invite another account onto a **sheet** (viewer / editor), then WebSockets / presence.
 

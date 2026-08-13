@@ -19,7 +19,7 @@ Stakeholders need Google sign-in, an org that owns the room catalog, Events as l
 | Auth vendor | **Google OAuth only** (no passwords, Clerk, or magic links) | BMT / Berkeley users already have Google accounts |
 | Public URL | **In this phase**, last subphase (2e) | Stakeholders cannot use `localhost` |
 | Daily dev | Keep `localhost` OAuth redirect **and** the public redirect on the same Google client | Avoid “login only works after deploy” |
-| Event | **Category only**: `name`, optional `event_date`, `org_id` | Admins must not dictate grid/palette for other planners |
+| Event | Label + **default clock** for new sheets (`name`, optional `event_date`, timezone, grid start/end, slot size, `org_id`). Does not own rooms, activities, or allocations | Admins set occasion + sensible prefills; planners own structure on the sheet |
 | Sheet | The plan: grid settings, activities, time blocks, allocations, title, owner | Same flexibility as a spreadsheet |
 | Sheet privacy | Owner only; **no Share button** | Co-edit like Google Sheets is a later phase |
 | Many sheets | No uniqueness on `(event_id, owner_id)` | Multiple private drafts per person per Event |
@@ -100,7 +100,7 @@ Non-owners requesting a sheet (or its allocations) get **404**, not 403, so ids 
 
 Do **not** add `GET /users?q=`.
 
-1. **Email invite.** Admin or superuser types a full email and a role (`admin` or `regular`). No typeahead over all users.
+1. **Email invite.** Org admin types a full email and a role (`admin` or `regular`). No typeahead over all users. (Superuser appoints the **first** admin only when creating an org on `#/super`, not via ongoing org invites.)
 2. **Join code.** Admin copies a link/code. Signed-in user requests access. Admin sees **pending requests for this org only** and approves as `admin` or `regular`.
 
 Search, if any, is over this org’s members and pending requests.
@@ -113,9 +113,9 @@ Do **not** put a public URL in front of 2a–2d. Those builds are still local (o
 
 ```
 2a Google sign-in
- → 2b Private sheets (Event becomes a label)
+ → 2b Private sheets + new-sheet setup (Event label + clock defaults)
    → 2c Orgs, catalog ownership, admin vs regular
-     → 2d Email invite + join code
+     → 2d Email invite + join code UI
        → 2e Public HTTPS
 ```
 
@@ -145,105 +145,114 @@ Do **not** put a public URL in front of 2a–2d. Those builds are still local (o
 
 #### 2b — Private allocations sheets
 
-**Goal.** The Event is a label. Planning lives on a **sheet** you own. You can have many sheets. Other logged-in users cannot open yours (404). Still one global catalog (no orgs yet).
+**Goal.** The Event is a label with clock **defaults**. Planning lives on a **sheet** you own. New sheet = setup wizard (rooms → activities → clock) then grid. Many sheets per Event; other users get 404 on yours. Still one global catalog (no orgs yet); any signed-in user can still create Events until 2c.
 
 **In.**
 
-- `sheets` table: `title`, `event_id`, `owner_id`, `timezone`, `slot_minutes`, `grid_start`, `grid_end`, `included_room_ids`.
+- `sheets` table: `title`, `event_id`, `owner_id`, `plan_date` (from Event `event_date` when set, else required at create), `timezone`, `slot_minutes`, `grid_start`, `grid_end`, `included_room_ids` (room ids, not building ids).
 - Move `activities`, `time_blocks`, `allocations` from Event to sheet. Overlap exclusion: `(sheet_id, room_id, tstzrange)`.
-- Strip Event to `name`, optional `event_date`, plus default timezone / grid start / grid end / slot minutes (copied onto new sheets, not live-bound).
-- `GET /api/v1/sheets/{id}/schedule` is what the grid loads (Event label + catalog + this sheet).
-- UI: Event list → **your** sheets → **New sheet** setup (rooms → activities → clock from Event defaults) → grid.
-- New sheet: title Untitled; rooms from picker; activities from setup; clock copied from Event then editable; allocations empty.
-- Migration: each existing Event becomes one sheet owned by the seed-owner user; copy current children and grid fields onto that sheet.
+- Event: `name`, optional `event_date`, default timezone / grid start / grid end / slot minutes (copied onto new sheets at create, not live-bound).
+- `GET /api/v1/sheets/{id}/schedule` — grid load (Event label + **current** catalog for picked rooms + sheet data). See [catalog history spec](2026-08-13-catalog-history-and-plan-pins.md) for future pin/sync.
+- UI routes: Event list → **your** sheets only → **New sheet** setup → `#/sheets/{id}` grid. Retire `#/` as the default schedule entry and `#/event` as grid/activity editor (Event admin page for defaults is minimal until 2c polishes admin UX).
+- **New sheet setup** (required before grid): (1) pick ≥1 room, (2) activities optional, (3) clock prefilled from Event, editable, (4) title default Untitled.
+- Migration: each existing Event → one sheet for seed-owner; copy activities, time blocks, allocations, grid fields; map old Event `included_building_ids` to all active room ids in those buildings (interim one-time migration only).
 
-**Out.** Orgs, admin vs regular, invites, public deploy. Any logged-in user can still create Events (2c restricts that). Catalog is still global.
+**Out.** Orgs, admin vs regular, invites, public deploy, room-picker polish, catalog revision history. Event create unrestricted (2c limits to admin).
 
 **Test.**
 
-1. On Event “BmMT 2026”, create two sheets. Set different slot sizes and different activities. Allocations on sheet A do not appear on sheet B.
-2. Book DWIN155 at 9:00 on both sheets — both succeed. Double-book DWIN155 at 9:00 **on the same sheet** — 409.
-3. Second Google user: they see the Event label, not user 1’s sheets. Opening user 1’s sheet id is 404. They can create their own sheet.
-4. Moving Lunch on sheet A does not change sheet B.
+1. Two sheets on same Event: different `included_room_ids`, activities, and slot sizes; allocations on A not on B.
+2. Cross-sheet same room/time succeeds; same-sheet double-book → 409.
+3. Second Google user: sees Event, not user 1’s sheet list; user 1’s sheet id → 404; can create own sheet.
+4. Time blocks / Lunch on sheet A do not appear on sheet B.
+5. New sheet: cannot finish setup with zero rooms; clock prefilled from Event; changing Event defaults afterward does not change an existing sheet’s clock.
+6. Grid headers for picked rooms use **current** catalog (Phase 2 interim live display).
 
-**Done when** those four pass on localhost with two Google test users.
+**Done when** all six pass on localhost with two Google test users.
 
 ---
 
 #### 2c — Organizations and roles
 
-**Goal.** Catalog and Events belong to an org. Two org roles. Sheets stay owner-private.
+**Goal.** Catalog and Events belong to an org. Admin vs regular. Sheets stay owner-private with the 2b setup flow. No invite UI yet (seed/SQL to add a second member).
 
 **In.**
 
-- `organizations`, `organization_memberships` (`admin` \| `regular`).
-- `org_id` on buildings (floors/rooms follow) and events. Unique `(org_id, buildings.code)` instead of global unique code.
-- API lists only orgs you belong to; catalog and Events scoped to the active org.
-- Regular: catalog CRUD yes; `POST/PATCH/DELETE` Event → 403; sheets unchanged (own only).
-- Admin: Event create/rename/archive + catalog + membership read (members of **this** org only).
-- Seed: one org (BMT), seed-owner as admin, BmMT catalog + Event + migrated sheet inside it.
-- Empty state if the signed-in user has no membership.
-- `PLATFORM_SUPERUSER_EMAILS` can create an org and add a first admin **via API or seed** (UI can wait for 2d).
+- `organizations` (name, join code — stored here; invite/join **UI** in 2d), `organization_memberships` (`admin` \| `regular`).
+- `org_id` on buildings (floors/rooms follow) and events. Unique `(org_id, buildings.code)`.
+- Scope API to active org: catalog, Events, sheets (still owner-only).
+- **Admin:** create/rename/archive Event including **clock defaults**; catalog CRUD; read org member list (seed members only until 2d).
+- **Regular:** catalog CRUD; list Events; cannot create/edit/archive Events.
+- Empty state when signed-in user has no org membership.
+- Nav: Events \| Catalog \| Org (admin only, stub or 403 until 2d).
+- **Event admin UI** (org admin): create/rename/archive Event; edit name, optional date, clock defaults (replaces 2b minimal Event stub).
+- Home after login (one org): Event list.
+- Seed: BMT org, seed-owner admin, catalog + Event with clock defaults + one demo sheet for seed-owner only.
+- Superuser: create org + first admin via API/seed (`PLATFORM_SUPERUSER_EMAILS`); UI in 2d.
 
-**Out.** Polished invite/join UI (seed or SQL is enough to attach a second member). Public deploy. Sheet sharing.
+**Out.** Email invite, join-request inbox, join-code copy UI, public deploy, sheet sharing, catalog history.
 
 **Test.**
 
-1. User in org A does not see org B’s rooms or Events.
-2. Two members of BMT: each sees the Event list; neither sees the other’s sheets.
-3. Regular cannot create an Event (403) and cannot call invite APIs if any exist yet.
-4. Regular can edit a room in the BMT catalog; admin can create Event “BmMT 2027.”
-5. Dev reseed still rebuilds BMT + catalog + one demo sheet for the seed owner. Allowed only when `ENABLE_DEV_RESEED=true`.
+1. User in org A does not see org B’s catalog or Events.
+2. Two BMT members: same Event list; neither sees the other’s sheets; each completes new-sheet setup independently.
+3. Regular: Event create → 403; catalog room edit succeeds.
+4. Admin: create Event “BmMT 2027” with clock defaults; new sheet on it prefills clock from that Event.
+5. No-org user: empty state, no catalog/Events.
+6. Dev reseed rebuilds BMT when `ENABLE_DEV_RESEED=true`; demo sheet only for seed-owner email.
 
-**Done when** those five pass on localhost.
+**Done when** all six pass on localhost.
 
 ---
 
 #### 2d — Invites and join requests
 
-**Goal.** Admins add people without a global user directory. Superuser can create an org and appoint a first admin from the UI.
+**Goal.** Admins add people without a global user directory. Superuser creates orgs from the UI. Wires up join codes created in 2c.
 
 **In.**
 
-- Email invite: always “Invite sent.” Pending invite attaches on first Google login with that verified email.
-- Join code / link on the org; signed-in user requests access; admin approves as `admin` or `regular`.
-- Superuser UI: create org, type first admin email.
-- Member list = this org only. Pending request inbox = this org only.
+- Email invite API + `#/org` UI: always “Invite sent”; pending invite attaches on first Google login with verified email.
+- Join code link + request-access flow; admin pending inbox (org-only); approve as `admin` or `regular`.
+- `#/org`: member list, invite, join code copy/rotate, pending requests.
+- `#/super`: create org, appoint first admin by email.
+- Post-invite empty state for new regular: Event list, empty sheet list, catalog visible (per First login section).
 
-**Out.** Public “browse all orgs.” Prefix search of all emails. Public deploy. Sheet sharing.
+**Out.** Public deploy. Sheet sharing. Catalog history.
 
 **Test.**
 
-1. Admin invites `person@gmail.com`. Response is the same whether or not they exist. After that person signs in with Google, they are in the org with the chosen role.
-2. Second user signs in with no org, pastes join code, requests access. Admin sees that request only (not a site-wide user list), approves as regular. Requester can open catalog + Events, still cannot see the admin’s sheets.
-3. Org admin has no endpoint that lists users outside the org.
-4. Superuser creates a second org and appoints an admin by email.
+1. Admin invites email; same response whether or not account exists; first Google login lands in org with correct role.
+2. User with no org: join code → pending → admin approves → catalog + Events, empty own sheets, cannot see admin’s sheets.
+3. No API lists platform-wide users; member search is org-only.
+4. Superuser creates second org + admin via `#/super`.
+5. New regular does not receive seed-owner demo sheet.
 
-**Done when** those four pass on localhost.
+**Done when** all five pass on localhost.
 
 ---
 
 #### 2e — Public HTTPS
 
-**Goal.** Stakeholders open a real URL, sign in with Google, and cannot wipe production data.
+**Goal.** Stakeholders use a public URL with the full 2a–2d behavior: Google sign-in, org scope, private sheets with setup wizard, invites.
 
 **In.**
 
-- Host TBD (Fly, Render, Cloud Run, or similar): HTTPS SPA + API + Postgres.
-- Google client: public redirect URI **in addition to** localhost.
-- Production env: `ENABLE_DEV_RESEED=false`, secrets not in git, cookie `Secure`.
-- Consent screen: Testing + allowlisted stakeholder emails (or publish later).
+- Host TBD: HTTPS SPA + API + Postgres.
+- Google client: public redirect URI plus localhost.
+- Production: `ENABLE_DEV_RESEED=false`, secrets in env, cookie `Secure`.
+- Smoke-test full BMT path: login → Event list → new sheet (rooms, activities, clock) → grid.
 
-**Out.** Custom domain polish, Google verification for sensitive scopes (not needed), multi-region, live sheet sync.
+**Out.** Custom domain polish, catalog history, live sheet sync.
 
 **Test.**
 
-1. From a phone or a second laptop, open the public URL, Continue with Google, land in BMT (or empty state).
-2. Reseed endpoint is 404 or 403.
-3. A non-member cannot read catalog or sheets.
-4. Localhost Google login still works with the other redirect URI.
+1. Public URL on a second device: Google login → BMT or no-org empty state.
+2. Reseed disabled.
+3. Non-member cannot read catalog or sheets.
+4. Localhost OAuth still works.
+5. Invited stakeholder (allowlisted) completes new-sheet setup on BmMT 2026 without seeing others’ sheets.
 
-**Done when** those four pass against the public URL.
+**Done when** all five pass against the public URL.
 
 ### Not in Phase 2
 
@@ -264,12 +273,13 @@ Suggested hash routes (keep the current router style; no new router library):
 - `#/login`
 - `#/orgs` (or auto-select if exactly one)
 - `#/catalog` — org catalog
-- `#/events` — Event labels (admin: Create Event; regulars: list only)
+- `#/events` — Event labels (admin: Create Event from **2c**; regulars: list only)
 - `#/events/{eventId}/sheets` — **your** sheets
-- `#/sheets/{sheetId}` — grid (replaces loading “the” Event schedule)
-- `#/org` — members, invites, join code, pending requests (org admin only)
-- `#/super` — create org, appoint first admin (platform superuser only)
-- Event-settings UI today that edits grid/activities/time blocks moves to the sheet
+- `#/sheets/{sheetId}` — grid (after setup)
+- `#/org` — members, invites, join code, pending requests (org admin; 2d)
+- `#/super` — create org, appoint first admin (platform superuser; 2d)
+- **Event admin** (admin only): name, date, clock defaults — not activities or room picks
+- **Sheet settings** (owner): edit rooms, activities, time blocks, clock after create
 
 ### First login and empty states
 
@@ -339,7 +349,7 @@ That is how BMT comes into existence. After that, BMT’s org admin uses `#/org`
 
 ### Catalog UI (vs Phase 1)
 
-Keep Phase 1’s `#/catalog`: three lists (buildings, floors, rooms), add forms, deactivate/reactivate, floor dropdown scoped to building. Do not restyle it. Activities and time blocks stay off this page (they already live on `#/event` in Phase 1; in Phase 2 they live on the **sheet**).
+Keep Phase 1’s `#/catalog` layout (buildings, floors, rooms). Activities and time blocks are configured on the **sheet**, not here or on Event admin.
 
 What actually changes:
 
@@ -380,16 +390,17 @@ Regulars can still deactivate (they can edit catalog). That only changes what th
 | Event vs sheet clock | **Decided:** Event stores defaults; copy onto the sheet at create; sheet can override; Event edits do not rewrite existing sheets |
 | Sheet title at create | **Decided:** yes; default “Untitled” |
 | Catalog history + plan pin/sync | **Future.** Spec: [specs/2026-08-13-catalog-history-and-plan-pins.md](2026-08-13-catalog-history-and-plan-pins.md). Phase 2 interim: live display by room id |
+| Multi-day events / day tabs | **Deferred.** Phase 2: one `plan_date` per sheet; multi-day = multiple sheets on the same Event unless we add day tabs later |
 
 ## Implementation plan
 
 Each step is a subphase above. Land 2a–2e as separate PRs (or stacked PRs), each with C4 updates **if** that PR adds auth, org, or sheet containers/components.
 
-1. **2a** — Users + Google OAuth + session gate on existing routes.
-2. **2b** — Sheet entity; migrate Event children; owner 404; grid loads a sheet.
-3. **2c** — Org + membership; scope catalog and Events; admin vs regular.
-4. **2d** — Invites, join requests, superuser org UI.
-5. **2e** — Public host, production env, Google production redirect.
+1. **2a** — Users + Google OAuth + session gate on existing Phase 1 routes.
+2. **2b** — Sheet entity + new-sheet setup wizard; Event clock defaults; migrate Event children; owner 404; `#/sheets/{id}` grid.
+3. **2c** — Org + membership; scope catalog and Events; admin vs regular; Event admin UI; join code stored (UI in 2d).
+4. **2d** — Email invites, join-request inbox, `#/org`, `#/super`.
+5. **2e** — Public HTTPS host, production env, full stakeholder smoke test.
 
 ## Acceptance criteria (phase complete)
 
@@ -399,8 +410,13 @@ Phase 2 is complete when **all** of 2a–2e “done when” lists pass, and:
 - [ ] Unauthenticated API mutation is impossible
 - [ ] Org regular cannot create Events or invite
 - [ ] Org regular can edit catalog and fully edit **their** sheets
+- [ ] New sheet setup: pick rooms (≥1), optional activities, clock from Event defaults, then grid
+- [ ] Sheets store `included_room_ids`; grid shows current catalog for those rooms (interim)
+- [ ] Event clock defaults copy at sheet create; editing Event later does not rewrite existing sheets
+- [ ] Home after login is Event list; new members get empty sheet list (no auto sheet)
 - [ ] A sheet is 404 for everyone except its owner
 - [ ] Two sheets can book the same room at the same time
+- [ ] Deactivate removes room from picker only, not from existing sheets’ columns
 - [ ] Org admins cannot list all platform users
 - [ ] Production reseed is off
 - [ ] C4 matches the deployed architecture (SPA, API, Postgres, Google as identity)
