@@ -284,7 +284,6 @@ Do **not** put a public URL in front of 2a–2d. Those builds are still local (o
 - Share button / extra people on a sheet / live sync / presence / audit log — [collaboration spec](2026-08-11-phase-2-collaboration.md)
 - Templates, proctors, CSV/PDF export, capacity dashboard (Phase 3)
 - Sheets import, mobile read-only, `team_count` (Phase 4)
-- Multi-day / day tabs / org `default_plan_days` (Phase 4 or Later)
 - Passwords, Clerk, magic links, non-Google identity
 - Global user directory, public org directory
 - CRDT / offline merge

@@ -62,8 +62,7 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | **1 — Core loop** | Persistent single-user product | **Complete** (2026-08-11). Spec: [specs/2026-08-11-phase-1-core-loop.md](specs/2026-08-11-phase-1-core-loop.md) |
 | **2 — Accounts, orgs, private sheets** | Public Google sign-in; org catalog; Event labels; owner-only sheets | Planned. Spec: [specs/2026-08-13-phase-2-accounts-orgs.md](specs/2026-08-13-phase-2-accounts-orgs.md). Ship as **2a–2e** (sign-in → sheets → orgs → invites → public HTTPS) |
 | **3 — Power features** | Templates, proctors, export, capacity; candidate home for [catalog history + plan pins](specs/2026-08-13-catalog-history-and-plan-pins.md) | Planned (was Phase 2) |
-| **4 — Polish** | Sheets import, mobile read-only, `team_count`; candidate home for **multi-day** (day tabs + org default day count) | Planned (was Phase 3) |
-| **Later — Multi-day** | Day tabs on a sheet; org `default_plan_days` (default **1**) prefills Event create | Unsequenced; BMT is single-day — implement when a multi-day org needs it |
+| **4 — Polish** | Sheets import, mobile read-only, `team_count` | Planned (was Phase 3) |
 | **Later — Collaboration** | Share a sheet like Google Sheets, then live sync | Unsequenced. Draft: [specs/2026-08-11-phase-2-collaboration.md](specs/2026-08-11-phase-2-collaboration.md) |
 | **Later — Catalog history** | Revision timeline, per-sheet pin, optional sync to latest catalog | Draft: [specs/2026-08-13-catalog-history-and-plan-pins.md](specs/2026-08-13-catalog-history-and-plan-pins.md) |
 
