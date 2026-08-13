@@ -22,6 +22,7 @@ import AppNav from "./AppNav";
 import { buildBuildingGroups, buildFloorGroups, buildGridSlots, orderColumns } from "./lib/grid";
 import {
   buildMergeMeta,
+  orderGroupRoomPatches,
   orderedRoomIds,
   resolveMemberIndex,
   runMemberIds,
@@ -358,24 +359,45 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
     const previous = members;
     replaceAllocations(nextMembers);
     setAllocationSelection(nextMembers.map((allocation) => allocation.id));
-    void (async () => {
-      try {
-        const results = await Promise.all(
-          nextMembers.map((allocation) =>
-            patchAllocation(allocation.id, {
-              roomId: allocation.roomId,
-              startAt: allocation.startAt,
-              endAt: allocation.endAt
-            })
-          )
-        );
-        replaceAllocations(results.map((result) => result.allocation));
-      } catch (error) {
-        replaceAllocations(previous);
-        if (error instanceof ApiError && error.status === 409) setToast("Move blocked (overlap)");
-        else setToast(error instanceof Error ? error.message : "Move failed");
+    void persistAllocationPatches(previous, orderGroupRoomPatches(previous, nextMembers), (error) => {
+      if (error instanceof ApiError && error.status === 409) setToast("Move blocked (overlap)");
+      else setToast(error instanceof Error ? error.message : "Move failed");
+    });
+  };
+
+  const persistAllocationPatches = async (
+    previous: Allocation[],
+    orderedNext: Allocation[],
+    onError: (error: unknown) => void
+  ) => {
+    const applied: Allocation[] = [];
+    try {
+      for (const allocation of orderedNext) {
+        const result = await patchAllocation(allocation.id, {
+          roomId: allocation.roomId,
+          startAt: allocation.startAt,
+          endAt: allocation.endAt
+        });
+        applied.push(result.allocation);
       }
-    })();
+      replaceAllocations(applied);
+    } catch (error) {
+      for (const allocation of [...applied].reverse()) {
+        const orig = previous.find((entry) => entry.id === allocation.id);
+        if (!orig) continue;
+        try {
+          await patchAllocation(orig.id, {
+            roomId: orig.roomId,
+            startAt: orig.startAt,
+            endAt: orig.endAt
+          });
+        } catch {
+          /* keep restoring the rest */
+        }
+      }
+      replaceAllocations(previous);
+      onError(error);
+    }
   };
 
   const onResize = (allocationId: string, direction: "start" | "end", deltaSlots: number) => {
@@ -736,8 +758,9 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                         key={group.building.id}
                         className={`header-button building ${group.collapsed ? "collapsed" : ""}`}
                         style={{ width: group.span * COLUMN_WIDTH }}
-                        title={group.collapsed ? "Double-click to expand" : "Click to select · Double-click to collapse"}
+                        title={group.collapsed ? "Click to expand" : "Click to select · Double-click to collapse"}
                         onClick={(event) => {
+                          if (event.detail > 1) return;
                           if (group.collapsed) {
                             toggleBuildingCollapsed(group.building.id);
                             return;
@@ -765,13 +788,14 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                         title={
                           group.collapsed
                             ? group.floorId
-                              ? "Click or double-click to expand"
+                              ? "Click to expand"
                               : "Building collapsed"
                             : group.floorId
                               ? "Click to select · Double-click to collapse"
                               : undefined
                         }
                         onClick={(event) => {
+                          if (event.detail > 1) return;
                           if (group.collapsed && group.floorId) {
                             toggleFloorCollapsed(group.floorId);
                             return;
@@ -950,10 +974,11 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                         style={{ gridColumn: "1", gridRow: `${band.start + 1} / span ${band.span}` }}
                         title={
                           band.collapsed
-                            ? "Click or double-click to expand"
+                            ? "Click to expand"
                             : "Click to select · Double-click to collapse"
                         }
                         onClick={(event) => {
+                          if (event.detail > 1) return;
                           if (band.collapsed) {
                             toggleBuildingCollapsed(band.buildingId);
                             return;
@@ -981,13 +1006,14 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                         title={
                           band.collapsed
                             ? band.floorId
-                              ? "Click or double-click to expand"
+                              ? "Click to expand"
                               : "Building collapsed"
                             : band.floorId
                               ? "Click to select · Double-click to collapse"
                               : undefined
                         }
                         onClick={(event) => {
+                          if (event.detail > 1) return;
                           if (band.collapsed && band.floorId) {
                             toggleFloorCollapsed(band.floorId);
                             return;

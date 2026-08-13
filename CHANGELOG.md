@@ -33,6 +33,11 @@
 - Partial selection expands the run into per-room cards until the full run is selected again
 - Closes the v0 leader-only edit bug in [docs/known-bugs-v0.md](docs/known-bugs-v0.md)
 
+### Regression fixes (2026-08-13)
+
+- Slide a merged run into neighboring rooms without 409: patch members in vacate-first order and roll back on failure
+- Collapsed building/floor headers expand on a single click; ignore the second click of a double-click so they do not snap shut
+
 ## v0 — Vision demo (2026-08-11)
 
 **Status: complete.** Frontend-only prototype that proves the grid UX against the BmMT spreadsheet workflow.
