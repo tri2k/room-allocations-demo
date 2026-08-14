@@ -14,7 +14,7 @@ import {
   bulkCreateAllocations,
   createAllocation,
   deleteAllocations,
-  loadActiveSchedule,
+  getSchedule,
   patchAllocations,
   reseed
 } from "./lib/api";
@@ -62,22 +62,18 @@ type AllocationSelectEvent = {
   commit?: boolean;
 };
 
-function App() {
+function App({ sheetId }: { sheetId: string }) {
   const [state, setState] = useState<ScheduleState | null>(null);
   const [boot, setBoot] = useState<"loading" | "empty" | "ready" | "error">("loading");
   const [bootMessage, setBootMessage] = useState("");
 
   const reload = async () => {
     try {
-      const next = await loadActiveSchedule();
-      if (!next) {
-        setState(null);
-        setBoot("empty");
-        return;
-      }
+      const next = await getSchedule(sheetId);
       setState(next);
       setBoot("ready");
     } catch (error) {
+      setState(null);
       setBoot("error");
       setBootMessage(error instanceof Error ? error.message : "Failed to load schedule");
     }
@@ -85,11 +81,11 @@ function App() {
 
   useEffect(() => {
     void reload();
-  }, []);
+  }, [sheetId]);
 
   const onReseed = async () => {
     await reseed();
-    await reload();
+    window.location.hash = "#/events";
   };
 
   if (boot === "loading") {
@@ -106,8 +102,8 @@ function App() {
         <h1>No event to schedule</h1>
         <p>Create an event, or seed the BmMT demo.</p>
         <div className="topbar-actions">
-          <a className="reset-button" href="#/event">
-            Create event
+          <a className="reset-button" href="#/events">
+            Events
           </a>
           <button
             className="reset-button"
@@ -121,7 +117,7 @@ function App() {
             Seed demo data
           </button>
         </div>
-        <AppNav current="schedule" />
+        <AppNav current="events" />
       </div>
     );
   }
@@ -131,10 +127,13 @@ function App() {
       <div className="boot-screen">
         <h1>Could not load schedule</h1>
         <p>{bootMessage}</p>
+        <a className="reset-button" href="#/events">
+          Back to events
+        </a>
         <button className="reset-button" onClick={() => void reload()}>
           Retry
         </button>
-        <AppNav current="schedule" />
+        <AppNav current="events" />
       </div>
     );
   }
@@ -166,8 +165,8 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
   selectedAllocationIdsRef.current = selectedAllocationIds;
 
   const slotCount = useMemo(
-    () => getSlotCount(state.event.gridStart, state.event.gridEnd, state.event.slotMinutes),
-    [state.event.gridEnd, state.event.gridStart, state.event.slotMinutes]
+    () => getSlotCount(state.sheet.gridStart, state.sheet.gridEnd, state.sheet.slotMinutes),
+    [state.sheet.gridEnd, state.sheet.gridStart, state.sheet.slotMinutes]
   );
 
   const columns = useMemo(
@@ -325,17 +324,17 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
   };
 
   const handleCreateFromPalette = async (activity: Activity, targetRoomIds: string[], startSlot: number) => {
-    const durationSlots = Math.max(1, Math.round(activity.defaultDurationMin / state.event.slotMinutes));
+    const durationSlots = Math.max(1, Math.round(activity.defaultDurationMin / state.sheet.slotMinutes));
     const clampedStart = clamp(startSlot, 0, slotCount - durationSlots);
-    const startAt = buildIso(state.event.eventDate, slotToTime(state.event.gridStart, state.event.slotMinutes, clampedStart));
+    const startAt = buildIso(state.sheet.planDate, slotToTime(state.sheet.gridStart, state.sheet.slotMinutes, clampedStart));
     const endAt = buildIso(
-      state.event.eventDate,
-      slotToTime(state.event.gridStart, state.event.slotMinutes, clampedStart + durationSlots)
+      state.sheet.planDate,
+      slotToTime(state.sheet.gridStart, state.sheet.slotMinutes, clampedStart + durationSlots)
     );
 
     try {
       if (targetRoomIds.length === 1) {
-        const result = await createAllocation(state.event.id, {
+        const result = await createAllocation(state.sheet.id, {
           roomId: targetRoomIds[0],
           activityId: activity.id,
           startAt,
@@ -349,7 +348,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
         return;
       }
 
-      const result = await bulkCreateAllocations(state.event.id, {
+      const result = await bulkCreateAllocations(state.sheet.id, {
         roomIds: targetRoomIds,
         activityId: activity.id,
         startAt,
@@ -398,13 +397,13 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
 
     const durationSlots = Math.max(
       1,
-      allocationStartSlot(state.event.eventDate, state.event.gridStart, state.event.slotMinutes, source.endAt) -
-        allocationStartSlot(state.event.eventDate, state.event.gridStart, state.event.slotMinutes, source.startAt)
+      allocationStartSlot(state.sheet.planDate, state.sheet.gridStart, state.sheet.slotMinutes, source.endAt) -
+        allocationStartSlot(state.sheet.planDate, state.sheet.gridStart, state.sheet.slotMinutes, source.startAt)
     );
     const sourceStart = allocationStartSlot(
-      state.event.eventDate,
-      state.event.gridStart,
-      state.event.slotMinutes,
+      state.sheet.planDate,
+      state.sheet.gridStart,
+      state.sheet.slotMinutes,
       source.startAt
     );
 
@@ -426,10 +425,10 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
     if (slotDelta === 0 && roomDelta === 0) return;
 
     const clampedStart = clamp(sourceStart + slotDelta, 0, slotCount - durationSlots);
-    const startAt = buildIso(state.event.eventDate, slotToTime(state.event.gridStart, state.event.slotMinutes, clampedStart));
+    const startAt = buildIso(state.sheet.planDate, slotToTime(state.sheet.gridStart, state.sheet.slotMinutes, clampedStart));
     const endAt = buildIso(
-      state.event.eventDate,
-      slotToTime(state.event.gridStart, state.event.slotMinutes, clampedStart + durationSlots)
+      state.sheet.planDate,
+      slotToTime(state.sheet.gridStart, state.sheet.slotMinutes, clampedStart + durationSlots)
     );
 
     const nextMembers: Allocation[] = [];
@@ -466,7 +465,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
     void (async () => {
       try {
         const result = await patchAllocations(
-          state.event.id,
+          state.sheet.id,
           nextMembers.map((allocation) => ({
             id: allocation.id,
             roomId: allocation.roomId,
@@ -494,23 +493,23 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
     const nextMembers: Allocation[] = [];
     for (const allocation of members) {
       const startSlot = allocationStartSlot(
-        state.event.eventDate,
-        state.event.gridStart,
-        state.event.slotMinutes,
+        state.sheet.planDate,
+        state.sheet.gridStart,
+        state.sheet.slotMinutes,
         allocation.startAt
       );
       const endSlot = allocationStartSlot(
-        state.event.eventDate,
-        state.event.gridStart,
-        state.event.slotMinutes,
+        state.sheet.planDate,
+        state.sheet.gridStart,
+        state.sheet.slotMinutes,
         allocation.endAt
       );
       const nextStart = direction === "start" ? clamp(startSlot + deltaSlots, 0, endSlot - 1) : startSlot;
       const nextEnd = direction === "end" ? clamp(endSlot + deltaSlots, nextStart + 1, slotCount) : endSlot;
       nextMembers.push({
         ...allocation,
-        startAt: buildIso(state.event.eventDate, slotToTime(state.event.gridStart, state.event.slotMinutes, nextStart)),
-        endAt: buildIso(state.event.eventDate, slotToTime(state.event.gridStart, state.event.slotMinutes, nextEnd))
+        startAt: buildIso(state.sheet.planDate, slotToTime(state.sheet.gridStart, state.sheet.slotMinutes, nextStart)),
+        endAt: buildIso(state.sheet.planDate, slotToTime(state.sheet.gridStart, state.sheet.slotMinutes, nextEnd))
       });
     }
 
@@ -519,7 +518,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
     void (async () => {
       try {
         const result = await patchAllocations(
-          state.event.id,
+          state.sheet.id,
           nextMembers.map((allocation) => ({
             id: allocation.id,
             startAt: allocation.startAt,
@@ -554,7 +553,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
     );
     setAllocationSelection([]);
     try {
-      await deleteAllocations(state.event.id, ids);
+      await deleteAllocations(state.sheet.id, ids);
       setToast(ids.length === 1 ? "Deleted allocation" : `Deleted ${ids.length} allocations`);
     } catch (error) {
       setState((current) => (current ? { ...current, allocations: previous } : current));
@@ -789,16 +788,16 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
   const getBlockSpan = (allocation: Allocation) =>
     Math.max(
       1,
-      allocationStartSlot(state.event.eventDate, state.event.gridStart, state.event.slotMinutes, allocation.endAt) -
-        allocationStartSlot(state.event.eventDate, state.event.gridStart, state.event.slotMinutes, allocation.startAt)
+      allocationStartSlot(state.sheet.planDate, state.sheet.gridStart, state.sheet.slotMinutes, allocation.endAt) -
+        allocationStartSlot(state.sheet.planDate, state.sheet.gridStart, state.sheet.slotMinutes, allocation.startAt)
     );
 
   const blockTitle = (activity: Activity, allocation: Allocation) =>
     `${activity.name} (${timeFromIso(allocation.startAt)}-${timeFromIso(allocation.endAt)})`;
 
   const phaseBounds = (block: TimeBlock) => {
-    const start = timeToSlot(state.event.gridStart, state.event.slotMinutes, block.startTime);
-    const end = timeToSlot(state.event.gridStart, state.event.slotMinutes, block.endTime);
+    const start = timeToSlot(state.sheet.gridStart, state.sheet.slotMinutes, block.startTime);
+    const end = timeToSlot(state.sheet.gridStart, state.sheet.slotMinutes, block.endTime);
     return { start: clamp(start, 0, slotCount), end: clamp(end, 0, slotCount) };
   };
 
@@ -807,13 +806,21 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
       <div className="app">
         <header className="topbar">
           <div>
-            <h1>{state.event.name} Room Schedule</h1>
-            <p>Drag from palette, bulk assign by floor. Schedule is saved on the server.</p>
+            <h1>{state.sheet.title}</h1>
+            <p>
+              {state.event.name}. Drag from palette, bulk assign by floor. Saved on this sheet only.
+            </p>
           </div>
           <AppNav
             current="schedule"
             extra={
               <>
+                <a className="reset-button" href={`#/events/${state.event.id}/sheets`}>
+                  Sheets
+                </a>
+                <a className="reset-button" href={`#/sheets/${state.sheet.id}/settings`}>
+                  Settings
+                </a>
                 <button
                   onClick={() => setOrientation((previous) => (previous === "normal" ? "transposed" : "normal"))}
                   className="reset-button"
@@ -963,7 +970,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                 <div className="grid-body">
                   <div className="time-gutter" style={{ height: gridHeight }}>
                     {Array.from({ length: slotCount }).map((_, slotIndex) => {
-                      const label = slotToTime(state.event.gridStart, state.event.slotMinutes, slotIndex);
+                      const label = slotToTime(state.sheet.gridStart, state.sheet.slotMinutes, slotIndex);
                       return (
                         <div key={label} className="time-cell" style={{ height: SLOT_HEIGHT }}>
                           {slotIndex % 2 === 0 ? formatTimeLabel(label) : ""}
@@ -1009,9 +1016,9 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                           activitiesById={activitiesById}
                           overlapIds={overlapsSet}
                           selected={selectedRoomIds.includes(slot.column.room.id)}
-                          eventDate={state.event.eventDate}
-                          gridStart={state.event.gridStart}
-                          slotMinutes={state.event.slotMinutes}
+                          eventDate={state.sheet.planDate}
+                          gridStart={state.sheet.gridStart}
+                          slotMinutes={state.sheet.slotMinutes}
                           onResize={onResize}
                           onDelete={(id) => void removeAllocations(idsForEdit(id))}
                           selectedAllocationIds={selectedAllocationIds}
@@ -1053,7 +1060,7 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
 
                       <div className="transpose-time-header" style={{ width: transposeWidth }}>
                         {Array.from({ length: slotCount }).map((_, slotIndex) => {
-                          const hhmm = slotToTime(state.event.gridStart, state.event.slotMinutes, slotIndex);
+                          const hhmm = slotToTime(state.sheet.gridStart, state.sheet.slotMinutes, slotIndex);
                           return (
                             <div key={hhmm} className="transpose-time-cell" style={{ width: TRANSPOSE_SLOT_WIDTH }}>
                               {slotIndex % 2 === 0 ? hhmm : ""}
@@ -1215,9 +1222,9 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
                               const merged = mergedNormalMeta.get(allocation.id);
                               if (merged && !merged.isLeader && !expanded) return null;
                               const startSlot = allocationStartSlot(
-                                state.event.eventDate,
-                                state.event.gridStart,
-                                state.event.slotMinutes,
+                                state.sheet.planDate,
+                                state.sheet.gridStart,
+                                state.sheet.slotMinutes,
                                 allocation.startAt
                               );
                               const span = getBlockSpan(allocation);

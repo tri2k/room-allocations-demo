@@ -125,7 +125,7 @@ class RoomOut(APIModel):
 
 class EventCreate(APIModel):
     name: str
-    event_date: date
+    event_date: date | None = None
     timezone: str
     slot_minutes: SlotMinutes = 15
     grid_start: time = time(7, 0)
@@ -225,7 +225,7 @@ class TimeBlockOut(APIModel):
 class EventOut(APIModel):
     id: UUID
     name: str
-    event_date: date
+    event_date: date | None = None
     timezone: str
     slot_minutes: int
     grid_start: str
@@ -234,9 +234,93 @@ class EventOut(APIModel):
     team_count: int | None = None
 
 
+class SheetCreateActivity(APIModel):
+    name: str
+    color: str
+    default_duration_min: int
+    allowed_room_types: list[str] = Field(default_factory=list)
+
+
+class SheetCreate(APIModel):
+    title: str = "Untitled"
+    included_room_ids: list[UUID]
+    plan_date: date | None = None
+    timezone: str | None = None
+    slot_minutes: SlotMinutes | None = None
+    grid_start: time | None = None
+    grid_end: time | None = None
+    activities: list[SheetCreateActivity] = Field(default_factory=list)
+
+    @field_validator("timezone")
+    @classmethod
+    def timezone_ok(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        return _require_timezone(value)
+
+    @field_validator("included_room_ids")
+    @classmethod
+    def at_least_one_room(cls, value: list[UUID]) -> list[UUID]:
+        seen: list[UUID] = []
+        for room_id in value:
+            if room_id not in seen:
+                seen.append(room_id)
+        if len(seen) == 0:
+            raise ValueError("Pick at least one room")
+        return seen
+
+    @model_validator(mode="after")
+    def grid_order(self) -> "SheetCreate":
+        if self.grid_start is not None and self.grid_end is not None and self.grid_end <= self.grid_start:
+            raise ValueError("gridEnd must be after gridStart")
+        return self
+
+
+class SheetUpdate(APIModel):
+    title: str | None = None
+    included_room_ids: list[UUID] | None = None
+    plan_date: date | None = None
+    timezone: str | None = None
+    slot_minutes: SlotMinutes | None = None
+    grid_start: time | None = None
+    grid_end: time | None = None
+
+    @field_validator("timezone")
+    @classmethod
+    def timezone_ok(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        return _require_timezone(value)
+
+    @field_validator("included_room_ids")
+    @classmethod
+    def at_least_one_room(cls, value: list[UUID] | None) -> list[UUID] | None:
+        if value is None:
+            return value
+        seen: list[UUID] = []
+        for room_id in value:
+            if room_id not in seen:
+                seen.append(room_id)
+        if len(seen) == 0:
+            raise ValueError("Pick at least one room")
+        return seen
+
+
+class SheetOut(APIModel):
+    id: UUID
+    title: str
+    event_id: UUID
+    owner_id: UUID
+    plan_date: date
+    timezone: str
+    slot_minutes: int
+    grid_start: str
+    grid_end: str
+    included_room_ids: list[UUID]
+
+
 class EventDetailOut(EventOut):
-    activities: list[ActivityOut]
-    time_blocks: list[TimeBlockOut]
+    pass
 
 
 class AllocationCreate(APIModel):
@@ -318,15 +402,12 @@ class BulkAllocationDelete(APIModel):
 class ScheduleEventOut(APIModel):
     id: UUID
     name: str
-    event_date: date
-    timezone: str
-    slot_minutes: int
-    grid_start: str
-    grid_end: str
+    event_date: date | None = None
 
 
 class ScheduleOut(APIModel):
     event: ScheduleEventOut
+    sheet: SheetOut
     buildings: list[BuildingOut]
     floors: list[FloorOut]
     rooms: list[RoomOut]

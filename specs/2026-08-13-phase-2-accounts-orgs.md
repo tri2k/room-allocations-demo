@@ -1,6 +1,6 @@
 # Phase 2 Accounts, Orgs, and Private Sheets
 
-**Status**: In progress (2a implemented; 2b–2e not started)
+**Status**: In progress (2a–2b implemented; 2c–2e not started)
 
 Product context: [PRODUCT.md](../PRODUCT.md). Depends on [Phase 1](2026-08-11-phase-1-core-loop.md). Live co-editing of a sheet is **not** this phase: [collaboration spec](2026-08-11-phase-2-collaboration.md).
 
@@ -460,5 +460,14 @@ Phase 2 is complete when **all** of 2a–2e “done when” lists pass, and:
 - Seed upserts `SEED_OWNER_EMAIL` and does **not** truncate `users` on reseed, so `google_sub` survives Reset.
 - Hash routes still have no router library. `#/login` is exact-match so future `#/events` will not collide with `#/event`.
 - Host / public URL still 2e.
+
+### 2b (2026-08-14)
+
+- `sheets` owns `activities`, `time_blocks`, `allocations`, clock fields, and `included_room_ids`. Event keeps name, optional `event_date`, and clock **defaults** only (plus leftover `included_building_ids` unused by the grid).
+- Grid load is `GET /api/v1/sheets/{id}/schedule`. Allocation writes are `/api/v1/sheets/{id}/allocations` (and bulk). Non-owner sheet or allocation → **404**.
+- Overlap gist is `(sheet_id, room_id, tstzrange) DEFERRABLE INITIALLY DEFERRED`.
+- Hash routes have no router library. `#/` and `#/event` land on the Event list. `#/events/{id}/sheets/new` is the create wizard; `#/sheets/{id}` is the existing dnd-kit grid.
+- Alembic `0004_sheets` copies each Event’s plan onto one sheet for `SEED_OWNER_EMAIL` (maps `included_building_ids` to active rooms once). No downgrade.
+- Reseed still does not truncate `users`. Demo sheet is seed-owner only.
 
 Fill in when 2e ships (deviations, seed owner email, host chosen).

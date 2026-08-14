@@ -53,7 +53,7 @@ function Login({ onSignedIn }: LoginProps) {
   return (
     <div className="boot-screen login-screen">
       <h1>Room Allocations</h1>
-      <p>Sign in to open the schedule.</p>
+      <p>Sign in to open your events.</p>
       {error ? <p className="catalog-error">{error}</p> : null}
       {config?.googleEnabled ? (
         <a className="reset-button" href="/api/v1/auth/google/start">

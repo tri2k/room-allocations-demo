@@ -54,15 +54,29 @@ export type Allocation = {
 export type EventInfo = {
   id: string;
   name: string;
-  eventDate: string;
+  eventDate: string | null;
   timezone: string;
   slotMinutes: number;
   gridStart: string;
   gridEnd: string;
 };
 
+export type SheetInfo = {
+  id: string;
+  title: string;
+  eventId: string;
+  ownerId: string;
+  planDate: string;
+  timezone: string;
+  slotMinutes: number;
+  gridStart: string;
+  gridEnd: string;
+  includedRoomIds: string[];
+};
+
 export type ScheduleState = {
-  event: EventInfo;
+  event: { id: string; name: string; eventDate: string | null };
+  sheet: SheetInfo;
   buildings: Building[];
   floors: Floor[];
   rooms: Room[];

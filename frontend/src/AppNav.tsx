@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useSession } from "./session";
 
 type AppNavProps = {
-  current: "schedule" | "event" | "catalog";
+  current: "events" | "catalog" | "schedule";
   extra?: ReactNode;
 };
 
@@ -11,11 +11,8 @@ function AppNav({ current, extra }: AppNavProps) {
   return (
     <div className="topbar-actions">
       <nav className="app-nav">
-        <a className={current === "schedule" ? "reset-button is-current" : "reset-button"} href="#/">
-          Schedule
-        </a>
-        <a className={current === "event" ? "reset-button is-current" : "reset-button"} href="#/event">
-          Event
+        <a className={current === "events" ? "reset-button is-current" : "reset-button"} href="#/events">
+          Events
         </a>
         <a className={current === "catalog" ? "reset-button is-current" : "reset-button"} href="#/catalog">
           Catalog

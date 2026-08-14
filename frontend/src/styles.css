@@ -663,9 +663,13 @@ body {
   font: inherit;
 }
 
-.catalog-app {
-  max-width: 960px;
-  margin: 0 auto;
+.sheet-picker-building {
+  margin: 12px 0;
+}
+
+.sheet-picker-building h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
 }
 
 .catalog-section {

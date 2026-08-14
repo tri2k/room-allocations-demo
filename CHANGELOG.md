@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Phase 2b private sheets (2026-08-14)
+
+- Event is a label plus clock **defaults**; planning lives on an owner-only `sheets` row
+- New sheet wizard: pick ≥1 room, optional activities, clock prefilled from the Event, title default Untitled
+- `GET /api/v1/sheets/{id}/schedule` loads the grid; activities, time blocks, and allocations are sheet-scoped
+- Overlap exclusion is `(sheet_id, room_id, tstzrange)`; two sheets may book the same room at the same time
+- Non-owners get **404** (not 403) for a sheet and its allocations
+- Hash routes: `#/events` → `#/events/{id}/sheets` → `#/events/{id}/sheets/new` → `#/sheets/{id}` (settings at `#/sheets/{id}/settings`)
+- Seed/reseed creates one demo sheet for `SEED_OWNER_EMAIL` only
+- Changing Event defaults does not rewrite existing sheets; changing a sheet’s date/timezone retargets that sheet’s allocation wall-clock times
+- Removing a room that still has allocations is 409
+- Spec: [specs/2026-08-13-phase-2-accounts-orgs.md](specs/2026-08-13-phase-2-accounts-orgs.md) subphase 2b
+
 ### Phase 2a Google sign-in (2026-08-14)
 
 - HTTP-only session cookie; unauthenticated `/api/v1` is 401
