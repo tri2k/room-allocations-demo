@@ -90,7 +90,14 @@ function Root() {
   }
 
   if (user === null) {
-    return <Login onSignedIn={setUser} />;
+    return (
+      <Login
+        onSignedIn={(next) => {
+          setUser(next);
+          window.location.hash = "#/events";
+        }}
+      />
+    );
   }
 
   let page = null;
