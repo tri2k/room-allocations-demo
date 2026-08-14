@@ -4,8 +4,11 @@ import App from "./App";
 import Catalog from "./Catalog";
 import EventPage from "./EventPage";
 import Login from "./Login";
+import NewSheetPage from "./NewSheetPage";
+import SheetSettings from "./SheetSettings";
+import SheetsPage from "./SheetsPage";
 import { ApiError, getMe, logout, setUnauthorizedHandler, type AuthUser } from "./lib/api";
-import { pageFromHash } from "./lib/hash";
+import { parseHash } from "./lib/hash";
 import { SessionContext } from "./session";
 import "./styles.css";
 
@@ -38,26 +41,26 @@ function Root() {
       });
   }, []);
 
+  const route = parseHash(hash);
+
   useEffect(() => {
     setUnauthorizedHandler(() => {
       setUser(null);
-      if (pageFromHash(window.location.hash) !== "login") {
+      if (parseHash(window.location.hash).name !== "login") {
         window.location.hash = "#/login";
       }
     });
     return () => setUnauthorizedHandler(null);
   }, []);
 
-  const page = pageFromHash(hash);
-
   useEffect(() => {
     if (boot !== "ready") return;
-    if (user === null && page !== "login") {
+    if (user === null && route.name !== "login") {
       window.location.hash = "#/login";
-    } else if (user !== null && page === "login") {
-      window.location.hash = "#/";
+    } else if (user !== null && route.name === "login") {
+      window.location.hash = "#/events";
     }
-  }, [boot, user, page]);
+  }, [boot, user, route.name]);
 
   const signOut = async () => {
     try {
@@ -90,11 +93,15 @@ function Root() {
     return <Login onSignedIn={setUser} />;
   }
 
-  return (
-    <SessionContext.Provider value={{ user, signOut }}>
-      {page === "catalog" ? <Catalog /> : page === "event" ? <EventPage /> : <App />}
-    </SessionContext.Provider>
-  );
+  let page = null;
+  if (route.name === "catalog") page = <Catalog />;
+  else if (route.name === "eventSheets") page = <SheetsPage eventId={route.eventId} />;
+  else if (route.name === "newSheet") page = <NewSheetPage eventId={route.eventId} />;
+  else if (route.name === "sheet") page = <App sheetId={route.sheetId} />;
+  else if (route.name === "sheetSettings") page = <SheetSettings sheetId={route.sheetId} />;
+  else page = <EventPage />;
+
+  return <SessionContext.Provider value={{ user, signOut }}>{page}</SessionContext.Provider>;
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

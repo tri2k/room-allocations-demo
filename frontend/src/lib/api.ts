@@ -1,4 +1,14 @@
-import type { Activity, Allocation, Building, EventInfo, Floor, Room, ScheduleState, TimeBlock } from "../types/schedule";
+import type {
+  Activity,
+  Allocation,
+  Building,
+  EventInfo,
+  Floor,
+  Room,
+  ScheduleState,
+  SheetInfo,
+  TimeBlock
+} from "../types/schedule";
 
 export class ApiError extends Error {
   status: number;
@@ -100,42 +110,69 @@ const EVENT_KEY = "room-allocations-demo:eventId";
 
 export const listEvents = (): Promise<EventInfo[]> => request("/api/v1/events");
 
-export const getSchedule = (eventId: string): Promise<ScheduleState> =>
-  request(`/api/v1/events/${eventId}/schedule`);
+export const getSchedule = (sheetId: string): Promise<ScheduleState> =>
+  request(`/api/v1/sheets/${sheetId}/schedule`);
 
 export const setActiveEventId = (eventId: string): void => {
   localStorage.setItem(EVENT_KEY, eventId);
 };
 
-export const loadActiveSchedule = async (): Promise<ScheduleState | null> => {
-  const events = await listEvents();
-  if (events.length === 0) return null;
-  const stored = localStorage.getItem(EVENT_KEY);
-  const chosen = events.find((event) => event.id === stored) ?? events[0];
-  setActiveEventId(chosen.id);
-  return getSchedule(chosen.id);
-};
-
 export const createEvent = (body: {
   name: string;
-  eventDate: string;
+  eventDate?: string | null;
   timezone: string;
   slotMinutes?: number;
   gridStart?: string;
   gridEnd?: string;
 }): Promise<EventInfo> => request("/api/v1/events", { method: "POST", body: JSON.stringify(body) });
 
-export const createAllocation = (
+export const listSheets = (eventId: string): Promise<SheetInfo[]> =>
+  request(`/api/v1/events/${eventId}/sheets`);
+
+export const createSheet = (
   eventId: string,
+  body: {
+    title?: string;
+    includedRoomIds: string[];
+    planDate?: string;
+    timezone?: string;
+    slotMinutes?: number;
+    gridStart?: string;
+    gridEnd?: string;
+    activities?: Array<{ name: string; color: string; defaultDurationMin: number }>;
+  }
+): Promise<SheetInfo> =>
+  request(`/api/v1/events/${eventId}/sheets`, { method: "POST", body: JSON.stringify(body) });
+
+export const getSheet = (sheetId: string): Promise<SheetInfo> => request(`/api/v1/sheets/${sheetId}`);
+
+export const patchSheet = (
+  sheetId: string,
+  body: Partial<{
+    title: string;
+    includedRoomIds: string[];
+    planDate: string;
+    timezone: string;
+    slotMinutes: number;
+    gridStart: string;
+    gridEnd: string;
+  }>
+): Promise<SheetInfo> => request(`/api/v1/sheets/${sheetId}`, { method: "PATCH", body: JSON.stringify(body) });
+
+export const deleteSheet = (sheetId: string): Promise<void> =>
+  request(`/api/v1/sheets/${sheetId}`, { method: "DELETE" });
+
+export const createAllocation = (
+  sheetId: string,
   body: { roomId: string; activityId: string; startAt: string; endAt: string; notes?: string }
 ): Promise<AllocationWrite> =>
-  request(`/api/v1/events/${eventId}/allocations`, { method: "POST", body: JSON.stringify(body) });
+  request(`/api/v1/sheets/${sheetId}/allocations`, { method: "POST", body: JSON.stringify(body) });
 
 export const bulkCreateAllocations = (
-  eventId: string,
+  sheetId: string,
   body: { roomIds: string[]; activityId: string; startAt: string; endAt: string; notes?: string }
 ): Promise<BulkAllocationWrite> =>
-  request(`/api/v1/events/${eventId}/allocations/bulk`, { method: "POST", body: JSON.stringify(body) });
+  request(`/api/v1/sheets/${sheetId}/allocations/bulk`, { method: "POST", body: JSON.stringify(body) });
 
 export const patchAllocation = (
   allocationId: string,
@@ -144,10 +181,10 @@ export const patchAllocation = (
   request(`/api/v1/allocations/${allocationId}`, { method: "PATCH", body: JSON.stringify(body) });
 
 export const patchAllocations = (
-  eventId: string,
+  sheetId: string,
   items: Array<{ id: string; roomId?: string; startAt?: string; endAt?: string; notes?: string }>
 ): Promise<{ allocations: Allocation[]; warnings: Warning[] }> =>
-  request(`/api/v1/events/${eventId}/allocations/bulk-patch`, {
+  request(`/api/v1/sheets/${sheetId}/allocations/bulk-patch`, {
     method: "POST",
     body: JSON.stringify({ items })
   });
@@ -155,8 +192,8 @@ export const patchAllocations = (
 export const deleteAllocation = (allocationId: string): Promise<void> =>
   request(`/api/v1/allocations/${allocationId}`, { method: "DELETE" });
 
-export const deleteAllocations = (eventId: string, ids: string[]): Promise<void> =>
-  request(`/api/v1/events/${eventId}/allocations/bulk-delete`, {
+export const deleteAllocations = (sheetId: string, ids: string[]): Promise<void> =>
+  request(`/api/v1/sheets/${sheetId}/allocations/bulk-delete`, {
     method: "POST",
     body: JSON.stringify({ ids })
   });
@@ -199,17 +236,26 @@ export const patchRoom = (id: string, body: Partial<Room>): Promise<Room> =>
   request(`/api/v1/rooms/${id}`, { method: "PATCH", body: JSON.stringify(body) });
 export const deleteRoom = (id: string): Promise<Room> => request(`/api/v1/rooms/${id}`, { method: "DELETE" });
 
-export type EventDetail = EventInfo & { activities: Activity[]; timeBlocks: TimeBlock[] };
+export type EventDetail = EventInfo;
 
-export const getEvent = (id: string): Promise<EventDetail> => request(`/api/v1/events/${id}`);
-export const patchEvent = (id: string, body: Partial<EventInfo>): Promise<EventInfo> =>
-  request(`/api/v1/events/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+export const getEvent = (id: string): Promise<EventInfo> => request(`/api/v1/events/${id}`);
+export const patchEvent = (
+  id: string,
+  body: Partial<{
+    name: string;
+    eventDate: string | null;
+    timezone: string;
+    slotMinutes: number;
+    gridStart: string;
+    gridEnd: string;
+  }>
+): Promise<EventInfo> => request(`/api/v1/events/${id}`, { method: "PATCH", body: JSON.stringify(body) });
 
 export const createActivity = (
-  eventId: string,
+  sheetId: string,
   body: { name: string; color: string; defaultDurationMin: number }
 ): Promise<Activity> =>
-  request(`/api/v1/events/${eventId}/activities`, { method: "POST", body: JSON.stringify(body) });
+  request(`/api/v1/sheets/${sheetId}/activities`, { method: "POST", body: JSON.stringify(body) });
 
 export const patchActivity = (id: string, body: Partial<Activity>): Promise<Activity> =>
   request(`/api/v1/activities/${id}`, { method: "PATCH", body: JSON.stringify(body) });
@@ -218,10 +264,10 @@ export const deleteActivity = (id: string): Promise<void> =>
   request(`/api/v1/activities/${id}`, { method: "DELETE" });
 
 export const createTimeBlock = (
-  eventId: string,
+  sheetId: string,
   body: { label: string; startTime: string; endTime: string; color?: string }
 ): Promise<TimeBlock> =>
-  request(`/api/v1/events/${eventId}/time-blocks`, { method: "POST", body: JSON.stringify(body) });
+  request(`/api/v1/sheets/${sheetId}/time-blocks`, { method: "POST", body: JSON.stringify(body) });
 
 export const deleteTimeBlock = (id: string): Promise<void> =>
   request(`/api/v1/time-blocks/${id}`, { method: "DELETE" });

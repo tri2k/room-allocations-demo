@@ -19,17 +19,17 @@ flowchart TB
   api -->|"OAuth token + userinfo"| google
   api -->|"SQLAlchemy / Alembic"| postgres
   api -->|"POST /dev/reseed and CLI"| seed
-  seed -->|"Inserts BmMT snapshot and seed-owner user"| postgres
+  seed -->|"Inserts BmMT snapshot, seed-owner user, and one demo sheet"| postgres
 ```
 
 ## Runtime
 
 | Container | Technology | Role |
 | --------- | ---------- | ---- |
-| Schedule SPA | Vite + React 18 + TypeScript + `@dnd-kit` | Login, grid, catalog forms, orientation |
-| FastAPI | Python 3, `/api/v1` | Session gate, Google OAuth, CRUD, overlap 409, composite schedule, atomic bulk allocation patch/delete |
-| Seed catalog | `server/data/bmmt-2026.json` | Demo event snapshot; upserts `SEED_OWNER_EMAIL` with `google_sub` null until first Google login |
-| PostgreSQL | Postgres 16 (Docker Compose) | Source of truth, including `users` |
+| Schedule SPA | Vite + React 18 + TypeScript + `@dnd-kit` | Login, Event list, sheet wizard, owner grid, catalog forms, orientation |
+| FastAPI | Python 3, `/api/v1` | Session gate, Google OAuth, CRUD, owner 404, overlap 409 per sheet, composite sheet schedule, atomic bulk allocation patch/delete |
+| Seed catalog | `server/data/bmmt-2026.json` | Demo Event + one sheet for `SEED_OWNER_EMAIL`; upserts that user with `google_sub` null until first Google login |
+| PostgreSQL | Postgres 16 (Docker Compose) | Source of truth, including `users` and `sheets` |
 | Google Identity | OAuth 2.0 authorization code | Sign-in; SPA never holds the client secret |
 
-Orientation is the only `localStorage` key. The schedule is not stored in the browser. The session is an HTTP-only signed cookie (`ra_session`).
+Orientation and last Event id are the only `localStorage` keys. The schedule is not stored in the browser. The session is an HTTP-only signed cookie (`ra_session`).

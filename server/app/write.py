@@ -10,6 +10,7 @@ CONSTRAINT_MESSAGES = {
     "floors_building_id_label_key": "A floor with this label already exists in this building",
     "rooms_building_id_name_key": "A room with this name already exists in this building",
     "allocations_no_overlap": "Allocation overlaps an existing booking in this room",
+    "sheets_slot_minutes_check": "slotMinutes must be 5, 15, or 30",
     "events_slot_minutes_check": "slotMinutes must be 5, 15, or 30",
     "allocations_end_after_start": "endAt must be after startAt",
 }

@@ -28,31 +28,31 @@ Hierarchy: **Org → Building → Floor → Room**, and **Org → Event → Shee
 
 Display label: `{building.code}{room.name}` → `DWIN155`. Room number and floor are stored separately.
 
-**Phase 1 (current code):** there are no orgs or sheets. Event still owns activities, time blocks, and allocations. That split lands in Phase 2.
+**Phase 2b (current code):** sheets exist and are owner-private. Event is a label plus clock defaults copied onto a sheet at create. Catalog and Events are still global (no orgs until 2c).
 
 As-built types for v0: [specs/2026-08-11-v0-vision-demo.md](specs/2026-08-11-v0-vision-demo.md). Persistence field lists and SQL as shipped: [specs/2026-08-11-phase-1-core-loop.md](specs/2026-08-11-phase-1-core-loop.md). Target model: [specs/2026-08-13-phase-2-accounts-orgs.md](specs/2026-08-13-phase-2-accounts-orgs.md).
 
 ## Architecture
 
-**Current (Phase 2a):** Vite SPA in `frontend/` talks to FastAPI in `server/`. PostgreSQL is the schedule store. Google OAuth (or local `ENABLE_DEV_AUTH` login) sets an HTTP-only session cookie. Unauthenticated `/api/v1` calls return 401. Catalog and Events are still global. No orgs or sheets yet.
+**Current (Phase 2b):** Vite SPA in `frontend/` talks to FastAPI in `server/`. PostgreSQL is the schedule store. Google OAuth (or local `ENABLE_DEV_AUTH` login) sets an HTTP-only session cookie. Unauthenticated `/api/v1` calls return 401. Catalog and Events are still global. Allocations live on private sheets (`#/sheets/{id}`); Event edits do not rewrite existing sheets.
 
 As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **current commit**, not a future target.
 
-**Phase 2 (rest):** Orgs, Event as a label with default clock settings, private sheets (2b–2d), then public HTTPS (2e). No Share button and no live sync yet.
+**Phase 2 (rest):** Orgs and roles (2c), invites (2d), then public HTTPS (2e). No Share button and no live sync yet.
 
 **Later:** invite another account onto a **sheet** (viewer / editor), then WebSockets / presence.
 
 ## Technology Summary
 
-| Layer | Phase 1 | Phase 2a (now) | Phase 2 (2b–2e) | Later |
-| ----- | ------- | -------------- | ---------------- | ----- |
-| UI | React 18, TypeScript, Vite, `@dnd-kit` | Same + `#/login` | login + org/event/sheet lists | Same core; GUIDELINES extras only if we adopt them |
-| State | React `useState` | Same | Same | TBD if catalog/grid state gets hard to share |
-| Persistence | PostgreSQL + SQLAlchemy + Alembic | Same + `users` | orgs, sheets | Same |
-| API | FastAPI `/api/v1` (unauthenticated) | Session cookie; still global catalog/events | org- and owner-gated | Same |
-| Identity | None | Google OAuth (+ local dev login) | Same | Sheet sharing ACL |
-| Realtime | None | None | None | WebSockets |
-| Package manager | npm | npm | npm | Stay on npm until we choose otherwise |
+| Layer | Phase 1 | Phase 2a | Phase 2b (now) | Phase 2 (2c–2e) | Later |
+| ----- | ------- | -------- | -------------- | ---------------- | ----- |
+| UI | React 18, TypeScript, Vite, `@dnd-kit` | Same + `#/login` | Event list, sheet wizard, `#/sheets/{id}` grid | org/event/sheet lists | Same core; GUIDELINES extras only if we adopt them |
+| State | React `useState` | Same | Same | Same | TBD if catalog/grid state gets hard to share |
+| Persistence | PostgreSQL + SQLAlchemy + Alembic | Same + `users` | Same + `sheets`; plan children on sheet | orgs | Same |
+| API | FastAPI `/api/v1` (unauthenticated) | Session cookie; still global catalog/events | Owner-gated sheets; catalog still global | org- and owner-gated | Same |
+| Identity | None | Google OAuth (+ local dev login) | Same | Same | Sheet sharing ACL |
+| Realtime | None | None | None | None | WebSockets |
+| Package manager | npm | npm | npm | npm | Stay on npm until we choose otherwise |
 
 ## Phased Delivery
 
@@ -60,7 +60,7 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | ----- | ---- | ------ |
 | **v0 — Vision demo** | Prove grid UX | **Complete** (2026-08-11). Spec: [specs/2026-08-11-v0-vision-demo.md](specs/2026-08-11-v0-vision-demo.md) |
 | **1 — Core loop** | Persistent single-user product | **Complete** (2026-08-11). Spec: [specs/2026-08-11-phase-1-core-loop.md](specs/2026-08-11-phase-1-core-loop.md) |
-| **2 — Accounts, orgs, private sheets** | Public Google sign-in; org catalog; Event labels; owner-only sheets | **In progress (2a).** Spec: [specs/2026-08-13-phase-2-accounts-orgs.md](specs/2026-08-13-phase-2-accounts-orgs.md). Ship as **2a–2e** (sign-in → sheets → orgs → invites → public HTTPS) |
+| **2 — Accounts, orgs, private sheets** | Public Google sign-in; org catalog; Event labels; owner-only sheets | **In progress (2a–2b).** Spec: [specs/2026-08-13-phase-2-accounts-orgs.md](specs/2026-08-13-phase-2-accounts-orgs.md). Ship as **2a–2e** (sign-in → sheets → orgs → invites → public HTTPS) |
 | **3 — Power features** | Templates, proctors, export, capacity; candidate home for [catalog history + plan pins](specs/2026-08-13-catalog-history-and-plan-pins.md) | Planned (was Phase 2) |
 | **4 — Polish** | Sheets import, mobile read-only, `team_count` | Planned (was Phase 3) |
 | **Later — Collaboration** | Share a sheet like Google Sheets, then live sync | Unsequenced. Draft: [specs/2026-08-11-phase-2-collaboration.md](specs/2026-08-11-phase-2-collaboration.md) |
@@ -79,7 +79,7 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 
 | Question | Status |
 | -------- | ------ |
-| Slot granularity | **Decided:** 15 min default; per-sheet in Phase 2 (per-event in Phase 1 code) |
+| Slot granularity | **Decided:** 15 min default; per-sheet (Event stores defaults copied at create) |
 | v0 deploy | **Decided:** static host |
 | Phase 1 hosted deploy | **Decided:** local-only |
 | Registration / team counts | **Decided:** later (Phase 4); not on Event |

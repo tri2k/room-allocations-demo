@@ -1,10 +1,29 @@
-export type AppPage = "login" | "catalog" | "event" | "schedule";
+export type AppRoute =
+  | { name: "login" }
+  | { name: "catalog" }
+  | { name: "events" }
+  | { name: "eventSheets"; eventId: string }
+  | { name: "newSheet"; eventId: string }
+  | { name: "sheet"; sheetId: string }
+  | { name: "sheetSettings"; sheetId: string };
 
-export const pageFromHash = (hash: string): AppPage => {
+const pathFromHash = (hash: string): string => {
   const trimmed = hash.startsWith("#") ? hash.slice(1) : hash;
-  const path = (trimmed.split("?")[0] || "/").replace(/\/+$/, "") || "/";
-  if (path === "/login") return "login";
-  if (path === "/catalog") return "catalog";
-  if (path === "/event") return "event";
-  return "schedule";
+  return (trimmed.split("?")[0] || "/").replace(/\/+$/, "") || "/";
+};
+
+export const parseHash = (hash: string): AppRoute => {
+  const path = pathFromHash(hash);
+  if (path === "/login") return { name: "login" };
+  if (path === "/catalog") return { name: "catalog" };
+  if (path === "/events" || path === "/event" || path === "/") return { name: "events" };
+  const newSheet = path.match(/^\/events\/([^/]+)\/sheets\/new$/);
+  if (newSheet) return { name: "newSheet", eventId: newSheet[1] };
+  const sheets = path.match(/^\/events\/([^/]+)\/sheets$/);
+  if (sheets) return { name: "eventSheets", eventId: sheets[1] };
+  const settings = path.match(/^\/sheets\/([^/]+)\/settings$/);
+  if (settings) return { name: "sheetSettings", sheetId: settings[1] };
+  const sheet = path.match(/^\/sheets\/([^/]+)$/);
+  if (sheet) return { name: "sheet", sheetId: sheet[1] };
+  return { name: "events" };
 };

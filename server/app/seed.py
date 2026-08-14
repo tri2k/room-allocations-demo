@@ -7,8 +7,8 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.models import Activity, Allocation, Building, Event, Floor, Room, TimeBlock, User
-from app.timeutil import parse_event_dt
+from app.models import Activity, Allocation, Building, Event, Floor, Room, Sheet, TimeBlock, User
+from app.timeutil import parse_tz_dt
 
 SEED_PATH = Path(__file__).resolve().parent.parent / "data" / "bmmt-2026.json"
 
@@ -16,6 +16,7 @@ TABLES = (
     "allocations",
     "time_blocks",
     "activities",
+    "sheets",
     "events",
     "rooms",
     "floors",
@@ -64,10 +65,11 @@ def seed_from_json(db: Session, path: Path = SEED_PATH) -> Event:
         room_ids[item["id"]] = row.id
 
     event_raw = raw["event"]
+    event_date = date.fromisoformat(event_raw["eventDate"])
     event = Event(
         id=uuid4(),
         name=event_raw["name"],
-        event_date=date.fromisoformat(event_raw["eventDate"]),
+        event_date=event_date,
         timezone=event_raw["timezone"],
         slot_minutes=event_raw["slotMinutes"],
         grid_start=time.fromisoformat(event_raw["gridStart"]),
@@ -76,10 +78,26 @@ def seed_from_json(db: Session, path: Path = SEED_PATH) -> Event:
     db.add(event)
     db.flush()
 
+    owner = ensure_seed_owner(db)
+    included = [room_ids[item["id"]] for item in raw["rooms"]]
+    sheet = Sheet(
+        title=event_raw["name"],
+        event_id=event.id,
+        owner_id=owner.id,
+        plan_date=event_date,
+        timezone=event.timezone,
+        slot_minutes=event.slot_minutes,
+        grid_start=event.grid_start,
+        grid_end=event.grid_end,
+        included_room_ids=included,
+    )
+    db.add(sheet)
+    db.flush()
+
     for index, item in enumerate(raw["activities"]):
         row = Activity(
             id=uuid4(),
-            event_id=event.id,
+            sheet_id=sheet.id,
             name=item["name"],
             color=item["color"],
             default_duration_min=item["defaultDurationMin"],
@@ -93,7 +111,7 @@ def seed_from_json(db: Session, path: Path = SEED_PATH) -> Event:
         db.add(
             TimeBlock(
                 id=uuid4(),
-                event_id=event.id,
+                sheet_id=sheet.id,
                 label=item["label"],
                 start_time=time.fromisoformat(item["startTime"]),
                 end_time=time.fromisoformat(item["endTime"]),
@@ -105,12 +123,12 @@ def seed_from_json(db: Session, path: Path = SEED_PATH) -> Event:
     db.flush()
 
     for item in raw["allocations"]:
-        start = parse_event_dt(datetime.fromisoformat(item["startAt"]), event)
-        end = parse_event_dt(datetime.fromisoformat(item["endAt"]), event)
+        start = parse_tz_dt(datetime.fromisoformat(item["startAt"]), event.timezone)
+        end = parse_tz_dt(datetime.fromisoformat(item["endAt"]), event.timezone)
         db.add(
             Allocation(
                 id=uuid4(),
-                event_id=event.id,
+                sheet_id=sheet.id,
                 room_id=room_ids[item["roomId"]],
                 activity_id=activity_ids[item["activityId"]],
                 start_at=start,
@@ -120,14 +138,11 @@ def seed_from_json(db: Session, path: Path = SEED_PATH) -> Event:
         )
 
     db.flush()
-    ensure_seed_owner(db)
     return event
 
 
-def ensure_seed_owner(db: Session) -> User | None:
+def ensure_seed_owner(db: Session) -> User:
     email = get_settings().seed_owner_email.strip().lower()
-    if not email or "@" not in email:
-        return None
     existing = db.scalar(select(User).where(User.email == email))
     if existing is not None:
         return existing

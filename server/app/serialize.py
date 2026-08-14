@@ -1,4 +1,4 @@
-from app.models import Activity, Allocation, Building, Event, Floor, Room, TimeBlock, User
+from app.models import Activity, Allocation, Building, Event, Floor, Room, Sheet, TimeBlock, User
 from app.schemas import (
     ActivityOut,
     AllocationOut,
@@ -8,10 +8,11 @@ from app.schemas import (
     FloorOut,
     RoomOut,
     ScheduleEventOut,
+    SheetOut,
     TimeBlockOut,
     UserOut,
 )
-from app.timeutil import format_event_dt, format_hhmm
+from app.timeutil import format_hhmm, format_tz_dt
 
 
 def user_out(row: User) -> UserOut:
@@ -61,32 +62,34 @@ def event_out(row: Event) -> EventOut:
 
 
 def event_detail_out(row: Event) -> EventDetailOut:
-    base = event_out(row)
-    return EventDetailOut(
-        **base.model_dump(),
-        activities=[activity_out(item) for item in sorted(row.activities, key=lambda a: a.sort_order)],
-        time_blocks=[time_block_out(item) for item in sorted(row.time_blocks, key=lambda t: t.sort_order)],
-    )
+    return EventDetailOut.model_validate(event_out(row).model_dump())
 
 
 def schedule_event_out(row: Event) -> ScheduleEventOut:
-    return ScheduleEventOut(
+    return ScheduleEventOut(id=row.id, name=row.name, event_date=row.event_date)
+
+
+def sheet_out(row: Sheet) -> SheetOut:
+    return SheetOut(
         id=row.id,
-        name=row.name,
-        event_date=row.event_date,
+        title=row.title,
+        event_id=row.event_id,
+        owner_id=row.owner_id,
+        plan_date=row.plan_date,
         timezone=row.timezone,
         slot_minutes=row.slot_minutes,
         grid_start=format_hhmm(row.grid_start),
         grid_end=format_hhmm(row.grid_end),
+        included_room_ids=list(row.included_room_ids or []),
     )
 
 
-def allocation_out(row: Allocation, event: Event) -> AllocationOut:
+def allocation_out(row: Allocation, timezone: str) -> AllocationOut:
     return AllocationOut(
         id=row.id,
         room_id=row.room_id,
         activity_id=row.activity_id,
-        start_at=format_event_dt(row.start_at, event),
-        end_at=format_event_dt(row.end_at, event),
+        start_at=format_tz_dt(row.start_at, timezone),
+        end_at=format_tz_dt(row.end_at, timezone),
         notes=row.notes,
     )
