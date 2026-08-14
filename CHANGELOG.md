@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Phase 2a Google sign-in (2026-08-14)
+
+- HTTP-only session cookie; unauthenticated `/api/v1` is 401
+- Google OAuth authorization-code flow on the API; SPA `#/login` with Continue with Google
+- Local bypass `POST /api/v1/dev/login` when `ENABLE_DEV_AUTH=true` (not for production)
+- `users` table; seed upserts `SEED_OWNER_EMAIL` with `google_sub` null until first Google login
+- Sign out clears the cookie; refresh stays signed out
+- Domain model is still Phase 1 (global catalog, Event owns the grid)
+- Spec: [specs/2026-08-13-phase-2-accounts-orgs.md](specs/2026-08-13-phase-2-accounts-orgs.md) subphase 2a
+
+
 ### Product plan: Phase 2 is accounts, not power features (2026-08-13)
 
 - Next phase is Google OAuth, orgs, Event-as-label, and owner-only allocations sheets, ending in a public HTTPS demo

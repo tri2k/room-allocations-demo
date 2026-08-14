@@ -21,6 +21,31 @@ class APIModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, from_attributes=True)
 
 
+class UserOut(APIModel):
+    id: UUID
+    email: str
+    name: str | None = None
+
+
+class AuthConfigOut(APIModel):
+    google_enabled: bool
+    dev_auth: bool
+
+
+class DevLoginIn(APIModel):
+    email: str
+    name: str | None = None
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        email = value.strip().lower()
+        local, sep, domain = email.partition("@")
+        if not sep or not local or not domain or "." not in domain:
+            raise ValueError("Invalid email")
+        return email
+
+
 class BuildingCreate(APIModel):
     code: str
     name: str

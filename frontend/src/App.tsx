@@ -121,6 +121,7 @@ function App() {
             Seed demo data
           </button>
         </div>
+        <AppNav current="schedule" />
       </div>
     );
   }
@@ -133,6 +134,7 @@ function App() {
         <button className="reset-button" onClick={() => void reload()}>
           Retry
         </button>
+        <AppNav current="schedule" />
       </div>
     );
   }
@@ -808,28 +810,32 @@ function ScheduleBoard({ state, setState, reload, onReseed }: ScheduleBoardProps
             <h1>{state.event.name} Room Schedule</h1>
             <p>Drag from palette, bulk assign by floor. Schedule is saved on the server.</p>
           </div>
-          <div className="topbar-actions">
-            <AppNav current="schedule" />
-            <button
-              onClick={() => setOrientation((previous) => (previous === "normal" ? "transposed" : "normal"))}
-              className="reset-button"
-            >
-              {orientation === "normal" ? "Transpose" : "Normal View"}
-            </button>
-            {selectedRoomIds.length > 0 ? (
-              <button
-                type="button"
-                className="reset-button"
-                onClick={() => setSelectedRoomIds([])}
-                title="Stop bulk-assigning to selected rooms"
-              >
-                Clear selection ({selectedRoomIds.length})
-              </button>
-            ) : null}
-            <button onClick={() => void resetToSeed()} className="reset-button">
-              Reset
-            </button>
-          </div>
+          <AppNav
+            current="schedule"
+            extra={
+              <>
+                <button
+                  onClick={() => setOrientation((previous) => (previous === "normal" ? "transposed" : "normal"))}
+                  className="reset-button"
+                >
+                  {orientation === "normal" ? "Transpose" : "Normal View"}
+                </button>
+                {selectedRoomIds.length > 0 ? (
+                  <button
+                    type="button"
+                    className="reset-button"
+                    onClick={() => setSelectedRoomIds([])}
+                    title="Stop bulk-assigning to selected rooms"
+                  >
+                    Clear selection ({selectedRoomIds.length})
+                  </button>
+                ) : null}
+                <button onClick={() => void resetToSeed()} className="reset-button">
+                  Reset
+                </button>
+              </>
+            }
+          />
         </header>
 
         <div className="workspace">

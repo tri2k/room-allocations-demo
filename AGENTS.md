@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Room Allocations is a drag-and-drop event room scheduler. Phase 1 is a local FastAPI + Postgres app with the v0 grid wired to `/api/v1`.
+Room Allocations is a drag-and-drop event room scheduler. Phase 2a adds Google sign-in (session cookie) on the Phase 1 FastAPI + Postgres app; catalog and Events are still global.
 
 Cross-project defaults live in [GUIDELINES.md](GUIDELINES.md). This file is **this repo only** — do not copy aspirational GUIDELINES stack (Zustand, Tailwind, pnpm, TanStack Router, tests) here until the repo actually uses them.
 
@@ -10,7 +10,8 @@ Cross-project defaults live in [GUIDELINES.md](GUIDELINES.md). This file is **th
 - Backend: Python, FastAPI, SQLAlchemy 2, Alembic, `psycopg2-binary` in `server/`
 - Persistence: PostgreSQL 16 (Docker Compose)
 - Seed: `server/data/bmmt-2026.json` + `POST /api/v1/dev/reseed` when `ENABLE_DEV_RESEED=true`
-- No auth, router library, test runner, or lint script yet
+- Auth: Google OAuth + HTTP-only session cookie; `ENABLE_DEV_AUTH=true` enables `POST /api/v1/dev/login`
+- No org/sheet split, router library, test runner, or lint script yet
 
 ## Commands
 
@@ -54,6 +55,7 @@ Frontend `npm run build` / `npm run preview` still apply inside `frontend/`.
 - JSON is camelCase; SQL is snake_case
 - Overlap on one room is HTTP 409 (bulk create reports `skipped`)
 - Group edit of allocations uses atomic `bulk-patch` / `bulk-delete`
+- `/api/v1` requires a session cookie (except OAuth start/callback, `GET /auth/config`, `POST /auth/logout`, and `POST /dev/login` when enabled)
 
 ## Cursor Cloud specific instructions
 
@@ -66,5 +68,5 @@ Cloud VMs here do not ship `python3-venv` apt packages; use **`uv`** (`~/.local/
 - `ERR_CONNECTION_REFUSED` on `:5173` almost always means Vite is not running (or `frontend/node_modules` was never installed). Fastest checks: `curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:5173/` and whether a `vite`/`npm run dev` process exists. In this VM `localhost` resolves to `::1` first; start Vite with `--host ::` (not only `0.0.0.0`) so IPv6 previews do not refuse.
 - Docker needs a running `dockerd` (fuse-overlayfs storage). Prefer `sudo docker …` unless the agent user is already in the `docker` group for the current session.
 - After compose comes up, wait until the `postgres` healthcheck is healthy before `alembic upgrade head` / `python -m scripts.seed`.
-- Copy `server/.env.example` → `server/.env` once (`ENABLE_DEV_RESEED=true` for Reset). `.env` is gitignored.
-- No lint/test scripts are defined yet (see Stack above). Sanity checks: `cd frontend && npm run build`, `curl http://127.0.0.1:8000/health`, and UI against `#/`, `#/catalog`, `#/event`.
+- Copy `server/.env.example` → `server/.env` once (`ENABLE_DEV_RESEED=true` and `ENABLE_DEV_AUTH=true` for local Reset + dev sign-in). `.env` is gitignored.
+- No lint/test scripts are defined yet (see Stack above). Sanity checks: `cd frontend && npm run build`, `curl http://127.0.0.1:8000/health`, `curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8000/api/v1/events` (expect `401` without a cookie), and UI against `#/login`, `#/`, `#/catalog`, `#/event`.
