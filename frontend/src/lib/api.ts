@@ -11,12 +11,33 @@ export class ApiError extends Error {
   }
 }
 
-const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
+type UnauthorizedHandler = () => void;
+
+let unauthorizedHandler: UnauthorizedHandler | null = null;
+
+export const setUnauthorizedHandler = (handler: UnauthorizedHandler | null): void => {
+  unauthorizedHandler = handler;
+};
+
+export type AuthUser = {
+  id: string;
+  email: string;
+  name: string | null;
+};
+
+export type AuthConfig = {
+  googleEnabled: boolean;
+  devAuth: boolean;
+};
+
+const request = async <T>(path: string, init?: RequestInit & { skipAuthRedirect?: boolean }): Promise<T> => {
+  const { skipAuthRedirect, ...fetchInit } = init ?? {};
   const response = await fetch(path, {
-    ...init,
+    ...fetchInit,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(init?.headers ?? {})
+      ...(fetchInit.headers ?? {})
     }
   });
   if (response.status === 204) return undefined as T;
@@ -35,6 +56,9 @@ const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
       response.status === 404 && detail === "Not Found"
         ? "API route missing. Restart the FastAPI server so it matches this frontend."
         : detail;
+    if (response.status === 401 && !skipAuthRedirect) {
+      unauthorizedHandler?.();
+    }
     throw new ApiError(response.status, message);
   }
   return body as T;
@@ -48,6 +72,16 @@ const formatDetail = (detail: unknown, status: number): string => {
   }
   return `Request failed (${status})`;
 };
+
+export const getAuthConfig = (): Promise<AuthConfig> =>
+  request("/api/v1/auth/config", { skipAuthRedirect: true });
+
+export const getMe = (): Promise<AuthUser> => request("/api/v1/auth/me", { skipAuthRedirect: true });
+
+export const logout = (): Promise<void> => request("/api/v1/auth/logout", { method: "POST", skipAuthRedirect: true });
+
+export const loginDev = (body: { email: string; name?: string }): Promise<AuthUser> =>
+  request("/api/v1/dev/login", { method: "POST", body: JSON.stringify(body), skipAuthRedirect: true });
 
 export type Warning = { code: string; message: string };
 

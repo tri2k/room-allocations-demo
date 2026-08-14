@@ -1,6 +1,6 @@
 # Phase 2 Accounts, Orgs, and Private Sheets
 
-**Status**: Draft (not implemented)
+**Status**: In progress (2a implemented; 2b–2e not started)
 
 Product context: [PRODUCT.md](../PRODUCT.md). Depends on [Phase 1](2026-08-11-phase-1-core-loop.md). Live co-editing of a sheet is **not** this phase: [collaboration spec](2026-08-11-phase-2-collaboration.md).
 
@@ -451,5 +451,14 @@ Phase 2 is complete when **all** of 2a–2e “done when” lists pass, and:
 - [ ] C4 matches the deployed architecture (SPA, API, Postgres, Google as identity)
 
 ## Post-implementation notes
+
+### 2a (2026-08-14)
+
+- Session is a signed HTTP-only cookie (`ra_session`), not a `sessions` table. TTL default 14 days. `SESSION_SECURE` stays false on localhost.
+- Google is authorization-code + userinfo on the API. Empty `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` hides Continue with Google (`GET /api/v1/auth/config`).
+- Local bypass: `ENABLE_DEV_AUTH=true` and `POST /api/v1/dev/login` `{ "email" }`. Same cookie as Google. Off in production (2e).
+- Seed upserts `SEED_OWNER_EMAIL` and does **not** truncate `users` on reseed, so `google_sub` survives Reset.
+- Hash routes still have no router library. `#/login` is exact-match so future `#/events` will not collide with `#/event`.
+- Host / public URL still 2e.
 
 Fill in when 2e ships (deviations, seed owner email, host chosen).

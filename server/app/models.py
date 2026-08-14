@@ -17,6 +17,16 @@ class TimestampMixin:
     )
 
 
+class User(TimestampMixin, Base):
+    __tablename__ = "users"
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    google_sub: Mapped[str | None] = mapped_column(String(64), unique=True)
+    name: Mapped[str | None] = mapped_column(String(256))
+    picture_url: Mapped[str | None] = mapped_column(String(1024))
+
+
 class Building(TimestampMixin, Base):
     __tablename__ = "buildings"
 

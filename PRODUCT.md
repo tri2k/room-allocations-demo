@@ -34,25 +34,25 @@ As-built types for v0: [specs/2026-08-11-v0-vision-demo.md](specs/2026-08-11-v0-
 
 ## Architecture
 
-**Current (Phase 1):** Vite SPA in `frontend/` talks to FastAPI in `server/`. PostgreSQL is the schedule store. No auth. Catalog and Events are global.
+**Current (Phase 2a):** Vite SPA in `frontend/` talks to FastAPI in `server/`. PostgreSQL is the schedule store. Google OAuth (or local `ENABLE_DEV_AUTH` login) sets an HTTP-only session cookie. Unauthenticated `/api/v1` calls return 401. Catalog and Events are still global. No orgs or sheets yet.
 
 As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **current commit**, not a future target.
 
-**Phase 2 (next):** Google OAuth, public HTTPS, orgs. Org owns the catalog. Event is a label with default clock settings for new sheets. Each user owns private sheets (room pick list, activities, clock, allocations). No Share button and no live sync yet.
+**Phase 2 (rest):** Orgs, Event as a label with default clock settings, private sheets (2b–2d), then public HTTPS (2e). No Share button and no live sync yet.
 
 **Later:** invite another account onto a **sheet** (viewer / editor), then WebSockets / presence.
 
 ## Technology Summary
 
-| Layer | Phase 1 (now) | Phase 2 | Later |
-| ----- | ------------- | ------- | ----- |
-| UI | React 18, TypeScript, Vite, `@dnd-kit` | Same; login + org/event/sheet lists | Same core; GUIDELINES extras only if we adopt them |
-| State | React `useState` | Same | TBD if catalog/grid state gets hard to share |
-| Persistence | PostgreSQL + SQLAlchemy + Alembic | Same; `users`, orgs, sheets | Same |
-| API | FastAPI `/api/v1` (unauthenticated) | Session cookie; org- and owner-gated | Same |
-| Identity | None | Google OAuth | Sheet sharing ACL |
-| Realtime | None | None | WebSockets |
-| Package manager | npm | npm | Stay on npm until we choose otherwise |
+| Layer | Phase 1 | Phase 2a (now) | Phase 2 (2b–2e) | Later |
+| ----- | ------- | -------------- | ---------------- | ----- |
+| UI | React 18, TypeScript, Vite, `@dnd-kit` | Same + `#/login` | login + org/event/sheet lists | Same core; GUIDELINES extras only if we adopt them |
+| State | React `useState` | Same | Same | TBD if catalog/grid state gets hard to share |
+| Persistence | PostgreSQL + SQLAlchemy + Alembic | Same + `users` | orgs, sheets | Same |
+| API | FastAPI `/api/v1` (unauthenticated) | Session cookie; still global catalog/events | org- and owner-gated | Same |
+| Identity | None | Google OAuth (+ local dev login) | Same | Sheet sharing ACL |
+| Realtime | None | None | None | WebSockets |
+| Package manager | npm | npm | npm | Stay on npm until we choose otherwise |
 
 ## Phased Delivery
 
@@ -60,7 +60,7 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | ----- | ---- | ------ |
 | **v0 — Vision demo** | Prove grid UX | **Complete** (2026-08-11). Spec: [specs/2026-08-11-v0-vision-demo.md](specs/2026-08-11-v0-vision-demo.md) |
 | **1 — Core loop** | Persistent single-user product | **Complete** (2026-08-11). Spec: [specs/2026-08-11-phase-1-core-loop.md](specs/2026-08-11-phase-1-core-loop.md) |
-| **2 — Accounts, orgs, private sheets** | Public Google sign-in; org catalog; Event labels; owner-only sheets | Planned. Spec: [specs/2026-08-13-phase-2-accounts-orgs.md](specs/2026-08-13-phase-2-accounts-orgs.md). Ship as **2a–2e** (sign-in → sheets → orgs → invites → public HTTPS) |
+| **2 — Accounts, orgs, private sheets** | Public Google sign-in; org catalog; Event labels; owner-only sheets | **In progress (2a).** Spec: [specs/2026-08-13-phase-2-accounts-orgs.md](specs/2026-08-13-phase-2-accounts-orgs.md). Ship as **2a–2e** (sign-in → sheets → orgs → invites → public HTTPS) |
 | **3 — Power features** | Templates, proctors, export, capacity; candidate home for [catalog history + plan pins](specs/2026-08-13-catalog-history-and-plan-pins.md) | Planned (was Phase 2) |
 | **4 — Polish** | Sheets import, mobile read-only, `team_count` | Planned (was Phase 3) |
 | **Later — Collaboration** | Share a sheet like Google Sheets, then live sync | Unsequenced. Draft: [specs/2026-08-11-phase-2-collaboration.md](specs/2026-08-11-phase-2-collaboration.md) |
@@ -69,7 +69,7 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 ## Non-Functional Requirements
 
 - Phase 1: local Docker Postgres + FastAPI; UI may still be demo-quality / buggy
-- Phase 2e: public HTTPS; `ENABLE_DEV_RESEED` off in production
+- Phase 2e: public HTTPS; `ENABLE_DEV_RESEED` and `ENABLE_DEV_AUTH` off in production
 - Slot grid: 15 minutes default (sheet-configurable: 5 / 15 / 30)
 - Overlap in one room **on one sheet**: HTTP 409; bulk create reports skipped rooms. Two sheets may book the same room at the same time
 - Warnings over hard blocks for room-type and capacity exceptions

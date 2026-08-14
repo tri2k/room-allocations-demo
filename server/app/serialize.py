@@ -1,4 +1,4 @@
-from app.models import Activity, Allocation, Building, Event, Floor, Room, TimeBlock
+from app.models import Activity, Allocation, Building, Event, Floor, Room, TimeBlock, User
 from app.schemas import (
     ActivityOut,
     AllocationOut,
@@ -9,8 +9,13 @@ from app.schemas import (
     RoomOut,
     ScheduleEventOut,
     TimeBlockOut,
+    UserOut,
 )
 from app.timeutil import format_event_dt, format_hhmm
+
+
+def user_out(row: User) -> UserOut:
+    return UserOut.model_validate(row)
 
 
 def building_out(row: Building) -> BuildingOut:

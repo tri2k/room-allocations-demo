@@ -3,10 +3,11 @@ from pathlib import Path
 from uuid import uuid4
 import json
 
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from app.models import Activity, Allocation, Building, Event, Floor, Room, TimeBlock
+from app.config import get_settings
+from app.models import Activity, Allocation, Building, Event, Floor, Room, TimeBlock, User
 from app.timeutil import parse_event_dt
 
 SEED_PATH = Path(__file__).resolve().parent.parent / "data" / "bmmt-2026.json"
@@ -119,7 +120,21 @@ def seed_from_json(db: Session, path: Path = SEED_PATH) -> Event:
         )
 
     db.flush()
+    ensure_seed_owner(db)
     return event
+
+
+def ensure_seed_owner(db: Session) -> User | None:
+    email = get_settings().seed_owner_email.strip().lower()
+    if not email or "@" not in email:
+        return None
+    existing = db.scalar(select(User).where(User.email == email))
+    if existing is not None:
+        return existing
+    user = User(email=email, name="Seed owner", google_sub=None)
+    db.add(user)
+    db.flush()
+    return user
 
 
 def reseed(db: Session) -> Event:
