@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Indoor maps architecture (2026-08-21)
+
+- Device-first indoor map from BMT toggle-map Figma files (Dwinelle, Wheeler, VLSB): Leaflet `CRS.Simple`, not a print poster
+- Geometry is Figma-import only; catalog `rooms` keep capacity; live exam overlay (role, proctors, timers) is a separate join
+- Importer is a fail-loud contract (role aliases, goldens), not a scrape of one `.fig` tree
+- Spec: [specs/2026-08-21-indoor-maps.md](specs/2026-08-21-indoor-maps.md)
+- Docs only; no application code in this change
+
 ### Phase 2b private sheets (2026-08-14)
 
 - Event is a label plus clock **defaults**; planning lives on an owner-only `sheets` row

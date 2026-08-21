@@ -40,7 +40,7 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 
 **Phase 2 (rest):** Orgs and roles (2c), invites (2d), then public HTTPS (2e). No Share button and no live sync yet.
 
-**Later:** invite another account onto a **sheet** (viewer / editor), then WebSockets / presence.
+**Later:** invite another account onto a **sheet** (viewer / editor), then WebSockets / presence. Indoor maps (Figma-imported floor polygons, Leaflet viewer, live overlay) are a separate later track: [specs/2026-08-21-indoor-maps.md](specs/2026-08-21-indoor-maps.md).
 
 ## Technology Summary
 
@@ -65,6 +65,7 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | **4 — Polish** | Sheets import, mobile read-only, `team_count` | Planned (was Phase 3) |
 | **Later — Collaboration** | Share a sheet like Google Sheets, then live sync | Unsequenced. Draft: [specs/2026-08-11-phase-2-collaboration.md](specs/2026-08-11-phase-2-collaboration.md) |
 | **Later — Catalog history** | Revision timeline, per-sheet pin, optional sync to latest catalog | Draft: [specs/2026-08-13-catalog-history-and-plan-pins.md](specs/2026-08-13-catalog-history-and-plan-pins.md) |
+| **Later — Indoor maps** | Figma-imported floor plans (Dwinelle / Wheeler / VLSB); device pan-zoom map; live exam overlay joins catalog rooms | Draft: [specs/2026-08-21-indoor-maps.md](specs/2026-08-21-indoor-maps.md) |
 
 ## Non-Functional Requirements
 
@@ -92,3 +93,4 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | Platform superuser scope | **Phase 2:** create org + first admin only. **Future:** broader superuser tooling likely (recovery, support) — not scoped yet |
 | Public HTTPS | **Decided:** in Phase 2e. Host vendor TBD |
 | Catalog history / plan pins | **Future.** [specs/2026-08-13-catalog-history-and-plan-pins.md](specs/2026-08-13-catalog-history-and-plan-pins.md) |
+| Indoor floor maps | **Decided (architecture):** Figma import owns geometry; Leaflet `CRS.Simple` viewer; capacity stays on `rooms`; live event data is a join. [specs/2026-08-21-indoor-maps.md](specs/2026-08-21-indoor-maps.md) |
