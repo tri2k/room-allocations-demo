@@ -2,7 +2,7 @@
 
 **Status**: Draft (future — not Phase 2)
 
-Product context: [PRODUCT.md](../PRODUCT.md). Depends on catalog **Building → Floor → Room** from [Phase 1](2026-08-11-phase-1-core-loop.md). Org-scope the catalog when [Phase 2c](2026-08-13-phase-2-accounts-orgs.md) lands; do not block a first slice on orgs or public HTTPS. Live exam overlay overlaps Phase 3 proctors. Do not implement until this spec is scheduled.
+Product context: [PRODUCT.md](../PRODUCT.md). Parent vision: [event operations platform](2026-08-22-ops-platform.md) (maps are a projection of the rooms kernel, not a second catalog). Depends on catalog **Building → Floor → Room** from [Phase 1](2026-08-11-phase-1-core-loop.md). Org-scope the catalog when [Phase 2c](2026-08-13-phase-2-accounts-orgs.md) lands; do not block a first slice on orgs or public HTTPS. Live exam overlay overlaps Phase 3 proctors. Do not implement until this spec is scheduled.
 
 Source files (not in this repo yet): BMT Maps Spring 2026 Figma toggle maps — Dwinelle (`C` / `D` / `E`), Wheeler (`B` / `1` / `2`), VLSB (`2`). Print layouts stay in Figma; this app does not reproduce the poster.
 
