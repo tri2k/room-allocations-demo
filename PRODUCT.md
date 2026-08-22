@@ -1,14 +1,14 @@
 # Room Allocations
 
-A general-purpose event room scheduler: a building/floor/room catalog plus a drag-and-drop room × time grid.
+A rooms catalog plus the tools that should share it: an event room allocator, day-of ops, proctor tools, a public map site, and volunteer tracking.
 
 ## Vision
 
-Event organizers (BmMT and similar) still plan rooms in spreadsheets: a dense time × room matrix, merged cells, copy-paste across columns, no conflict detection, and “FINAL v3” file sharing.
+Event organizers (BmMT and similar) still run contests from a pile of spreadsheets and forms: a classroom/capacity sheet, a dense time × room grid, a volunteer Google Form whose room list is copied by hand, printed day-of status, and guest maps that do not know about any of the above. Each copy of DWIN155 drifts.
 
-The product replaces that sheet with a reusable room catalog and a grid where activities snap onto rooms and time. Bulk assign by floor or building is the main win. Sharing a plan like Google Sheets, then live multi-user editing, comes later.
+The kernel is a **rooms catalog**. The allocator (this repo today) is the first module on that catalog, not a product that owns rooms by itself. Day-of ops, proctors, the public site, and volunteers should point at the same buildings and rooms — draft plans stay on sheets; one published plan plus a live overlay is what day-of and guests see.
 
-BmMT 2026 is the first template, not hard-coded logic.
+BmMT 2026 is a later Event on the same org, not a second product. Target platform: [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md). First production target: **BMT 2026 (2026-11-14)**.
 
 ## Core Concepts
 
@@ -28,7 +28,9 @@ Hierarchy: **Org → Building → Floor → Room**, and **Org → Event → Shee
 
 Display label: `{building.code}{room.name}` → `DWIN155`. Room number and floor are stored separately.
 
-**Phase 2b (current code):** sheets exist and are owner-private. Event is a label plus clock defaults copied onto a sheet at create. Catalog and Events are still global (no orgs until 2c).
+**Target platform (mostly unbuilt):** `Person` / `Assignment` (volunteers and proctors), a **published plan** (one sheet selected for day-of), `LiveRoomState` (timers, headcount), and `MapSpace` (Figma geometry with optional `room_id`). See [ops platform spec](specs/2026-08-22-ops-platform.md).
+
+**Phase 2b (current code):** sheets exist and are owner-private. Event is a label plus clock defaults copied onto a sheet at create. Catalog and Events are still global (no orgs until 2c). No publish-to-ops seam yet.
 
 As-built types for v0: [specs/2026-08-11-v0-vision-demo.md](specs/2026-08-11-v0-vision-demo.md). Persistence field lists and SQL as shipped: [specs/2026-08-11-phase-1-core-loop.md](specs/2026-08-11-phase-1-core-loop.md). Target model: [specs/2026-08-13-phase-2-accounts-orgs.md](specs/2026-08-13-phase-2-accounts-orgs.md).
 
@@ -40,7 +42,7 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 
 **Phase 2 (rest):** Orgs and roles (2c), invites (2d), then public HTTPS (2e). No Share button and no live sync yet.
 
-**Later:** invite another account onto a **sheet** (viewer / editor), then WebSockets / presence.
+**Later:** invite another account onto a **sheet** (viewer / editor), then WebSockets / presence. Indoor maps, day-of ops, proctor suite, public site, and volunteers are modules on the rooms kernel — not extra room lists: [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md), [specs/2026-08-21-indoor-maps.md](specs/2026-08-21-indoor-maps.md).
 
 ## Technology Summary
 
@@ -65,6 +67,8 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | **4 — Polish** | Sheets import, mobile read-only, `team_count` | Planned (was Phase 3) |
 | **Later — Collaboration** | Share a sheet like Google Sheets, then live sync | Unsequenced. Draft: [specs/2026-08-11-phase-2-collaboration.md](specs/2026-08-11-phase-2-collaboration.md) |
 | **Later — Catalog history** | Revision timeline, per-sheet pin, optional sync to latest catalog | Draft: [specs/2026-08-13-catalog-history-and-plan-pins.md](specs/2026-08-13-catalog-history-and-plan-pins.md) |
+| **Later — Indoor maps** | Figma-imported floor plans (Dwinelle / Wheeler / VLSB); device pan-zoom map; live exam overlay joins catalog rooms | Draft: [specs/2026-08-21-indoor-maps.md](specs/2026-08-21-indoor-maps.md) |
+| **Later — Ops platform** | Publish a sheet as the day-of plan; live overlay; proctors; public maps; volunteers as people + assignments on the same rooms | Draft: [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md) |
 
 ## Non-Functional Requirements
 
@@ -82,7 +86,7 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | Slot granularity | **Decided:** 15 min default; per-sheet (Event stores defaults copied at create) |
 | v0 deploy | **Decided:** static host |
 | Phase 1 hosted deploy | **Decided:** local-only |
-| Registration / team counts | **Decided:** later (Phase 4); not on Event |
+| Registration / team counts | **Decided:** registration platform out of scope; optional **roster CSV** for HQ/proctors. Not a live SIS join |
 | Layout `src/` vs `frontend/` + `server/` | **Decided (Phase 1 spec):** `frontend/` + `server/` |
 | Adopt GUIDELINES frontend extras (Zustand, Tailwind, pnpm, …) | **Decided (Phase 1 spec):** no; keep v0 UI stack |
 | Auth vendor | **Decided (Phase 2 spec):** Google OAuth only |
@@ -92,3 +96,5 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | Platform superuser scope | **Phase 2:** create org + first admin only. **Future:** broader superuser tooling likely (recovery, support) — not scoped yet |
 | Public HTTPS | **Decided:** in Phase 2e. Host vendor TBD |
 | Catalog history / plan pins | **Future.** [specs/2026-08-13-catalog-history-and-plan-pins.md](specs/2026-08-13-catalog-history-and-plan-pins.md) |
+| Indoor floor maps | **Decided (architecture):** Figma import owns geometry; Leaflet `CRS.Simple` viewer; capacity stays on `rooms`; live event data is a join. [specs/2026-08-21-indoor-maps.md](specs/2026-08-21-indoor-maps.md) |
+| Integrated ops platform | **Decided (direction):** modular monolith; rooms kernel; BMT 2026 (2026-11-14); freeze on publish; per-room timers; Google-only; replace volunteer app; no year-one turn-by-turn. Remaining questions in [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md) |

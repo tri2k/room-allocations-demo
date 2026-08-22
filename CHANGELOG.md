@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Ops platform architecture (2026-08-22)
+
+- Rooms catalog is the kernel; allocator, day-of ops, proctors, public maps, and volunteers are modules that join `rooms.id`
+- New seam: publish one sheet as the day-of plan; live state does not rewrite the grid
+- Figma maps and the old Dwinelle Navigator are not a second rooms list; Navigator-class routing is later than floor search
+- Locked: BMT 2026 (2026-11-14), one org, freeze-on-publish, independent per-room timers, replace volunteer app, Google OAuth, roster CSV only, no year-one turn-by-turn
+- Round-2 questions (Nov 14 must-haves, focus-test model, roster/volunteer/proctor UX) live in the spec
+
+### Indoor maps architecture (2026-08-21)
+
+- Device-first indoor map from BMT toggle-map Figma files (Dwinelle, Wheeler, VLSB): Leaflet `CRS.Simple`, not a print poster
+- Geometry is Figma-import only; catalog `rooms` keep capacity; live exam overlay (role, proctors, timers) is a separate join
+- Importer is a fail-loud contract (role aliases, goldens), not a scrape of one `.fig` tree
+- Spec: [specs/2026-08-21-indoor-maps.md](specs/2026-08-21-indoor-maps.md)
+- Docs only; no application code in this change
+
 ### Phase 2b private sheets (2026-08-14)
 
 - Event is a label plus clock **defaults**; planning lives on an owner-only `sheets` row
