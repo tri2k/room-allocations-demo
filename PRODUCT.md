@@ -8,7 +8,7 @@ Event organizers (BmMT and similar) still run contests from a pile of spreadshee
 
 The kernel is a **rooms catalog**. The allocator (this repo today) is the first module on that catalog, not a product that owns rooms by itself. Day-of ops, proctors, the public site, and volunteers should point at the same buildings and rooms — draft plans stay on sheets; one published plan plus a live overlay is what day-of and guests see.
 
-BmMT 2026 is the first template, not hard-coded logic. Target platform (unbuilt beyond catalog + allocator): [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md).
+BmMT 2026 is a later Event on the same org, not a second product. Target platform: [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md). First production target: **BMT 2026 (2026-11-14)**.
 
 ## Core Concepts
 
@@ -86,7 +86,7 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | Slot granularity | **Decided:** 15 min default; per-sheet (Event stores defaults copied at create) |
 | v0 deploy | **Decided:** static host |
 | Phase 1 hosted deploy | **Decided:** local-only |
-| Registration / team counts | **Decided:** later (Phase 4); not on Event |
+| Registration / team counts | **Decided:** registration platform out of scope; optional **roster CSV** for HQ/proctors. Not a live SIS join |
 | Layout `src/` vs `frontend/` + `server/` | **Decided (Phase 1 spec):** `frontend/` + `server/` |
 | Adopt GUIDELINES frontend extras (Zustand, Tailwind, pnpm, …) | **Decided (Phase 1 spec):** no; keep v0 UI stack |
 | Auth vendor | **Decided (Phase 2 spec):** Google OAuth only |
@@ -97,4 +97,4 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | Public HTTPS | **Decided:** in Phase 2e. Host vendor TBD |
 | Catalog history / plan pins | **Future.** [specs/2026-08-13-catalog-history-and-plan-pins.md](specs/2026-08-13-catalog-history-and-plan-pins.md) |
 | Indoor floor maps | **Decided (architecture):** Figma import owns geometry; Leaflet `CRS.Simple` viewer; capacity stays on `rooms`; live event data is a join. [specs/2026-08-21-indoor-maps.md](specs/2026-08-21-indoor-maps.md) |
-| Integrated ops platform | **Decided (direction):** modular monolith on this repo; rooms catalog is the kernel; other tools join `rooms.id`. Open questions (publish snapshot, volunteer app replacement, timers) in [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md) |
+| Integrated ops platform | **Decided (direction):** modular monolith; rooms kernel; BMT 2026 (2026-11-14); freeze on publish; per-room timers; Google-only; replace volunteer app; no year-one turn-by-turn. Remaining questions in [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md) |
