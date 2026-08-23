@@ -254,11 +254,44 @@ The seed data in this repo is a **BmMT** day (Puzzle / Indiv / Team / Relay). BM
 
 ### C. Rooms catalog
 
-21. What are the **column headers** on the current capacity spreadsheet? (Paste them.) Which are required vs nice?
-22. Do you store **two capacities** (fire code vs “we will seat for a test”)? The app already has `capacity` and `optimal_capacity`.
-23. Who may **edit a room on the morning of** (broken projector, room pulled by campus)? Catalog edit vs a day-of “closed” flag that does not change the catalog?
-24. How do you handle **rooms campus takes back** after you planned — hide from picker, deactivate, or leave on the published plan as closed?
-25. Wheeler (and any hall not in the current seed): do you have a registrar **building code** you want in the UI (`WHEE` vs `Wheeler`)?
+These five are about the **rooms database** (the spreadsheet of classrooms), not the time×room grid, not Figma, not volunteers. A “wrong” answer here would mean we store the wrong fields or treat a one-day outage as a permanent catalog change.
+
+The app today already stores, per room: building code (`DWIN`), floor label (`1` — this will need to become `C`/`D`/`E` for Dwinelle), room name (`155`), type (`auditorium` / `small` / `large`), `capacity`, `optimalCapacity`, active/inactive.
+
+21. **What columns exist on the capacity spreadsheet you use today?**
+    - **What this is:** Open the Google Sheet (or Excel) that lists every classroom and its size. Copy the **header row** (the names of the columns), not the data.
+    - **Why:** We need to know which facts belong in the catalog forever (capacity, ADA, projector) vs which are event-only (this year’s proctor count). If we guess, we either omit a field you use every week or add junk you will never fill in.
+    - **How to answer:** Paste headers, e.g. `Building | Room | Floor | Capacity | Testing seats | ADA | Notes`. Then mark each as **required** (cannot plan without it) or **nice**.
+    - **Not asking:** The volunteer form fields, or the grid’s time axis.
+
+22. **Do you keep two different “how many people fit” numbers?**
+    - **What this is:** Some orgs store (a) the official/fire-code max and (b) how many contestants they will actually seat (desks, spacing, no broken chairs). The app already has two integers: `capacity` and `optimalCapacity`. I do not know if your sheet uses both, one, or something else (e.g. chairs vs desks).
+    - **Why:** The allocator, volunteer “how many proctors,” and HQ “87 / 120” all need to know **which** number to show. Using the fire-code number for seating would overfill; using the testing number for a public occupancy badge might be wrong.
+    - **How to answer:** One of: “only one number, call it X”; “yes, fire vs testing seats”; “yes, something else (explain)”. If you have both, which one is the default on the grid?
+    - **Not asking:** Headcount of students who actually showed up (that is live/day-of, not the catalog).
+
+23. **If something is wrong with a room on Saturday morning, do we change the catalog or only the live day?**
+    - **What this is:** Example: DWIN155’s projector dies, or the room is too hot, or you decide not to use it for *this* contest. Two different writes:
+      - **Catalog edit:** changes the room for every future event (capacity 400 → 380 forever, or mark inactive).
+      - **Day-of closed/flag:** “not in use today” on the published plan / live overlay. Next semester the room is still in the catalog as usual.
+    - **Why:** Mixing these is how last year’s “we lost 155 for one Saturday” becomes “155 disappeared from the database.” Planners vs HQ may also be different people; who is allowed to do which?
+    - **How to answer:** For a broken projector / room pulled for one day, is that a catalog edit, a day-of “closed” flag, or both (and who may click it: planner, HQ, anyone with Google)?
+    - **Not asking:** Moving Algebra from 155 to 182 on the grid (that is question 27, allocator).
+
+24. **Campus tells you Friday that you cannot have a room you already put on the plan. What should the software do?**
+    - **What this is:** The room was real in the catalog and on the frozen plan. Then registrar/campus rescinds it.
+    - **Why:** Three behaviors feel similar but are not:
+      1. **Deactivate in catalog** — room vanishes from the picker for *future* plans; old published plan still lists it unless you also close it day-of.
+      2. **Hide from picker only** — still in the database, just hard to pick.
+      3. **Leave on the published plan as “closed”** — HQ still sees a row so they know it was planned and dropped; volunteers are not assigned there.
+    - **How to answer:** Pick 1/2/3 or a combo (“deactivate + mark closed on this event”). Also: must HQ be blocked from assigning proctors to a closed room?
+    - **Not asking:** How Figma draws the polygon (the shape can stay; we just would not treat it as bookable that day).
+
+25. **What short code should appear in labels like `DWIN155` for buildings you actually use?**
+    - **What this is:** The product displays `{building code}{room number}` → `DWIN155`. The demo seed has `DWIN` and `VLSB` only. Wheeler (and others) need a **stable short code** people will type and search. Campus/registrar codes are often 4 letters; you might prefer something staff already say (`WHEE`, `WHEELER`, `WHE`).
+    - **Why:** This code is the join key to Figma names, roster CSV rooms, and volunteer assignments. Changing it later breaks every import. It is not the pretty name (“Wheeler Hall”).
+    - **How to answer:** A table: `Dwinelle → DWIN`, `Wheeler → ?`, `VLSB → VLSB` (or whatever you use), plus any other hall for Nov 14. If you do not care, say “pick 3–4 letters and stick to them.”
+    - **Not asking:** Floor letters (`C`/`D`/`E` vs `1`/`2`) — that is implied by Figma, but if your spreadsheet uses different floor names, mention it under 21.
 
 ### D. Allocator + freeze
 
