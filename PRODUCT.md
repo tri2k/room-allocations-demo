@@ -68,7 +68,7 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | **Later — Collaboration** | Share a sheet like Google Sheets, then live sync | Unsequenced. Draft: [specs/2026-08-11-phase-2-collaboration.md](specs/2026-08-11-phase-2-collaboration.md) |
 | **Later — Catalog history** | Revision timeline, per-sheet pin, optional sync to latest catalog | Draft: [specs/2026-08-13-catalog-history-and-plan-pins.md](specs/2026-08-13-catalog-history-and-plan-pins.md) |
 | **Later — Indoor maps** | Figma-imported floor plans (Dwinelle / Wheeler / VLSB); device pan-zoom map; live exam overlay joins catalog rooms | Draft: [specs/2026-08-21-indoor-maps.md](specs/2026-08-21-indoor-maps.md) |
-| **Later — Ops platform** | Publish a sheet as the day-of plan; live overlay; proctors; public maps; volunteers as people + assignments on the same rooms | Draft: [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md) |
+| **Later — Ops platform** | Publish/import a sheet as the day-of plan; live overlay; proctors; public maps; volunteers as people + assignments on the same rooms | Draft: [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md), [specs/2026-08-23-bmt-2026-architecture.md](specs/2026-08-23-bmt-2026-architecture.md) |
 
 ## Non-Functional Requirements
 
@@ -97,4 +97,4 @@ As-built diagrams: [docs/c4/](docs/c4/README.md). Those files match the **curren
 | Public HTTPS | **Decided:** in Phase 2e. Host vendor TBD |
 | Catalog history / plan pins | **Future.** [specs/2026-08-13-catalog-history-and-plan-pins.md](specs/2026-08-13-catalog-history-and-plan-pins.md) |
 | Indoor floor maps | **Decided (architecture):** Figma import owns geometry; Leaflet `CRS.Simple` viewer; capacity stays on `rooms`; live event data is a join. [specs/2026-08-21-indoor-maps.md](specs/2026-08-21-indoor-maps.md) |
-| Integrated ops platform | **Decided (direction):** modular monolith; rooms kernel; BMT 2026 (2026-11-14); freeze on publish; per-room timers; Google-only; replace volunteer app; no year-one turn-by-turn. Remaining questions in [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md) |
+| Integrated ops platform | **Round 2 locked:** all six modules for BMT 2026 (2026-11-14); catalog never written day-of; custom room fields; room-username proctor login; ops imports the allocator sheet. Details: [specs/2026-08-23-bmt-2026-architecture.md](specs/2026-08-23-bmt-2026-architecture.md) |

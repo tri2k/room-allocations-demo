@@ -1,6 +1,6 @@
 # Event operations platform
 
-**Status**: Draft (vision — decisions locking; module specs still open)
+**Status**: Draft (round 2 locked — detailed architecture in [2026-08-23-bmt-2026-architecture.md](2026-08-23-bmt-2026-architecture.md))
 
 Product context: [PRODUCT.md](../PRODUCT.md). This spec is the parent of the allocator (this repo today), [indoor maps](2026-08-21-indoor-maps.md), [catalog history](2026-08-13-catalog-history-and-plan-pins.md), and later ops / proctor / volunteer / public modules. Do not implement the whole platform in one pass. Do **protect the kernel** so those modules do not grow a second rooms list.
 
@@ -70,13 +70,23 @@ Figma does **not** own rooms. The volunteer form does **not** own rooms. The pro
 | Scale (design load) | ~**1800** contestants, **50+** testing rooms (growth 500 F22 → 1800 Sp26) | Timers, clarifications, maps, volunteer assign must work at this size |
 | Student registration | **Out of scope.** Roster may be a **CSV import** | Separate platform exists; do not join it for v1 |
 | Volunteer product | **Replace** the current volunteer app | Shared catalog + assignments beats another room CSV |
-| Publish | **Frozen snapshot** of one sheet per Event | Day-of cannot drift from an accidental grid edit; republish is explicit |
-| Timers | **Independent clock per room** | Not one shared Indiv clock. Bulk “start these rooms” is a convenience; each clock then runs on its own `starts_at` / `ends_at` |
-| Clarifications | **Both** one room and a **subset** of rooms | Focus tests run in parallel; “all Algebra rooms” ≠ “all testing rooms” |
-| Staff auth | **Google OAuth only** (same as Phase 2a) | Assume volunteers/proctors have Google accounts; no magic-link v1 unless we learn otherwise |
 | Indoor turn-by-turn | **Not year one** | Public maps: floor finder + search + pinch-zoom |
-| Custom room fields | Known columns as real SQL; `JSONB extras` for rare one-offs | Adding `has_projector` to everyone is a migration; adding “piano” to two rooms is extras (column list still open) |
-| Realtime | Server-authoritative clocks (`starts_at` / `ends_at`); poll ops v1; push if clarifications need it | 50+ rooms is still a small JSON; drifting phone timers are the bug |
+| Custom room fields | **One built-in `capacity`.** All other room facts are **admin-defined fields** | Spreadsheet columns keep growing; do not ship a migration per field |
+| Building codes | **User-editable** name ↔ code mappings | Join key for Figma/CSV |
+| Catalog vs day-of | **Day-of never writes the rooms catalog** | Closed rooms and campus pulls live on the event overlay |
+| Nov 14 scope | **All six modules** plus **printed backup** | Last semester 4/5 vibecoded tools broke |
+| Staff roles | **Admin** (everything) and **Organizer** (view only). ~3 Google accounts | Building leads use admin. Live site has its own announcement admin panel |
+| Proctor login | **Room as username**, not Google | Laptop/projector in 155 signs in as that room |
+| Timer start | **Proctor may only start.** HQ does pause / add time / rest | No bulk-start |
+| Offline timer | Local countdown; **desync banner on proctor and HQ** | Server is source of truth when connected |
+| Clarifications | One-way; **no ack**; text + images; **projected** | Subset targeting; other activities do not see it |
+| Plan load | Ops **admin imports** an allocator sheet (frozen). Re-import **keeps clocks** | Grid rebuilt in-app; bulk floor-assign yes |
+| Contest rounds | **Power**, **Individual**, **Guts**. Individual: 2 of 4 focus **or** 1 general | One room × one slot = one activity |
+| Roster | CSV morning-of after check-in; **names**; **move in-app**; two tests = two rows | Registration platform stays separate |
+| Public site | `live.berkeley.mt`, English, **no public clock** | Per-room guest detail undecided. Outdoor maps stretch |
+| Volunteers | Form builder; custom roles; shifts later; ~300 people; name-search check-in; prefill + DNI | PII visible to managers |
+| Staff auth | Google for **admin / organizer** only | Proctors do not use Google for the timer |
+| Realtime | Server-authoritative clocks; poll or push for clarifications | 50+ rooms is still a small JSON |
 | C4 | Update as-built diagrams only when code lands | This file is target, not current commit |
 
 ### Component map
@@ -88,11 +98,12 @@ Replace the capacity spreadsheet. Edits to existing classrooms are rare; **addin
 | Move | How |
 | ---- | --- |
 | New building + rooms | Catalog UI already: insert `buildings`, `floors`, `rooms` |
-| New field on every room | Alembic column + form control (e.g. `accessible`, `seat_rows`) |
-| One-off facts | `rooms.extras` JSONB, or tags you already have |
+| New field on every room | Admin-defined field (not a code migration), except built-in `capacity` |
 | Wrong capacity last year vs this year | [Catalog history / pins](2026-08-13-catalog-history-and-plan-pins.md) when scheduled — do not snapshot-copy rooms into volunteer or map tables |
 
-**Do not** store polygons, timers, or proctor names here.
+**Built-in:** identity (building, floor, name, active) + `capacity`. Everything else is a user-created field. Manual catalog entry is enough (no capacity-sheet importer required for Nov 14).
+
+**Do not** store polygons, timers, proctor names, or “closed today” here. Day-of never writes this database.
 
 Identity: UUID plus stable display `{building.code}{room.name}`. Floor `label` must be the real code (`C`/`D`/`E`, not v0 `1`/`2`) before maps or volunteers can join without a translation table.
 
@@ -100,9 +111,7 @@ Identity: UUID plus stable display `{building.code}{room.name}`. Floor `label` m
 
 Time × room grid. Allocations reference `room_id`. Many private sheets per Event (Phase 2b).
 
-**New seam (not built):** `POST /events/{id}/publish` copies the sheet into a **frozen snapshot** (allocations, activities, included rooms, clock). Day-of tools read **only** that snapshot. The original sheet can keep changing; it does not affect ops until someone republishes. Republish replaces the snapshot (policy for in-flight timers is still open).
-
-Until something is published, ops/public/proctor have no schedule. That is intentional.
+**Seam (not built):** an **ops admin imports** a chosen allocator sheet as the frozen **day plan**. The allocator sheet can keep changing; ops is unaffected until they import again. Re-import **keeps clocks** already running. Until a plan is imported, HQ and the proctor suite have no schedule.
 
 #### 3. Day-of operations dashboard
 
@@ -112,26 +121,28 @@ Per room, HQ might see: assigned activity, assigned proctors (from Assignments),
 
 Views are **projections** of the same rows:
 
-- List: rooms as a table (closest to the spreadsheet they already stare at)
-- Map: same `LiveRoomState` joined to [map spaces](2026-08-21-indoor-maps.md)
-- (Later) building / floor filters
+- List and map, **toggle** (columns / colors later)
+- Same `LiveRoomState` on both views
 
-Ops **writes live fields**. It does not move Puzzle from 155 to 182 — that is an allocator edit + republish, or a deliberate “live override” flagged as diverged from plan.
+Ops **writes live fields only**. It does not edit the rooms catalog. Moving a round between rooms on the day is a day-plan override, not a catalog edit.
 
 #### 4. Proctor suite
 
 Timer + clarifications for 50+ rooms. Attached to **this event’s assignment + published allocation**, not to the catalog forever.
 
-- Timer: **each room** has its own server-authoritative countdown (`starts_at` / `ends_at`). HQ or the proctor starts/pauses/**adds time** on that room. A bulk action may start many rooms at once; that only copies the same timestamp onto each room — it does not bind their clocks together afterward.
-- Clarifications: HQ posts to **one room**, **all rooms**, or a **subset** (e.g. every room currently allocated to Algebra focus). Proctors acknowledge. Targeting shortcuts (by activity, subject tag, building, multi-select) are still open.
+- Timer: each **testing** room has its own clock. **Proctor session may only start.** Admin HQ may pause / add time / rest. No bulk-start. Offline: client keeps ticking and both sides show **out of sync**.
+- Auto **5 minutes remaining**. Non-testing rooms: no timer.
+- Clarifications: one-way HQ → subset of rooms; no ack; text + images; **projected** in the room. Other activities do not see that a message went out.
 
-Proctors are `Person`s with role `proctor` (or similar) on an `Assignment` with `room_id`. They sign in with **Google**. The suite is a phone-first UI; it must not require the allocator grid.
+Login: **username = room**, not Google. Volunteer-to-room assignment is a separate table.
 
 Pulling the rooms catalog: **yes, by id**, so we never type “Dwinelle 155” into a fourth sheet.
 
 #### 5. Public live site (guests)
 
-Primary: contest status (“Indiv in progress”, lunch, delays). Secondary: useful maps.
+Host: **`live.berkeley.mt`**. English. **No public countdown.** Announcements from that site’s admin panel. Per-room guest detail undecided. Outdoor maps are a stretch (no Figma yet).
+
+Primary: contest status. Secondary: indoor maps.
 
 Same map viewer as ops, **different live payload**:
 
@@ -183,7 +194,7 @@ Never join on free-text `"Dwinelle 155"` in production paths. Import/search may 
 | Volunteer admin | Read | — | — | Full | Yes |
 | Org admin | Full | Policy | Publish rights | Full | Yes |
 
-Exact roles can wait for Phase 2c, but **do not** invent a new permission system per module.
+Exact roles: [BMT 2026 architecture](2026-08-23-bmt-2026-architecture.md). Google = admin | organizer. Proctor suite = room login. Do not invent a third permission system per module.
 
 ### What to build first (avoid the redesign without boiling the ocean)
 
@@ -216,11 +227,15 @@ Phase 2c orgs still matter: catalog and people are org-scoped; Events belong to 
 - Student contest **registration / scoring** (separate platform; CSV roster only)
 - Recreating Kessler’s 3D navigator in year one
 - Replacing Figma as the drafting tool for walls
-- Multi-org product; magic-link login (unless Google proves insufficient)
+- Multi-org product
+- Student registration/scoring join
+- Recreating Kessler’s 3D navigator in year one
 
-## Open questions (round 2)
+## Round 2
 
-Round 1 is locked above. Answer in any order; numbered so you can reply `11. a`, `12. …`. If a question is “not for Nov 14,” say so — that is a useful answer.
+Answered 2026-08-23. Questionnaire below is kept for traceability; **do not re-ask locked items**. Misread items (14, 21, 27, 31) are explained in [2026-08-23-bmt-2026-architecture.md](2026-08-23-bmt-2026-architecture.md).
+
+## Open questions (round 2, original text)
 
 ### A. What must actually run on 2026-11-14
 
