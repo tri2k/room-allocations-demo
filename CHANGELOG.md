@@ -13,7 +13,7 @@
 - Building codes: DWIN, WHLR, VLSB, MLK; GPBB out of scope; code is set at create, not edited like capacity
 - Documented building-code aliases: they keep CSV/login matching after a rename; uniqueness and dual labels are the cost. Skip for v1.
 - Staff login **open** (year-round, not a contest-day switch): Google *or* one shared **staff** password for catalog/HQ/volunteers/live admin. Recommend staff password. **Do not** reuse the room password; **do not** catalog-only password. Organizer view-only only exists with named logins.
-- Persistence: **one** Postgres 16, **one** database (`roomalloc`). Defined **table group** (related tables in that DB) and **seam** (deliberate CSV/import between products). Roster rows live here after CSV import; the registration/scoring product stays external.
+- Persistence: **one** Postgres 16, **one** database (`roomalloc`). A **seam** is any copy (catalog CSV into other tools included). Keep seams when a snapshot is enough (roster, day plan, print). Collapse catalog→ops/volunteers/maps by sharing `rooms` because those tools need the live list.
 - Spec: [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md)
 - Docs only; no application code in this change
 

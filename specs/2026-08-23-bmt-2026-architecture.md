@@ -30,7 +30,7 @@ Parent: [ops platform](2026-08-22-ops-platform.md). Indoor maps: [2026-08-21-ind
 **Jargon used below:**
 
 - **Table group** — a cluster of related tables inside that one database. Catalog is `buildings` / `floors` / `rooms`. Allocator is `sheets` / `allocations` / …. They can point at each other with foreign keys. This is a naming convenience, not a second database.
-- **Seam** — a **deliberate copy or import** between two products that do not share a database. Example: export a CSV from registration, import it here as the Saturday roster. The two sides can disagree after that; someone chose that. A volunteer app that retypes DWIN155 is an *accidental* copy, not a seam.
+- **Seam** — any **copy** from one list to another (CSV, “import this sheet as the day plan,” retyping rooms into a volunteer app). After a copy, the two sides can disagree until you copy again. Catalog → six tools by CSV **is** a seam. It is just a bad one if those tools need the same rooms all semester.
 
 When earlier docs say “the rooms database,” they mean the **catalog tables** (`buildings` / `floors` / `rooms`), not a second Postgres.
 
@@ -75,7 +75,16 @@ Indoor maps docs used to say “three stores.” That means three **kinds of row
 | Read **replica** | Same data, extra copy for reads / failover | A hosting option later if `live.berkeley.mt` should survive a primary blip. Still one source of truth. |
 | Static **export** (print packet, JSON dump of the day plan) | Paper / file fallback | Already required. This is how you survive the DB dying, not a second database. |
 
-When a second database *is* right: a **different product** with a different owner and a **deliberate seam**. Student **registration / scoring** is that (see below). CSV in the morning is the seam. A volunteer app with its own room list was that pattern done wrong: same owner, same rooms, no good seam.
+A second database is a seam you have to keep feeding. Use it when a **snapshot** is enough and you do not own the other product.
+
+| Copy | Keep the seam? | Why |
+| ---- | -------------- | --- |
+| Registration CSV → Saturday roster | **Yes** | Snapshot is enough. We do not rebuild signup/scoring. Morning-of import is the inconvenience we accept. |
+| Allocator sheet → frozen day plan | **Yes** (inside this same database) | Saturday should not rewrite the draft grid. Re-import is explicit. |
+| Print packet / JSON dump | **Yes** | Postgres may die. Paper is the copy. |
+| Catalog CSV → volunteer app, maps app, HQ app, … | **No — share `rooms` instead** | Those tools need the **same** rooms all semester, not a file from last Tuesday. Re-export when someone adds 182 is the inconvenience you named. Last semester that copy went stale. |
+
+Figma → map polygons is a seam we **do** keep (draft in Figma, import geometry). Capacity and “what is in 155 at 10:45” still join `rooms.id` in this database, not a second rooms spreadsheet.
 
 **Why registration stays a separate product** (not “students cannot live in Postgres”). Roster **rows** — name, room, time for that Saturday — **are** in `roomalloc` after CSV import. What we are not building is the contestant platform: signup, payment, school/team, test choice, scoring. That already exists. A live join would mean owning or syncing that whole product. Volunteers are the opposite: replacing that app is in scope, and its only join to ops is `rooms.id`.
 
