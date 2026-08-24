@@ -75,8 +75,8 @@ Figma does **not** own rooms. The volunteer form does **not** own rooms. The pro
 | Building codes | **Set at building create, then read-only** in the catalog UI | Join key for Figma/CSV/room login; pretty name stays editable |
 | Catalog vs day-of | **Day-of never writes the rooms catalog** | Closed rooms and campus pulls live on the event overlay |
 | Nov 14 scope | **All six modules** plus **printed backup** | Last semester 4/5 vibecoded tools broke |
-| Staff roles | **Admin** (everything) and **Organizer** (view only). ~3 Google accounts | Building leads use admin. Live site has its own announcement admin panel |
-| Proctor login | **Room as username** + **one shared event password** (today: env var) | Not Google; not a unique PIN per room in v1 |
+| Staff roles | **Admin** (everything). **Organizer** (view only) only if staff login is named (Google) | Building leads use admin. Live announcements use the same staff login |
+| Proctor login | **Room as username** + **one shared event password** (today: env var) | Not staff login; not a unique PIN per room in v1 |
 | Timer start | **Proctor may only start.** HQ does pause / add time / rest | No bulk-start |
 | Offline timer | Local countdown; **desync banner on proctor and HQ** | Server is source of truth when connected |
 | Clarifications | One-way; **no ack**; text + images; **projected** | Subset targeting; other activities do not see it |
@@ -85,7 +85,7 @@ Figma does **not** own rooms. The volunteer form does **not** own rooms. The pro
 | Roster | CSV morning-of after check-in; **names**; **move in-app**; two tests = two rows | Registration platform stays separate |
 | Public site | `live.berkeley.mt`, English, **no public clock** | Per-room guest detail undecided. Outdoor maps stretch |
 | Volunteers | Form builder; custom roles; shifts later; ~300 people; name-search check-in; prefill + DNI | PII visible to managers |
-| Staff auth | Google for **admin / organizer** only | Proctors do not use Google for the timer |
+| Staff auth | **Open:** Google *or* one shared **staff** password for all human UIs. **Different** room password for projectors. Do not catalog-only-password | See [architecture](2026-08-23-bmt-2026-architecture.md#staff-google-vs-a-shared-password) |
 | Realtime | Server-authoritative clocks; poll or push for clarifications | 50+ rooms is still a small JSON |
 | C4 | Update as-built diagrams only when code lands | This file is target, not current commit |
 
@@ -194,7 +194,7 @@ Never join on free-text `"Dwinelle 155"` in production paths. Import/search may 
 | Volunteer admin | Read | — | — | Full | Yes |
 | Org admin | Full | Policy | Publish rights | Full | Yes |
 
-Exact roles: [BMT 2026 architecture](2026-08-23-bmt-2026-architecture.md). Google = admin | organizer. Proctor suite = room login. Do not invent a third permission system per module.
+Exact roles: [BMT 2026 architecture](2026-08-23-bmt-2026-architecture.md). Human staff = one login (Google *or* shared staff password). Proctor suite = room login. Do not invent a third permission system per module.
 
 ### What to build first (avoid the redesign without boiling the ocean)
 

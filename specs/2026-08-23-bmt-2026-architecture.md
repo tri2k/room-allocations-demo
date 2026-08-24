@@ -27,7 +27,7 @@ Parent: [ops platform](2026-08-22-ops-platform.md). Indoor maps: [2026-08-21-ind
 
 ```text
 Catalog (buildings, floors, rooms, custom field defs)
-  writers: Google admin only
+  writers: staff-with-write (same login as HQ — see staff auth)
   never: HQ day-of, proctors, public, volunteer check-in
 
 Allocator sheets (draft grid)
@@ -39,31 +39,31 @@ Day plan (frozen copy of one sheet)
   never: catalog tables
 
 Live (timers, clarifications, desync, roster seats)
-  writers: room session (start timer only); Google admin (everything else); roster import + in-app student move
+  writers: room session (start timer only); staff-with-write (everything else); roster import + in-app student move
   never: catalog
 
 Volunteers (people, applications, assignments, DNI)
-  writers: public form (application); Google admin (assignments, DNI, check-in)
+  writers: public form (application); staff-with-write (assignments, DNI, check-in)
 
 Public content (announcements)
-  writers: live.berkeley.mt admin panel (Google admin)
+  writers: live.berkeley.mt admin panel (staff-with-write)
 ```
 
 Day-of tools **must not** `UPDATE rooms`. “Closed,” “campus pulled,” “moved to 182” are event rows.
 
-### Three logins (not one)
+### Three logins (not six)
 
 | Who | How they sign in | What they see |
 | --- | ---------------- | ------------- |
-| **Admin** | Google (~3 people; building leads may share this role) | Catalog, allocator, import day plan, HQ dashboard, timers (all controls), clarifications, volunteers, roster, live-site announcements, print/export |
-| **Organizer** | Google | **View only** on ops/day-plan/live (no catalog writes, no timer writes) |
+| **Staff** | **Open:** Google *or* one shared **staff** password (see below). ~3 people; building leads included | Catalog, allocator, import day plan, HQ dashboard, timers (all controls), clarifications, volunteers, roster, live-site announcements, print/export |
+| **Organizer** | Only exists if staff login is **named** (Google) or you add a **second** staff secret | **View only** on ops/day-plan/live (no catalog writes, no timer writes) |
 | **Room (proctor suite)** | **Username = room code** (`DWIN155`) + **one shared secret for the event** | Timer (**start only**), clarifications, **projection** (timer + clarifications only). Roster **names on operator view only**, not on the projector |
 | **Guest** | None | `live.berkeley.mt` |
-| **Volunteer applicant** | Public form (no Google required to apply) | Signup only |
+| **Volunteer applicant** | Public form (no staff login required to apply) | Signup only |
 
 Today the suite uses a **shared password in an environment variable** (all rooms, one secret, change = redeploy). Target: same UX (**one password for every room that event**), stored on the Event/day plan (hashed), **printable** on the backup packet, rotatable by admin **without** a redeploy. Unique per-room PINs are not v1.
 
-Proctor-as-person (the volunteer assigned to 155) is **not** the same as the room login. Assignments still point at `rooms.id`; the laptop does not need that volunteer’s Google account.
+Proctor-as-person (the volunteer assigned to 155) is **not** the same as the room login. Assignments still point at `rooms.id`; the laptop does not need a Google account.
 
 ### Six UIs, not six logins
 
@@ -71,25 +71,42 @@ The six “platforms” are **screens on one product**, not six account database
 
 | UI | Typical person | How they prove who they are |
 | -- | -------------- | --------------------------- |
-| Catalog | staff looking up a room | **Google** |
-| Allocator | person who builds the grid | **Google** (same account) |
-| Ops / HQ dashboard | war room | **Google** (same account; **admin** vs **organizer** role) |
+| Catalog | staff looking up a room | **Same staff login as HQ** (not a catalog-only secret, not the room password) |
+| Allocator | person who builds the grid | Same staff login |
+| Ops / HQ dashboard | war room | Same staff login |
 | Proctor + projector | laptop in DWIN155 | **Room username + shared event password** |
 | `live.berkeley.mt` | students, parents, coaches | **None** |
-| Volunteer signup | volunteer | **None** (form). Managers who assign people use **Google** |
-
-That is **two** secrets (Google, room password) plus anonymous. Which **menus** a Google user sees is a **role** on that user, not a new login for catalog vs HQ vs volunteers.
-
-Roles we already sketched (can add more later without new password systems):
-
-- **Admin** — write catalog, import plan, HQ controls, volunteer admin, live announcements.
-- **Organizer** — view ops (and, if we want, view catalog). No writes.
-
-Nov 14 can run with ~3 Google **admins** (building leads use admin). If volunteer-managers should not import the day plan, that is a **third Google role** later (`volunteer_admin`), still Google, not a sixth password.
-
-Catalog Q5 (“who may **read** `#/catalog`”) is only: does **organizer** include catalog view? Interim default **yes**. Tighten to admins-only if the catalog will hold notes you do not want on a view-only staff account.
+| Volunteer signup | volunteer | **None** (form). Managers who assign people use **the staff login** |
 
 Room laptops never get `#/catalog`. Guests never get it.
+
+### Staff: Google vs a shared password
+
+The catalog should **not** be “Google admin” as a special case. Either **every human staff screen** is Google, or **every human staff screen** is one staff password. Catalog-only auth is the worst split: a third secret, and HQ (where roster names live) is still the real risk.
+
+The **proctor laptops** already use a shared **event** password. That is the right model for 50 machines. **Do not** reuse that password for catalog, HQ, volunteers, or live-site admin. It is on 50 projectors and a print packet.
+
+| | Google (few named people) | One shared **staff** password |
+| - | ------------------------- | ----------------------------- |
+| Setup | OAuth client + allowlist (already in this repo for Phase 2a) | One secret in 1Password, like today’s room env var |
+| Revoke one person | Remove their Gmail | Rotate the password and tell everyone |
+| Audit | “jsy@ edited DWIN155 capacity” | “someone with the password did” |
+| Organizer view-only | A **role** on the same login | Does not exist unless you add a **second** staff password |
+| Blast radius | One account | Everyone who ever saw Slack / 1Password |
+| Saturday HQ + **roster names** | Tied to a person | Anyone with the staff password sees 1800 names |
+| Club turnover | New officer = new allowlist row | Password often never rotates |
+
+**Viable splits**
+
+1. **Google for all human staff.** Room password only for laptops. Two secrets. You get organizer view-only and per-person revoke. Phase 2a already built this.
+2. **One staff password** for catalog + allocator + HQ + volunteer managers + live admin. **Different** room password for projectors. Simpler than Google. Everyone who can open the catalog can write it. Treat roster as “anyone with the staff password.”
+3. **Catalog-only password**, something else for HQ. **Do not do this.** Extra secret, little gain.
+
+**Recommendation:** **option 2** for Nov 14. The club is ~3 people who all need write. Google’s only real wins here are “kick one person” and organizer view-only — neither of which you described as needed. If you later want named accounts, Google can come back without changing modules; roles hang off a user row, not off `#/catalog`.
+
+Phase 2a Google can stay in the repo unused in production; `ENABLE_DEV_AUTH` already covers local sign-in. Production staff would type the staff password (hashed on the org or event, rotatable without redeploy — same storage idea as the room password, **different secret**).
+
+This stays **open** until you confirm **1** (Google humans) or **2** (staff password humans). Catalog Q5 follows: with 2, whoever has the staff password can see and edit the catalog.
 
 ### Catalog kernel
 
@@ -226,6 +243,7 @@ v1: if pickup is **in a named room**, it is a catalog **room**. If it is a table
 | HQ list columns / red meaning | Can ship list+map with a minimal column set |
 | Public per-room detail | Flag |
 | Outdoor maps | Stretch |
+| Staff login: Google vs one staff password | Catalog Q5; organizer view-only |
 | Shift editor, form fields, 73–79 artifacts | Volunteer/catalog content, not kernel |
 | Projection vs operator as one URL or two | Same session either way |
 

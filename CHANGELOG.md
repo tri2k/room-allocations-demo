@@ -7,11 +7,12 @@
 - Rooms catalog is the kernel; allocator, day-of ops, proctors, public maps, and volunteers are modules that join `rooms.id`
 - New seam: publish one sheet as the day-of plan; live state does not rewrite the grid
 - Figma maps and the old Dwinelle Navigator are not a second rooms list; Navigator-class routing is later than floor search
-- Locked: BMT 2026 (2026-11-14), one org, freeze-on-publish, independent per-room timers, replace volunteer app, Google OAuth, roster CSV only, no year-one turn-by-turn
+- Locked: BMT 2026 (2026-11-14), one org, freeze-on-publish, independent per-room timers, replace volunteer app, roster CSV only, no year-one turn-by-turn
 - Locked: no live co-edit on the allocator grid; projector has no roster names; Individual = activity group; spaces later with `appears_on_grid` hedge
 - Room suite secret: today’s shared env password → per-event shared password (not per-room PIN, no redeploy to rotate)
 - Building codes: DWIN, WHLR, VLSB, MLK; GPBB out of scope; code is set at create, not edited like capacity
 - Documented building-code aliases: they keep CSV/login matching after a rename; uniqueness and dual labels are the cost. Skip for v1.
+- Staff login **open:** Google (already in Phase 2a) *or* one shared **staff** password for catalog/HQ/volunteers/live admin. Recommend staff password for Nov 14. **Do not** reuse the room password; **do not** catalog-only password. Organizer view-only only exists with named logins.
 - Spec: [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md)
 - Docs only; no application code in this change
 
