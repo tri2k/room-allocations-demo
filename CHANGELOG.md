@@ -4,6 +4,7 @@
 
 ### Ops platform architecture (2026-08-22)
 
+- **Greenfield:** target parent [specs/2026-08-24-integrated-system.md](specs/2026-08-24-integrated-system.md). Allocator prototype (this git tree, Google OAuth, owner-only sheets) is not a design constraint. Stack (language, UI library) is chosen at implementation.
 - Rooms catalog is the kernel; allocator, day-of ops, proctors, public maps, and volunteers are modules that join `rooms.id`
 - New seam: publish one sheet as the day-of plan; live state does not rewrite the grid
 - Figma maps and the old Dwinelle Navigator are not a second rooms list; Navigator-class routing is later than floor search
@@ -13,7 +14,7 @@
 - Building codes: DWIN, WHLR, VLSB, MLK; GPBB out of scope; code is set at create, not edited like capacity
 - Documented building-code aliases: they keep CSV/login matching after a rename; uniqueness and dual labels are the cost. Skip for v1.
 - Staff login **open** (year-round, not a contest-day switch): Google *or* one shared **staff** password for catalog/HQ/volunteers/live admin. Recommend staff password. **Do not** reuse the room password; **do not** catalog-only password. Organizer view-only only exists with named logins.
-- Persistence: **one** Postgres 16, **one** database (`roomalloc`). A **seam** is any copy (catalog CSV into other tools included). Keep seams when a snapshot is enough (roster, day plan, print). Collapse catalog→ops/volunteers/maps by sharing `rooms` because those tools need the live list.
+- Persistence: **one** Postgres, **one** database. A **seam** is any copy (catalog CSV into other tools included). Keep seams when a snapshot is enough (roster, day plan, print). Collapse catalog→ops/volunteers/maps by sharing `rooms`.
 - Spec: [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md)
 - Docs only; no application code in this change
 

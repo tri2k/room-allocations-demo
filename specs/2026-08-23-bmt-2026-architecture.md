@@ -1,12 +1,12 @@
 # BMT 2026 architecture (after round 2)
 
-**Status**: Draft (assumptions 1–4 locked; module workshop starts with catalog)
+**Status**: Draft — workshop locks. **Target parent:** [greenfield integrated system](2026-08-24-integrated-system.md). The allocator prototype in this repo is not a constraint.
 
-Parent: [ops platform](2026-08-22-ops-platform.md). Indoor maps: [2026-08-21-indoor-maps.md](2026-08-21-indoor-maps.md). First event: **BMT 2026, Saturday 2026-11-14**. Design load: ~1800 contestants, ~50+ testing rooms, ~300 volunteers.
+Parent notes: [ops platform](2026-08-22-ops-platform.md). Indoor maps: [2026-08-21-indoor-maps.md](2026-08-21-indoor-maps.md). First event: **BMT 2026, Saturday 2026-11-14**. Design load: ~1800 contestants, ~50+ testing rooms, ~300 volunteers.
 
 ## Are we ready to spec details?
 
-**Yes, for architecture.** Round 2 is enough to lock write-boundaries, login kinds, contest shape, and how the six modules share `rooms.id`. We should write per-module specs next (screens, APIs, failure modes) **without** waiting for spreadsheet dumps (73–79).
+**Yes, for architecture.** Round 2 is enough to lock write-boundaries, login kinds, contest shape, and how the six modules share `rooms.id`. We should write per-module specs next (screens, APIs, failure modes) **without** waiting for spreadsheet dumps (73–79). Design as if there is no existing app.
 
 **Not yet ready to freeze UI chrome** (HQ columns, map colors, volunteer form fields, shift UI). Those can be marked “TBD in module spec” and designed against the same data model.
 
@@ -25,7 +25,7 @@ Parent: [ops platform](2026-08-22-ops-platform.md). Indoor maps: [2026-08-21-ind
 
 ### Persistence: one Postgres, not six databases
 
-**There is one PostgreSQL server and one database.** Today that is Docker Compose `postgres:16`, database name `roomalloc` (user `roomalloc`). Production is the same shape: one hosted Postgres, one database, Alembic migrations. A **module** is a screen (catalog, grid, HQ, …) plus the tables it reads and writes — not its own server.
+**There is one PostgreSQL server and one database.** Hosting and the database name are chosen at implementation. A **module** is a screen (catalog, grid, HQ, …) plus the tables it reads and writes — not its own server.
 
 **Jargon used below:**
 
@@ -35,23 +35,20 @@ Parent: [ops platform](2026-08-22-ops-platform.md). Indoor maps: [2026-08-21-ind
 When earlier docs say “the rooms database,” they mean the **catalog tables** (`buildings` / `floors` / `rooms`), not a second Postgres.
 
 ```text
-One Postgres  (roomalloc)
+One Postgres
   catalog     buildings, floors, rooms, later custom field defs
-  allocator   events, sheets, activities, time_blocks, allocations
-  identity    users  (staff; room login is a different session, not a second DB)
-  --- not built yet, same database ---
-  day plan    frozen copy of one sheet + day-of overrides (closed, moved)
+  allocator   events, draft plans, activities, time blocks, allocations
+  identity    staff login (Google *or* staff password — open)
+  day plan    frozen copy of one draft + day-of overrides (closed, moved)
   live        timers, clarifications, roster seats  (join rooms.id)
   volunteers  people, applications, assignments     (assignments.room_id)
   maps        floor plates + GeoJSON polygons in JSONB  (optional room_id)
   public      announcements
 ```
 
-Join key for almost everything that is “about a classroom”: **`rooms.id`** (UUID). Display string `DWIN155` is computed from catalog columns. Do not keep a second copy of Dwinelle 155 in a volunteer DB or a map DB.
+Join key for almost everything that is “about a classroom”: **`rooms.id`** (UUID). Display string `DWIN155` is computed from catalog columns. Do not keep a second copy of Dwinelle 155 in a volunteer list or a map list.
 
-**As-built today (Phase 2b):** catalog + events + sheets + allocations + users. All in `roomalloc`.
-
-**Not in this Postgres (and not going to be):**
+**Not in this Postgres as a product:**
 
 | Thing | Where it lives |
 | ----- | -------------- |
@@ -61,7 +58,7 @@ Join key for almost everything that is “about a classroom”: **`rooms.id`** (
 | Session cookie | Signed cookie on the browser, not a sessions table |
 | Clarification images | Not designed. Files or object storage if needed — still not a second Postgres |
 
-**Also not in the plan:** Redis, a rooms microservice, one database per module, PostGIS (maps use JSONB on vanilla 16). `live.berkeley.mt` is another **hostname** in front of the same API, not another database.
+**Also not in the plan:** Redis, a rooms microservice, one database per module, PostGIS (maps: JSONB on vanilla Postgres). `live.berkeley.mt` is another **hostname** in front of the same API, not another database.
 
 Indoor maps docs used to say “three stores.” That means three **kinds of row** (geometry, catalog facts, live overlay) in this one database, joined by room id.
 
@@ -86,7 +83,7 @@ A second database is a seam you have to keep feeding. Use it when a **snapshot**
 
 Figma → map polygons is a seam we **do** keep (draft in Figma, import geometry). Capacity and “what is in 155 at 10:45” still join `rooms.id` in this database, not a second rooms spreadsheet.
 
-**Why registration stays a separate product** (not “students cannot live in Postgres”). Roster **rows** — name, room, time for that Saturday — **are** in `roomalloc` after CSV import. What we are not building is the contestant platform: signup, payment, school/team, test choice, scoring. That already exists. A live join would mean owning or syncing that whole product. Volunteers are the opposite: replacing that app is in scope, and its only join to ops is `rooms.id`.
+**Why registration stays a separate product** (not “students cannot live in Postgres”). Roster **rows** — name, room, time for that Saturday — **are** in this database after CSV import. What we are not building is the contestant platform: signup, payment, school/team, test choice, scoring. That already exists. A live join would mean owning or syncing that whole product. Volunteers are the opposite: replacing that app is in scope, and its only join to ops is `rooms.id`.
 
 Reliability if Postgres dies: printed plan + offline timers, not “maps still have yesterday’s rooms in another DB.” Isolation of **writes** is table permissions and app rules (day-of never `UPDATE rooms`), not extra servers.
 
@@ -97,9 +94,9 @@ Catalog (buildings, floors, rooms, custom field defs)
   writers: staff-with-write (same login as HQ — see staff auth)
   never: HQ day-of, proctors, public, volunteer check-in
 
-Allocator sheets (draft grid)
-  writers: sheet owner (planner)
-  readers: owner; ops admin at import
+Allocator drafts (grid)
+  writers: staff (one person at a time; no live co-edit)
+  readers: staff; ops at day-plan import
 
 Day plan (frozen copy of one sheet)
   writers: ops admin import / re-import; ops admin day-plan overrides (room closed, move round)
@@ -145,7 +142,7 @@ The six “platforms” are **screens on one product**, not six account database
 | `live.berkeley.mt` | students, parents, coaches | **None** |
 | Volunteer signup | volunteer | **None** (form). Managers who assign people use **the staff login** |
 
-Room laptops never get `#/catalog`. Guests never get it.
+Room laptops never get the catalog. Guests never get it.
 
 ### Staff: Google vs a shared password
 
@@ -155,7 +152,7 @@ The **proctor laptops** already use a shared **event** password. That is the rig
 
 | | Google (few named people) | One shared **staff** password |
 | - | ------------------------- | ----------------------------- |
-| Setup | OAuth client + allowlist (already in this repo for Phase 2a) | One secret in 1Password, like today’s room env var |
+| Setup | OAuth client + allowlist | One secret in 1Password |
 | Revoke one person | Remove their Gmail | Rotate the password and tell everyone |
 | Audit | “jsy@ edited DWIN155 capacity” | “someone with the password did” |
 | Organizer view-only | A **role** on the same login | Does not exist unless you add a **second** staff password |
@@ -163,9 +160,9 @@ The **proctor laptops** already use a shared **event** password. That is the rig
 | Saturday HQ + **roster names** | Tied to a person | Anyone with the staff password sees 1800 names |
 | Club turnover | New officer = new allowlist row | Password often never rotates |
 
-**How humans sign in** (this is year-round, not a Saturday switch). Officers type rooms in `#/catalog` weeks before the contest. Same login later opens the allocator, HQ, volunteer admin, and live-site admin. The catalog is not “a Nov 14 feature”; BMT 2026 (2026-11-14) is only the first event the **whole** platform has to survive.
+**How humans sign in** (year-round). Officers type rooms in the catalog weeks before the contest. Same login later opens the allocator, HQ, volunteer admin, and live-site admin. The catalog is not “a contest-day feature”; BMT 2026 is only the first event the **whole** platform has to survive.
 
-- **Google:** each officer uses their Gmail (already in this repo). You can later make someone view-only, or kick one person without rotating a shared secret.
+- **Google:** each officer uses their Gmail. You can later make someone view-only, or kick one person without rotating a shared secret.
 - **One staff password:** everyone types the same password (in 1Password). Simpler. Whoever has it can see and edit catalog, HQ, roster names. No view-only role unless you add a second password.
 - **Catalog-only password, something else for HQ:** **do not.** Extra secret, little gain.
 
@@ -173,7 +170,7 @@ The **proctor laptops** already use a shared **event** password. That is the rig
 
 **Recommendation:** staff password. ~3 people who all need write. Google can be added later without changing modules.
 
-Phase 2a Google can stay in the repo unused in production; `ENABLE_DEV_AUTH` already covers local sign-in. A production staff password would be hashed on the org (or event), rotatable without redeploy — same storage idea as the room password, **different secret**.
+A staff password would be hashed, rotatable without redeploy — same storage idea as the room password, **different secret**. We do not keep Google because a prototype once had it.
 
 Still **open:** reply **Google** or **staff password**.
 
@@ -307,7 +304,7 @@ v1: if pickup is **in a named room**, it is a catalog **room**. If it is a table
 | ---- | ------ |
 | General **spaces** (food/merch not in a room) | Only those labels; **hedge:** `appears_on_grid` — see above |
 | Exact **activity names** for four focus tests + general | Clarification presets; can rename |
-| Day-plan **move room** UI | Workaround: re-import a fixed sheet (clocks kept) |
+| Day-plan **move room** UI | Workaround: re-import a fixed draft (clocks kept) |
 | Roster CSV headers | Mapper; import still works |
 | HQ list columns / red meaning | Can ship list+map with a minimal column set |
 | Public per-room detail | Flag |
@@ -317,6 +314,8 @@ v1: if pickup is **in a named room**, it is a catalog **room**. If it is a table
 | Projection vs operator as one URL or two | Same session either way |
 
 ## Next specs to write (workshop; no application code yet)
+
+Parent: [greenfield integrated system](2026-08-24-integrated-system.md). Do not check the prototype for columns.
 
 1. **Catalog** (in progress): [2026-08-24-catalog.md](2026-08-24-catalog.md) — custom fields, code mappings, `appears_on_grid`  
 2. Allocator + bulk floor assign + import-to-ops  

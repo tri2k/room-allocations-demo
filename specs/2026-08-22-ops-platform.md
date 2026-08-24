@@ -1,8 +1,8 @@
 # Event operations platform
 
-**Status**: Draft (round 2 locked — detailed architecture in [2026-08-23-bmt-2026-architecture.md](2026-08-23-bmt-2026-architecture.md))
+**Status**: Draft (round 2 locked). **Target parent:** [greenfield integrated system](2026-08-24-integrated-system.md). Do not treat the allocator prototype as the product.
 
-Product context: [PRODUCT.md](../PRODUCT.md). This spec is the parent of the allocator (this repo today), [indoor maps](2026-08-21-indoor-maps.md), [catalog history](2026-08-13-catalog-history-and-plan-pins.md), and later ops / proctor / volunteer / public modules. Do not implement the whole platform in one pass. Do **protect the kernel** so those modules do not grow a second rooms list.
+Product context: [PRODUCT.md](../PRODUCT.md). Indoor maps: [2026-08-21-indoor-maps.md](2026-08-21-indoor-maps.md). Do **protect the kernel** so modules do not grow a second rooms list.
 
 ## Problem
 
@@ -11,7 +11,7 @@ BMT-style contests are run from a pile of spreadsheets and forms that all mentio
 | Today | Pain |
 | ----- | ---- |
 | Classroom/capacity sheet | Source of truth until someone forgets to copy a column |
-| Time × room grid | The allocator this repo already targets |
+| Time × room grid | Must share the catalog, not a private room list |
 | Volunteer Google Form → attached sheet → LLM cleanup → another app | Room names typed again; dropouts edited in a sheet; no semester-to-semester person |
 | Day-of status | Slack, memory, a printed grid |
 | Proctor timers / clarifications | Separate from the plan that said “Indiv in DWIN155” |
@@ -21,15 +21,15 @@ The costly redesign is not “we picked FastAPI.” It is **DWIN155 existing in 
 
 ## Recommendation
 
-**One org, one Postgres, one API, several modules.** A modular monolith on this stack (FastAPI + Postgres + Vite). Not six apps with six room tables. Not microservices. Persistence detail: [architecture — one Postgres](2026-08-23-bmt-2026-architecture.md#persistence--one-postgres-not-six-databases).
+**One org, one Postgres, one API, several modules.** A modular monolith. Not six apps with six room tables. Not microservices. Persistence detail: [architecture — one Postgres](2026-08-23-bmt-2026-architecture.md#persistence-one-postgres-not-six-databases). Language and UI library are an implementation choice, not this spec.
 
 Rooms are the **kernel**. Everything else is either a rare catalog edit, a **draft plan**, a **published plan**, or a **live overlay** on that plan.
 
 ```text
-Identity (Google users, roles)
+Identity (staff login — Google or staff password)
         │
         ▼
-Catalog  Building → Floor → Room          ← kernel (capacity, type, ADA, …)
+Catalog  Building → Floor → Room          ← kernel (capacity, custom fields, …)
         │                 │
         │                 └── MapSpace (Figma geom; optional room_id)
         ▼
@@ -39,10 +39,10 @@ Event (BMT 2026, then BmMT and later semesterly contests)
         │       └── Applications (this event)
         │       └── Assignments (this event: role + optional room/building)
         │
-        ├── Sheets (private allocator drafts)
+        ├── Draft plans (allocator grids; staff-visible)
         │       └── Allocations (activity × room × time)
         │
-        ├── PublishedPlan (one sheet snapshot selected for day-of)
+        ├── DayPlan (frozen import of one draft)
         │
         ├── LiveRoomState (timer, headcount, status — day-of only)
         │       └── Clarifications (HQ → proctors)
@@ -58,10 +58,10 @@ Figma does **not** own rooms. The volunteer form does **not** own rooms. The pro
 
 | Topic | Decision | Why |
 | ----- | -------- | --- |
-| Shape | Modular monolith, this repo | Student-org turnover; one deploy; custom room fields instead of a migration per column |
-| Kernel | Org-owned catalog: building / floor / room | Already in Phase 1–2b; missing org-scope until 2c |
+| Shape | Modular monolith | Student-org turnover; one deploy; custom room fields instead of a migration per column |
+| Kernel | Catalog: building / floor / room | One org; no tenant marketplace |
 | Live vs plan | Live state is a **separate** row keyed by event + room (and time window) | Reality diverges without rewriting the frozen snapshot |
-| People vs users | `Person` (volunteer record) ≠ `User` (Google sign-in) | Volunteers exist before they sign in; students from CSV are not volunteers |
+| People vs users | `Person` (volunteer record) ≠ staff login | Volunteers exist without a staff account; students from CSV are not volunteers |
 | Assignments | `(person, event, role, room?, building?)` | Proctors and other roles share one table |
 | Maps | [Indoor maps spec](2026-08-21-indoor-maps.md): Figma geom; join by code → `room_id` | Unjoined spaces still draw; they never become grid columns |
 | Public vs staff | Same API; public routes **omit** fields | Guests never get rosters, phones, HQ notes |
@@ -76,7 +76,7 @@ Figma does **not** own rooms. The volunteer form does **not** own rooms. The pro
 | Catalog vs day-of | **Day-of never writes the rooms catalog** | Closed rooms and campus pulls live on the event overlay |
 | Nov 14 scope | **All six modules** plus **printed backup** | Last semester 4/5 vibecoded tools broke |
 | Staff roles | **Admin** (everything). **Organizer** (view only) only if staff login is named (Google) | Building leads use admin. Live announcements use the same staff login |
-| Proctor login | **Room as username** + **one shared event password** (today: env var) | Not staff login; not a unique PIN per room in v1 |
+| Proctor login | **Room as username** + **one shared event password** | Not staff login; not a unique PIN per room in v1 |
 | Timer start | **Proctor may only start.** HQ does pause / add time / rest | No bulk-start |
 | Offline timer | Local countdown; **desync banner on proctor and HQ** | Server is source of truth when connected |
 | Clarifications | One-way; **no ack**; text + images; **projected** | Subset targeting; other activities do not see it |
@@ -107,11 +107,11 @@ Replace the capacity spreadsheet. Edits to existing classrooms are rare; **addin
 
 Identity: UUID plus stable display `{building.code}{room.name}`. Floor `label` must be the real code (`C`/`D`/`E`, not v0 `1`/`2`) before maps or volunteers can join without a translation table.
 
-#### 2. Event room allocator (this repo)
+#### 2. Event room allocator
 
-Time × room grid. Allocations reference `room_id`. Many private sheets per Event (Phase 2b).
+Time × room grid. Allocations reference `room_id`. Drafts belong to the Event and to staff, not to a personal Google account. One writer at a time.
 
-**Seam (not built):** an **ops admin imports** a chosen allocator sheet as the frozen **day plan**. The allocator sheet can keep changing; ops is unaffected until they import again. Re-import **keeps clocks** already running. Until a plan is imported, HQ and the proctor suite have no schedule.
+**Seam:** ops **imports** a chosen draft as the frozen **day plan**. The draft can keep changing; ops is unaffected until they import again. Re-import **keeps clocks** already running. Until a plan is imported, HQ and the proctor suite have no schedule.
 
 #### 3. Day-of operations dashboard
 
@@ -210,7 +210,7 @@ Protect the kernel, then cut **vertical slices** that reuse it:
 
 Maps can be prototyped in parallel **as soon as room codes match Figma**, because geometry does not depend on volunteers. Do not block the catalog on Leaflet.
 
-Phase 2c orgs still matter: catalog and people are org-scoped; Events belong to an org. Public HTTPS (2e) is required for guests and proctor phones.
+Public HTTPS is required for guests and proctor phones. One org in product; no tenant marketplace in v1.
 
 ## In Scope (as a vision doc)
 
