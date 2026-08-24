@@ -70,7 +70,9 @@ Indoor maps docs used to say “three stores.” That means three **kinds of row
 | Read **replica** | Same data, extra copy for reads / failover | A hosting option later if `live.berkeley.mt` should survive a primary blip. Still one source of truth. |
 | Static **export** (print packet, JSON dump of the day plan) | Paper / file fallback | Already required. This is how you survive the DB dying, not a second database. |
 
-When a second database *is* right: a **different product** with a different owner and a deliberate seam. Student registration is that. CSV in the morning is the seam. A volunteer app with its own room list was that pattern done wrong.
+When a second database *is* right: a **different product** with a different owner and a **deliberate seam**. Student **registration / scoring** is that (see below). CSV in the morning is the seam. A volunteer app with its own room list was that pattern done wrong: same owner, same rooms, no good seam.
+
+**Why registration stays a separate product** (not “students cannot live in Postgres”). Roster **rows** — name, room, time for that Saturday — **are** in `roomalloc` after CSV import. What we are not building is the contestant platform: signup, payment, school/team, test choice, scoring. That already exists. A live join would mean owning or syncing that whole product. Volunteers are the opposite: replacing that app is in scope, and its only join to ops is `rooms.id`.
 
 Reliability if Postgres dies: printed plan + offline timers, not “maps still have yesterday’s rooms in another DB.” Isolation of **writes** is table permissions and app rules (day-of never `UPDATE rooms`), not extra servers.
 
@@ -225,7 +227,7 @@ Clarification composer (admin): pick target set (activity, building, floor, mult
 - Match room via building code mapping + room name; unmatched rows go to a review queue.
 - Two tests → two rows → two `(student, room, time)` seats.
 - **Move in-app** (wrong room) updates the event roster only.
-- Students are **not** volunteer `Person`s.
+- Students are **not** volunteer `Person`s. The registration **product** stays separate; this app only holds the imported roster slice.
 
 ### Volunteers (shape only)
 
