@@ -36,7 +36,7 @@ At implementation we may rewrite this repo or start a new tree. Specs describe t
 - `appears_on_grid` hedge; skip a Location supertype
 - Timers, clarifications, projector, print backup as already locked
 
-**Stack at build time is still open.** Architecture is: **one API**, one Postgres, **six links**, staff hostname + `live.berkeley.mt`, paper if the site dies. Language and UI library are not part of this design.
+**Stack at build time is still open.** Architecture is: **one API**, one Postgres, **six links**, hosts including **`hq.berkeley.mt`** and **`live.berkeley.mt`**, paper if the site dies. Language and UI library are not part of this design.
 
 ## One API (the twin of one Postgres)
 
@@ -60,9 +60,10 @@ Browsers (staff, room laptop, guest)
 
 | Address | Who | Still the same API? |
 | ------- | --- | ------------------- |
-| Staff site | officers (catalog, grid, HQ, volunteers) | Yes |
+| Planning origin | officers (catalog, grid, volunteer admin) | Yes |
+| `hq.berkeley.mt` | war room | Yes (staff cookie) |
 | Room laptop URL | proctor / projector | Yes (room cookie, not staff) |
-| `live.berkeley.mt` | guests | Yes (public routes only; omit names, phones, HQ notes) |
+| `live.berkeley.mt` | guests | Yes (public routes only) |
 
 Those can be **one JavaScript app** with several routes, or a staff bundle plus a thinner public bundle. Both are fine. What we are not doing is six separately deployed sites with six release buttons.
 
@@ -76,7 +77,7 @@ Six screens should feel like six places you can bookmark. That is right. Last se
 | ---- | --- | ------------ |
 | Catalog | staff | Rooms, capacity, custom fields |
 | Allocator | staff | Time × room draft |
-| HQ | staff | Saturday list + map, timers, clarifications, roster |
+| HQ | staff | Saturday list + map (tabs **inside** this host), timers, clarifications, roster |
 | Volunteers | staff | People, assignments, check-in, DNI, form builder |
 | Room | laptop in the testing room | Login as `DWIN155`, timer, projector. **No staff nav** (must not HDMI the catalog) |
 | Public | guests | `live.berkeley.mt` — announcements, maps |
@@ -85,13 +86,20 @@ Six screens should feel like six places you can bookmark. That is right. Last se
 
 **Hostnames (v1):**
 
-- **Staff origin** (name TBD: `ops.berkeley.mt` or similar) — catalog, allocator, HQ, volunteer admin as **paths**. Officers get four bookmarks; same login; a small nav between them is OK.
-- **`live.berkeley.mt`** — guests. No staff chrome.
-- **Room** — either `staff-origin/room` (stripped chrome) or a third host if HDMI-risk is high. Same API, room cookie. Printed packet lists this URL.
+| Host | What lives there |
+| ---- | ---------------- |
+| **`hq.berkeley.mt`** | Day-of dashboard only. List / map / whatever else are **tabs on this host**, not more subdomains. Bookmark this on Saturday. |
+| **Planning origin** (name TBD, e.g. `ops.berkeley.mt`) | Year-round: catalog, allocator, volunteer **admin**. Paths on one host are fine; these are not a Saturday war-room. |
+| **`live.berkeley.mt`** | Guests. Announcements, maps. Volunteer **apply** here (e.g. `/volunteer`). No staff chrome. |
+| **Room** | Projector / proctor. Own host or a stripped URL. **Must not** be a tab on `hq.berkeley.mt` (HDMI would show HQ). Same API, room cookie. Printed packet lists this URL. |
 
-Do **not** do `catalog.berkeley.mt` + `grid.berkeley.mt` + … as six deploys. Six subdomains that all serve the **same** app are optional later (pretty bookmarks). They are not six codebases.
+HQ is its own subdomain because it is a **destination with its own chrome** (multiple tabs). That does **not** make it a second API or a second deploy. The same app can answer `hq.` and `ops.` and `live.`.
 
-Exact path strings (`/catalog` vs `/rooms`) are chrome; pick them in implementation. The split above is the product.
+Staff login should use a cookie on the **parent** (`berkeley.mt` or the staff parent) so jumping from ops → hq does not mean signing in twice. Room login stays a different cookie.
+
+Do **not** mint `catalog.`, `grid.`, `volunteers.` as extra deploys unless we later want prettier bookmarks in front of the **same** app. List vs map stays on `hq.berkeley.mt`, not `hq-list.` / `hq-map.`.
+
+Exact planning-origin name and path strings are chrome. **`hq.berkeley.mt`** and **`live.berkeley.mt`** are the locked public-facing hosts.
 
 ## What the product is
 
