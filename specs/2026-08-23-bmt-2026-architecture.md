@@ -96,17 +96,19 @@ The **proctor laptops** already use a shared **event** password. That is the rig
 | Saturday HQ + **roster names** | Tied to a person | Anyone with the staff password sees 1800 names |
 | Club turnover | New officer = new allowlist row | Password often never rotates |
 
-**Viable splits**
+**How humans sign in** (this is year-round, not a Saturday switch). Officers type rooms in `#/catalog` weeks before the contest. Same login later opens the allocator, HQ, volunteer admin, and live-site admin. The catalog is not “a Nov 14 feature”; BMT 2026 (2026-11-14) is only the first event the **whole** platform has to survive.
 
-1. **Google for all human staff.** Room password only for laptops. Two secrets. You get organizer view-only and per-person revoke. Phase 2a already built this.
-2. **One staff password** for catalog + allocator + HQ + volunteer managers + live admin. **Different** room password for projectors. Simpler than Google. Everyone who can open the catalog can write it. Treat roster as “anyone with the staff password.”
-3. **Catalog-only password**, something else for HQ. **Do not do this.** Extra secret, little gain.
+- **Google:** each officer uses their Gmail (already in this repo). You can later make someone view-only, or kick one person without rotating a shared secret.
+- **One staff password:** everyone types the same password (in 1Password). Simpler. Whoever has it can see and edit catalog, HQ, roster names. No view-only role unless you add a second password.
+- **Catalog-only password, something else for HQ:** **do not.** Extra secret, little gain.
 
-**Recommendation:** **option 2** for Nov 14. The club is ~3 people who all need write. Google’s only real wins here are “kick one person” and organizer view-only — neither of which you described as needed. If you later want named accounts, Google can come back without changing modules; roles hang off a user row, not off `#/catalog`.
+**Do not** use the **room** password (the one on projectors) as this staff password.
 
-Phase 2a Google can stay in the repo unused in production; `ENABLE_DEV_AUTH` already covers local sign-in. Production staff would type the staff password (hashed on the org or event, rotatable without redeploy — same storage idea as the room password, **different secret**).
+**Recommendation:** staff password. ~3 people who all need write. Google can be added later without changing modules.
 
-This stays **open** until you confirm **1** (Google humans) or **2** (staff password humans). Catalog Q5 follows: with 2, whoever has the staff password can see and edit the catalog.
+Phase 2a Google can stay in the repo unused in production; `ENABLE_DEV_AUTH` already covers local sign-in. A production staff password would be hashed on the org (or event), rotatable without redeploy — same storage idea as the room password, **different secret**.
+
+Still **open:** reply **Google** or **staff password**.
 
 ### Catalog kernel
 

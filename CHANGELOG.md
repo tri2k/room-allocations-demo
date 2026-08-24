@@ -12,7 +12,7 @@
 - Room suite secret: today’s shared env password → per-event shared password (not per-room PIN, no redeploy to rotate)
 - Building codes: DWIN, WHLR, VLSB, MLK; GPBB out of scope; code is set at create, not edited like capacity
 - Documented building-code aliases: they keep CSV/login matching after a rename; uniqueness and dual labels are the cost. Skip for v1.
-- Staff login **open:** Google (already in Phase 2a) *or* one shared **staff** password for catalog/HQ/volunteers/live admin. Recommend staff password for Nov 14. **Do not** reuse the room password; **do not** catalog-only password. Organizer view-only only exists with named logins.
+- Staff login **open** (year-round, not a contest-day switch): Google *or* one shared **staff** password for catalog/HQ/volunteers/live admin. Recommend staff password. **Do not** reuse the room password; **do not** catalog-only password. Organizer view-only only exists with named logins.
 - Spec: [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md)
 - Docs only; no application code in this change
 
