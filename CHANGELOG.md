@@ -11,7 +11,7 @@
 - Locked: no live co-edit on the allocator grid; projector has no roster names; Individual = activity group; spaces later with `appears_on_grid` hedge
 - Room suite secret: today’s shared env password → per-event shared password (not per-room PIN, no redeploy to rotate)
 - Building codes: DWIN, WHLR, VLSB, MLK; GPBB out of scope; code is set at create, not edited like capacity
-- Documented consequences if a code were edited (UUID rows stay; string labels, CSV, room login, URLs drift)
+- Documented building-code aliases: they keep CSV/login matching after a rename; uniqueness and dual labels are the cost. Skip for v1.
 - Spec: [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md)
 - Docs only; no application code in this change
 
