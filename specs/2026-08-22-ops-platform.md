@@ -58,7 +58,7 @@ Figma does **not** own rooms. The volunteer form does **not** own rooms. The pro
 
 | Topic | Decision | Why |
 | ----- | -------- | --- |
-| Shape | Modular monolith, this repo | Student-org turnover; one deploy; one migration to add a room field |
+| Shape | Modular monolith, this repo | Student-org turnover; one deploy; custom room fields instead of a migration per column |
 | Kernel | Org-owned catalog: building / floor / room | Already in Phase 1–2b; missing org-scope until 2c |
 | Live vs plan | Live state is a **separate** row keyed by event + room (and time window) | Reality diverges without rewriting the frozen snapshot |
 | People vs users | `Person` (volunteer record) ≠ `User` (Google sign-in) | Volunteers exist before they sign in; students from CSV are not volunteers |

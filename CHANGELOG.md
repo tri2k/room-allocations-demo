@@ -8,8 +8,9 @@
 - New seam: publish one sheet as the day-of plan; live state does not rewrite the grid
 - Figma maps and the old Dwinelle Navigator are not a second rooms list; Navigator-class routing is later than floor search
 - Locked: BMT 2026 (2026-11-14), one org, freeze-on-publish, independent per-room timers, replace volunteer app, Google OAuth, roster CSV only, no year-one turn-by-turn
-- Round 2 locked (2026-08-23): all modules for Nov 14; day-of never writes catalog; custom room fields; room-username proctors; ops imports the sheet; projection of timer + clarifications
-- Detailed architecture: [specs/2026-08-23-bmt-2026-architecture.md](specs/2026-08-23-bmt-2026-architecture.md)
+- Locked: no live co-edit on the allocator grid; projector has no roster names; Individual = activity group; spaces later with `appears_on_grid` hedge
+- Room suite secret: today’s shared env password → per-event shared password (not per-room PIN, no redeploy to rotate)
+- Catalog workshop spec: [specs/2026-08-24-catalog.md](specs/2026-08-24-catalog.md)
 - Spec: [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md)
 - Docs only; no application code in this change
 
