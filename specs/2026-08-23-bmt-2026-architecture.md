@@ -107,7 +107,7 @@ Live (timers, clarifications, desync, roster seats)
   never: catalog
 
 Volunteers (people, applications, assignments, DNI)
-  writers: public form (application); staff-with-write (assignments, DNI, check-in)
+  writers: volunteer account (own person + this-event application); staff-with-write (assignments, DNI, check-in, form)
 
 Public content (announcements)
   writers: live.berkeley.mt admin panel (staff-with-write)
@@ -115,21 +115,21 @@ Public content (announcements)
 
 Day-of tools **must not** `UPDATE rooms`. “Closed,” “campus pulled,” “moved to 182” are event rows.
 
-### Three logins (not six)
+### Four logins (not six products)
 
 | Who | How they sign in | What they see |
 | --- | ---------------- | ------------- |
-| **Staff** | **Open:** Google *or* one shared **staff** password (see below). ~3 people; building leads included | Catalog, allocator, import day plan, HQ dashboard, timers (all controls), clarifications, volunteers, roster, live-site announcements, print/export |
-| **Organizer** | Only exists if staff login is **named** (Google) or you add a **second** staff secret | **View only** on ops/day-plan/live (no catalog writes, no timer writes) |
-| **Room (proctor suite)** | **Username = room code** (`DWIN155`) + **one shared secret for the event** | Timer (**start only**), clarifications, **projection** (timer + clarifications only). Roster **names on operator view only**, not on the projector |
+| **Staff** | **Open:** Google *or* one shared **staff** password. ~3 people | Catalog, allocator, import day plan, HQ on ops, timers (all controls), clarifications, volunteer **admin**, roster, live announcements |
+| **Organizer** | Only if staff login is **named** (Google) or a second staff secret | **View only** on ops |
+| **Volunteer** | Own account on **`volunteers.berkeley.mt`** (mechanism TBD) | Apply / return / see own assignment. Not HQ, not roster of contestants |
+| **Room (proctor suite)** | **Username = room code** (`DWIN155`) + **one shared secret for the event** | Timer (**start only**), clarifications, projection. Names on operator view only |
 | **Guest** | None | `live.berkeley.mt` |
-| **Volunteer applicant** | Public form (no staff login required to apply) | Signup only |
+
+Proctor-as-person (the volunteer assigned to 155) is **not** the same as the room login. They may have a volunteer account; the laptop still uses `DWIN155`. Assignments point at `rooms.id`.
 
 Today the suite uses a **shared password in an environment variable** (all rooms, one secret, change = redeploy). Target: same UX (**one password for every room that event**), stored on the Event/day plan (hashed), **printable** on the backup packet, rotatable by admin **without** a redeploy. Unique per-room PINs are not v1.
 
-Proctor-as-person (the volunteer assigned to 155) is **not** the same as the room login. Assignments still point at `rooms.id`; the laptop does not need a Google account.
-
-### Six UIs, not six logins
+### Six UIs, not six products
 
 The six “platforms” are **screens on one product**, not six account databases. Last semester’s breakage came from five separate deploys, not from having too few password types.
 
@@ -140,7 +140,7 @@ The six “platforms” are **screens on one product**, not six account database
 | Ops / HQ dashboard | war room | Same staff login |
 | Proctor + projector | laptop in DWIN155 | **Room username + shared event password** |
 | `live.berkeley.mt` | students, parents, coaches | **None** |
-| Volunteer signup | volunteer | **None** (form). Managers who assign people use **the staff login** |
+| Volunteer signup / return | volunteer | **Volunteer account** on `volunteers.berkeley.mt`. Managers who assign people use **staff login on ops** |
 
 Room laptops never get the catalog. Guests never get it.
 
@@ -148,7 +148,7 @@ Room laptops never get the catalog. Guests never get it.
 
 The catalog should **not** be “Google admin” as a special case. Either **every human staff screen** is Google, or **every human staff screen** is one staff password. Catalog-only auth is the worst split: a third secret, and HQ (where roster names live) is still the real risk.
 
-The **proctor laptops** already use a shared **event** password. That is the right model for 50 machines. **Do not** reuse that password for catalog, HQ, volunteers, or live-site admin. It is on 50 projectors and a print packet.
+The **proctor laptops** already use a shared **event** password. That is the right model for 50 machines. **Do not** reuse the **room** password for ops or for volunteer accounts. It is on 50 projectors and a print packet.
 
 | | Google (few named people) | One shared **staff** password |
 | - | ------------------------- | ----------------------------- |
@@ -242,12 +242,14 @@ Clarification composer (admin): pick target set (activity, building, floor, mult
 
 ### Volunteers (shape only)
 
-- Form **builder** (admin), not a hardcoded Google Form clone.
+- Host: **`volunteers.berkeley.mt`** for the people; staff **admin** on ops.
+- Returning volunteers **reuse an account** (login mechanism TBD). First-time apply can be logged out on that same host.
+- Form **builder** (admin on ops), not a hardcoded Google Form clone.
 - Roles **customizable**.
 - **Shifts** exist (schema: assignment has a time window); UI details later.
 - Default proctor count from a **capacity heuristic**, override per room.
-- Check-in: **name search**.
-- Returning: prefill application; **do not invite** list.
+- Check-in: **name search** (staff on ops). Volunteer seeing their own room is on the volunteer host.
+- **Do not invite** list.
 - ~300 volunteers. Shirt/dietary/etc stored; visible to managers; field list later.
 
 ### Public (`live.berkeley.mt`)
@@ -261,7 +263,7 @@ Clarification composer (admin): pick target set (activity, building, floor, mult
 
 Because last semester’s tools died:
 
-- One API, one database, six entry links (`ops.berkeley.mt` + `swire.berkeley.mt` + `live.berkeley.mt`).
+- One API, one database, hosts `ops.berkeley.mt` + `volunteers.berkeley.mt` + `swire.berkeley.mt` + `live.berkeley.mt`.
 - Printed plan / shared room-password / assignment packet after import.
 - Offline timer with explicit desync, not silent drift.
 - Do not make the projector depend on a second “vibecoded” host.
