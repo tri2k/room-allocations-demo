@@ -25,6 +25,7 @@ At implementation we may rewrite this repo or start a new tree. Specs describe t
 **Kept because we decided them in workshop**, not because code did:
 
 - One Postgres, one database, six screens sharing `rooms.id`
+- **One API** (defined below). How many browser bundles is softer.
 - Catalog is sacred: day-of never updates rooms
 - Draft grid → explicit import as frozen day plan; re-import keeps running clocks
 - No live co-edit on the grid
@@ -35,7 +36,37 @@ At implementation we may rewrite this repo or start a new tree. Specs describe t
 - `appears_on_grid` hedge; skip a Location supertype
 - Timers, clarifications, projector, print backup as already locked
 
-**Stack at build time is still open.** Architecture is: one web app, one API, one Postgres, a staff hostname and `live.berkeley.mt`, paper if the site dies. Language and UI library are not part of this design.
+**Stack at build time is still open.** Architecture is: **one API**, one Postgres, staff screens + `live.berkeley.mt`, paper if the site dies. Language and UI library are not part of this design.
+
+## One API (the twin of one Postgres)
+
+**One API** means one HTTP backend that is the only writer to that Postgres. Catalog, allocator, HQ, proctors, volunteer admin, and the public site all call **this** service. Rules like “day-of never updates rooms” live in one place.
+
+It does **not** mean one URL the humans type, or that staff and guests share a homepage.
+
+Last semester was six backends (or six sites with no backend). Splitting APIs while keeping one Postgres still splits the rules: the volunteer service might still `UPDATE rooms`, or it talks to tables the HQ service does not know about. One API is how the write-boundaries stay real.
+
+```text
+Browsers (staff, room laptop, guest)
+        │
+        ▼
+   one API   ←  only process allowed to talk to Postgres
+        │
+        ▼
+   one Postgres
+```
+
+**What you type in the address bar can still differ:**
+
+| Address | Who | Still the same API? |
+| ------- | --- | ------------------- |
+| Staff site | officers (catalog, grid, HQ, volunteers) | Yes |
+| Room laptop URL | proctor / projector | Yes (room cookie, not staff) |
+| `live.berkeley.mt` | guests | Yes (public routes only; omit names, phones, HQ notes) |
+
+Those can be **one JavaScript app** with three hosts/routes, or **two apps** (a staff+room bundle and a thinner public bundle). Both are fine. What we are not doing is a volunteer.berkeley.mt with its own server and its own rooms list.
+
+**“One web app”** was shorthand for “not six independently shipped sites.” The locked part next to Postgres is **one API**. Two frontends that only speak to that API are still the integrated product.
 
 ## What the product is
 
@@ -97,13 +128,7 @@ One org in product (BMT). No `org_id` required for v1.
 
 ## Runtime
 
-```text
-Staff browser  →  API  →  Postgres
-Room laptop    →  API  (room session)
-Guest browser  →  API  (public routes only)   as live.berkeley.mt
-```
-
-Same API, different cookies. Public routes omit roster names, phones, HQ notes. Projector omits roster names.
+Same picture as above. Different cookies / routes, not different APIs.
 
 If Postgres or the site dies: printed day plan, printed room password, assignment packet. Timers may keep ticking locally and show desync when they reconnect.
 
