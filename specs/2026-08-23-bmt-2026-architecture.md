@@ -97,7 +97,7 @@ Room laptops never get `#/catalog`. Guests never get it.
 - Built-in numeric: **`capacity` only**.
 - **Field definitions** (org-level): name, type (number / text / yes-no). Values per room. “Guts capacity,” “optimal,” “ADA” are examples staff add — not hardcoded.
 - Active/inactive is catalog (room truly gone or unused for the org). **“Not using 155 today” is not inactive.**
-- Tentative Nov 14 halls: Dwinelle **DWIN**, Wheeler **WHLR**, VLSB **VLSB**; MLK and GPBB codes still open.
+- Nov 14 halls: Dwinelle **DWIN**, Wheeler **WHLR**, VLSB **VLSB**, Martin Luther King Jr. Building **MLK**. **No GPBB.**
 - **Spaces** (food, merch, not a classroom): **v1 does not need a new type.** See [Spaces later](#spaces-food--merch--difficulty-of-adding-later) for how to keep the door open.
 
 ### Contest model (grid)
