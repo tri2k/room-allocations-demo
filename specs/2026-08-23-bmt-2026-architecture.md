@@ -93,7 +93,7 @@ Room laptops never get `#/catalog`. Guests never get it.
 
 ### Catalog kernel
 
-- Identity: user-editable **building code** + floor label + room name. Display `DWIN155`.
+- Identity: building **code** set at create (read-only after); editable pretty name; display `DWIN155`.
 - Built-in numeric: **`capacity` only**.
 - **Field definitions** (org-level): name, type (number / text / yes-no). Values per room. “Guts capacity,” “optimal,” “ADA” are examples staff add — not hardcoded.
 - Active/inactive is catalog (room truly gone or unused for the org). **“Not using 155 today” is not inactive.**

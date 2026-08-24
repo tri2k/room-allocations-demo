@@ -72,11 +72,11 @@ Figma does **not** own rooms. The volunteer form does **not** own rooms. The pro
 | Volunteer product | **Replace** the current volunteer app | Shared catalog + assignments beats another room CSV |
 | Indoor turn-by-turn | **Not year one** | Public maps: floor finder + search + pinch-zoom |
 | Custom room fields | **One built-in `capacity`.** All other room facts are **admin-defined fields** | Spreadsheet columns keep growing; do not ship a migration per field |
-| Building codes | **User-editable** name ↔ code mappings | Join key for Figma/CSV |
+| Building codes | **Set at building create, then read-only** in the catalog UI | Join key for Figma/CSV/room login; pretty name stays editable |
 | Catalog vs day-of | **Day-of never writes the rooms catalog** | Closed rooms and campus pulls live on the event overlay |
 | Nov 14 scope | **All six modules** plus **printed backup** | Last semester 4/5 vibecoded tools broke |
 | Staff roles | **Admin** (everything) and **Organizer** (view only). ~3 Google accounts | Building leads use admin. Live site has its own announcement admin panel |
-| Proctor login | **Room as username**, not Google | Laptop/projector in 155 signs in as that room |
+| Proctor login | **Room as username** + **one shared event password** (today: env var) | Not Google; not a unique PIN per room in v1 |
 | Timer start | **Proctor may only start.** HQ does pause / add time / rest | No bulk-start |
 | Offline timer | Local countdown; **desync banner on proctor and HQ** | Server is source of truth when connected |
 | Clarifications | One-way; **no ack**; text + images; **projected** | Subset targeting; other activities do not see it |
