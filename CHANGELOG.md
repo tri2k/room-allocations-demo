@@ -13,6 +13,7 @@
 - Building codes: DWIN, WHLR, VLSB, MLK; GPBB out of scope; code is set at create, not edited like capacity
 - Documented building-code aliases: they keep CSV/login matching after a rename; uniqueness and dual labels are the cost. Skip for v1.
 - Staff login **open** (year-round, not a contest-day switch): Google *or* one shared **staff** password for catalog/HQ/volunteers/live admin. Recommend staff password. **Do not** reuse the room password; **do not** catalog-only password. Organizer view-only only exists with named logins.
+- Persistence: **one** Postgres 16, **one** database (`roomalloc`). Six modules are table groups + UIs that join `rooms.id`, not extra databases. Student registration stays an external product (CSV in). Figma `.fig` is import source, not a runtime DB.
 - Spec: [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md)
 - Docs only; no application code in this change
 

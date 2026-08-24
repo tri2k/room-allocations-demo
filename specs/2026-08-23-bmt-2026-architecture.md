@@ -23,6 +23,43 @@ Parent: [ops platform](2026-08-22-ops-platform.md). Indoor maps: [2026-08-21-ind
 
 ## Locked architecture
 
+### Persistence — one Postgres, not six databases
+
+**There is one PostgreSQL server and one database.** Today that is Docker Compose `postgres:16`, database name `roomalloc` (user `roomalloc`). Production is the same shape: one hosted Postgres, one database, Alembic migrations. Modules are **table groups + screens**, not extra servers.
+
+When earlier docs say “the rooms database,” they mean the **catalog tables** (`buildings` / `floors` / `rooms`), not a second Postgres.
+
+```text
+One Postgres  (roomalloc)
+  catalog     buildings, floors, rooms, later custom field defs
+  allocator   events, sheets, activities, time_blocks, allocations
+  identity    users  (staff; room login is a different session, not a second DB)
+  --- not built yet, same database ---
+  day plan    frozen copy of one sheet + day-of overrides (closed, moved)
+  live        timers, clarifications, roster seats  (join rooms.id)
+  volunteers  people, applications, assignments     (assignments.room_id)
+  maps        floor plates + GeoJSON polygons in JSONB  (optional room_id)
+  public      announcements
+```
+
+Join key for almost everything that is “about a classroom”: **`rooms.id`** (UUID). Display string `DWIN155` is computed from catalog columns. Do not keep a second copy of Dwinelle 155 in a volunteer DB or a map DB.
+
+**As-built today (Phase 2b):** catalog + events + sheets + allocations + users. All in `roomalloc`.
+
+**Not in this Postgres (and not going to be):**
+
+| Thing | Where it lives |
+| ----- | -------------- |
+| Student registration / scoring | Separate platform. We may **import a CSV** into roster tables here. We do not replicate that product’s DB |
+| Figma `.fig` files | Officers’ laptops / Figma. An **importer** writes polygons into map tables here |
+| Dwinelle Navigator graph | Kessler’s site. Not year one; would be more tables here if we ever import it |
+| Session cookie | Signed cookie on the browser, not a sessions table |
+| Clarification images | Not designed. Files or object storage if needed — still not a second Postgres |
+
+**Also not in the plan:** Redis, a rooms microservice, one database per module, PostGIS (maps use JSONB on vanilla 16). `live.berkeley.mt` is another **hostname** in front of the same API, not another database.
+
+Indoor maps docs used to say “three stores.” That means three **kinds of row** (geometry, catalog facts, live overlay) in this one database, joined by room id.
+
 ### What may write what
 
 ```text

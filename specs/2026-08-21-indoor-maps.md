@@ -33,15 +33,15 @@ We need the catalog’s rooms to sit on a **to-scale indoor map** imported from 
 | Stack | Existing Vite SPA + FastAPI `/api/v1` + hash routes | This repo; not Next.js |
 | C4 | Update diagrams **in the same commit as the code**, not this docs-only change | Specs are not as-built |
 
-### Three stores, one join key
+### Three table groups, one join key
 
 ```
-Figma .fig  --import-->  map store (geom, kind, blank/internal/external fills)
-Catalog                  rooms (capacity, room_type, active)     -- already shipped
-Event ops                live overlay (role, proctors, timer)    -- Phase 3 / later
+Figma .fig  --import-->  map tables (geom, kind, blank/internal/external fills)
+Catalog                  rooms (capacity, active)     -- already shipped, same Postgres
+Event ops                live overlay (role, proctors, timer)    -- later, same Postgres
 ```
 
-Join is **building code + floor label + room code** (`DWIN` / `D` / `155`), plus `aliases[]` for stacked labels (`22A + 22AA`). Map spaces that are not bookable (stairs, bathrooms, courtyards) have **no** `room_id`.
+Join is **building code + floor label + room code** (`DWIN` / `D` / `155`), plus `aliases[]` for stacked labels (`22A + 22AA`). Map spaces that are not bookable (stairs, bathrooms, courtyards) have **no** `room_id`. These are not three database servers. Geometry, catalog facts, and live overlay are **tables in `roomalloc`**.
 
 ```text
 Browser
@@ -51,7 +51,7 @@ Browser
   join:    space.id in both map and live payloads
 ```
 
-Public deploy does not merge these databases. It adds auth on the live payload.
+Public routes do not dump HQ live fields into the cached map payload. They add auth (or omit fields) on the live overlay. Same Postgres.
 
 ### How this attaches to the catalog
 

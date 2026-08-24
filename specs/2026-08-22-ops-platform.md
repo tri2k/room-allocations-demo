@@ -21,7 +21,7 @@ The costly redesign is not “we picked FastAPI.” It is **DWIN155 existing in 
 
 ## Recommendation
 
-**One org, one Postgres, one API, several modules.** A modular monolith on this stack (FastAPI + Postgres + Vite). Not six apps with six room tables. Not microservices.
+**One org, one Postgres, one API, several modules.** A modular monolith on this stack (FastAPI + Postgres + Vite). Not six apps with six room tables. Not microservices. Persistence detail: [architecture — one Postgres](2026-08-23-bmt-2026-architecture.md#persistence--one-postgres-not-six-databases).
 
 Rooms are the **kernel**. Everything else is either a rare catalog edit, a **draft plan**, a **published plan**, or a **live overlay** on that plan.
 
