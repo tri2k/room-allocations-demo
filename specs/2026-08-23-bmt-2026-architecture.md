@@ -65,13 +65,39 @@ Today the suite uses a **shared password in an environment variable** (all rooms
 
 Proctor-as-person (the volunteer assigned to 155) is **not** the same as the room login. Assignments still point at `rooms.id`; the laptop does not need that volunteer’s Google account.
 
+### Six UIs, not six logins
+
+The six “platforms” are **screens on one product**, not six account databases. Last semester’s breakage came from five separate deploys, not from having too few password types.
+
+| UI | Typical person | How they prove who they are |
+| -- | -------------- | --------------------------- |
+| Catalog | staff looking up a room | **Google** |
+| Allocator | person who builds the grid | **Google** (same account) |
+| Ops / HQ dashboard | war room | **Google** (same account; **admin** vs **organizer** role) |
+| Proctor + projector | laptop in DWIN155 | **Room username + shared event password** |
+| `live.berkeley.mt` | students, parents, coaches | **None** |
+| Volunteer signup | volunteer | **None** (form). Managers who assign people use **Google** |
+
+That is **two** secrets (Google, room password) plus anonymous. Which **menus** a Google user sees is a **role** on that user, not a new login for catalog vs HQ vs volunteers.
+
+Roles we already sketched (can add more later without new password systems):
+
+- **Admin** — write catalog, import plan, HQ controls, volunteer admin, live announcements.
+- **Organizer** — view ops (and, if we want, view catalog). No writes.
+
+Nov 14 can run with ~3 Google **admins** (building leads use admin). If volunteer-managers should not import the day plan, that is a **third Google role** later (`volunteer_admin`), still Google, not a sixth password.
+
+Catalog Q5 (“who may **read** `#/catalog`”) is only: does **organizer** include catalog view? Interim default **yes**. Tighten to admins-only if the catalog will hold notes you do not want on a view-only staff account.
+
+Room laptops never get `#/catalog`. Guests never get it.
+
 ### Catalog kernel
 
 - Identity: user-editable **building code** + floor label + room name. Display `DWIN155`.
 - Built-in numeric: **`capacity` only**.
 - **Field definitions** (org-level): name, type (number / text / yes-no). Values per room. “Guts capacity,” “optimal,” “ADA” are examples staff add — not hardcoded.
 - Active/inactive is catalog (room truly gone or unused for the org). **“Not using 155 today” is not inactive.**
-- Tentative Nov 14 halls: Dwinelle, Wheeler, MLK, VLSB, GPBB — codes staff edit.
+- Tentative Nov 14 halls: Dwinelle **DWIN**, Wheeler **WHLR**, VLSB **VLSB**; MLK and GPBB codes still open.
 - **Spaces** (food, merch, not a classroom): **v1 does not need a new type.** See [Spaces later](#spaces-food--merch--difficulty-of-adding-later) for how to keep the door open.
 
 ### Contest model (grid)

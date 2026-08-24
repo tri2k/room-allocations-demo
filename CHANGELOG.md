@@ -10,7 +10,7 @@
 - Locked: BMT 2026 (2026-11-14), one org, freeze-on-publish, independent per-room timers, replace volunteer app, Google OAuth, roster CSV only, no year-one turn-by-turn
 - Locked: no live co-edit on the allocator grid; projector has no roster names; Individual = activity group; spaces later with `appears_on_grid` hedge
 - Room suite secret: today’s shared env password → per-event shared password (not per-room PIN, no redeploy to rotate)
-- Catalog workshop spec: [specs/2026-08-24-catalog.md](specs/2026-08-24-catalog.md) (five questions explained in-place)
+- Catalog: seed Room type custom field; capacity 0 allowed; codes DWIN / WHLR / VLSB; kind-dropdown vs checkbox and catalog-read role still open
 - Spec: [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md)
 - Docs only; no application code in this change
 
