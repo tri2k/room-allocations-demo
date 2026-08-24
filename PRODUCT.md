@@ -34,7 +34,7 @@ The v0–2b allocator in this repo is **not** the target model. Historical notes
 
 ## Architecture
 
-**Target:** **one API**, one Postgres, **six entry links**. **`hq.berkeley.mt`** is its own subdomain (list/map tabs stay on that host). Planning (catalog, allocator, volunteer admin) can share an ops host. **`live.berkeley.mt`** for guests. Room is not a tab on HQ. Spec: [integrated system](specs/2026-08-24-integrated-system.md).
+**Target:** **one API**, one Postgres, **six entry links**. **`ops.berkeley.mt`** = HQ (tabs) + volunteer admin (historical ambition). **`swire.berkeley.mt`** = room timers only (no `/admin`; that moves to ops HQ). **`live.berkeley.mt`** = guests. Spec: [integrated system](specs/2026-08-24-integrated-system.md).
 
 Language, UI library, and folder layout are chosen at implementation. `docs/c4/` describes whatever code is in the current commit, not this target.
 

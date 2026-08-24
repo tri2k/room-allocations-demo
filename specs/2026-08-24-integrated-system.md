@@ -36,7 +36,7 @@ At implementation we may rewrite this repo or start a new tree. Specs describe t
 - `appears_on_grid` hedge; skip a Location supertype
 - Timers, clarifications, projector, print backup as already locked
 
-**Stack at build time is still open.** Architecture is: **one API**, one Postgres, **six links**, hosts including **`hq.berkeley.mt`** and **`live.berkeley.mt`**, paper if the site dies. Language and UI library are not part of this design.
+**Stack at build time is still open.** Architecture is: **one API**, one Postgres, **six links**, hosts **`swire.berkeley.mt`**, **`ops.berkeley.mt`**, **`live.berkeley.mt`**, paper if the site dies. Language and UI library are not part of this design.
 
 ## One API (the twin of one Postgres)
 
@@ -60,9 +60,8 @@ Browsers (staff, room laptop, guest)
 
 | Address | Who | Still the same API? |
 | ------- | --- | ------------------- |
-| Planning origin | officers (catalog, grid, volunteer admin) | Yes |
-| `hq.berkeley.mt` | war room | Yes (staff cookie) |
-| Room laptop URL | proctor / projector | Yes (room cookie, not staff) |
+| `ops.berkeley.mt` | officers (HQ, volunteers; catalog/allocator as other paths) | Yes (staff cookie) |
+| `swire.berkeley.mt` | laptop in the room | Yes (room cookie, not staff) |
 | `live.berkeley.mt` | guests | Yes (public routes only) |
 
 Those can be **one JavaScript app** with several routes, or a staff bundle plus a thinner public bundle. Both are fine. What we are not doing is six separately deployed sites with six release buttons.
@@ -77,29 +76,34 @@ Six screens should feel like six places you can bookmark. That is right. Last se
 | ---- | --- | ------------ |
 | Catalog | staff | Rooms, capacity, custom fields |
 | Allocator | staff | Time × room draft |
-| HQ | staff | Saturday list + map (tabs **inside** this host), timers, clarifications, roster |
-| Volunteers | staff | People, assignments, check-in, DNI, form builder |
-| Room | laptop in the testing room | Login as `DWIN155`, timer, projector. **No staff nav** (must not HDMI the catalog) |
+| HQ | staff | Saturday list + map (tabs **on ops**), timers, clarifications, roster |
+| Volunteers | staff | People, assignments, check-in, DNI, form builder — **same host as HQ** |
+| Room | laptop | `swire.berkeley.mt` — login as `DWIN155`, timer, projector. **No staff nav** |
 | Public | guests | `live.berkeley.mt` — announcements, maps |
 
-**Seventh link, same product:** volunteer **apply** (public form, no staff password). That is the volunteer screen’s public face, not a second volunteer app. Put it on `live.berkeley.mt` (e.g. `/volunteer`) or its own path on the staff host that does not require login. Do not make it an eighth database.
+**Seventh link, same product:** volunteer **apply** (public form, no staff password). Put it on `live.berkeley.mt` (e.g. `/volunteer`). Do not make it an eighth database.
 
-**Hostnames (v1):**
+**Historical hosts (keep the names):**
+
+| Host | What it was | What was missing |
+| ---- | ----------- | ---------------- |
+| **`swire.berkeley.mt`** | Room timers (one page per room) plus **`/admin`** for Swire itself (HQ-style timer controls) | Clarifications, roster, maps, a rooms catalog — Swire was the clock product |
+| **`ops.berkeley.mt`** | Volunteers (this past semester) | Unmet ambition: **ops dashboard / HQ on this same host** |
+| **`live.berkeley.mt`** | Public contest site | Indoor maps joined to the catalog |
+
+We are not inventing `hq.berkeley.mt`. HQ is the dashboard you already wanted **on ops**. Swire stays the name people use for the room clock.
+
+**Hostnames (target):**
 
 | Host | What lives there |
 | ---- | ---------------- |
-| **`hq.berkeley.mt`** | Day-of dashboard only. List / map / whatever else are **tabs on this host**, not more subdomains. Bookmark this on Saturday. |
-| **Planning origin** (name TBD, e.g. `ops.berkeley.mt`) | Year-round: catalog, allocator, volunteer **admin**. Paths on one host are fine; these are not a Saturday war-room. |
-| **`live.berkeley.mt`** | Guests. Announcements, maps. Volunteer **apply** here (e.g. `/volunteer`). No staff chrome. |
-| **Room** | Projector / proctor. Own host or a stripped URL. **Must not** be a tab on `hq.berkeley.mt` (HDMI would show HQ). Same API, room cookie. Printed packet lists this URL. |
+| **`ops.berkeley.mt`** | **Saturday bookmark.** HQ dashboard (list / map / other HQ chrome as **tabs on this host**). Volunteer **admin** on the same host (path or tab) — finish last semester’s ambition. Catalog and allocator can live here as **other paths** (not the default page officers open on Saturday). |
+| **`swire.berkeley.mt`** | Room / projector only. Username `DWIN155` + event password. Timer + clarifications. **No `/admin`.** Timer pause / add-time / clarifications composer live on **ops HQ**, not next to the HDMI page. Printed packet lists this URL. |
+| **`live.berkeley.mt`** | Guests. Announcements, maps. Volunteer **apply** (e.g. `/volunteer`). No staff chrome. |
 
-HQ is its own subdomain because it is a **destination with its own chrome** (multiple tabs). That does **not** make it a second API or a second deploy. The same app can answer `hq.` and `ops.` and `live.`.
+Same API, same Postgres. Cookie: staff session on the parent so ops paths share login. Swire uses the **room** cookie, not staff.
 
-Staff login should use a cookie on the **parent** (`berkeley.mt` or the staff parent) so jumping from ops → hq does not mean signing in twice. Room login stays a different cookie.
-
-Do **not** mint `catalog.`, `grid.`, `volunteers.` as extra deploys unless we later want prettier bookmarks in front of the **same** app. List vs map stays on `hq.berkeley.mt`, not `hq-list.` / `hq-map.`.
-
-Exact planning-origin name and path strings are chrome. **`hq.berkeley.mt`** and **`live.berkeley.mt`** are the locked public-facing hosts.
+List vs map stay tabs on `ops.berkeley.mt`, not extra subdomains. Do not put HQ on Swire — that recreates `/admin` on the room product and risks HDMI. Do not mint `hq.berkeley.mt` unless ops is retired as a name.
 
 ## What the product is
 

@@ -21,7 +21,7 @@ The costly redesign is not “we picked FastAPI.” It is **DWIN155 existing in 
 
 ## Recommendation
 
-**One org, one Postgres, one API, six links.** HQ is **`hq.berkeley.mt`** (own subdomain, tabs inside). Persistence: [one Postgres](2026-08-23-bmt-2026-architecture.md#persistence-one-postgres-not-six-databases). Links: [integrated system](2026-08-24-integrated-system.md#six-links-how-people-enter).
+**One org, one Postgres, one API, six links.** HQ + volunteers on **`ops.berkeley.mt`**. Rooms on **`swire.berkeley.mt`**. Guests on **`live.berkeley.mt`**. Persistence: [one Postgres](2026-08-23-bmt-2026-architecture.md#persistence-one-postgres-not-six-databases). Links: [integrated system](2026-08-24-integrated-system.md#six-links-how-people-enter).
 
 Rooms are the **kernel**. Everything else is either a rare catalog edit, a **draft plan**, a **published plan**, or a **live overlay** on that plan.
 
