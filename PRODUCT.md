@@ -34,7 +34,7 @@ The v0–2b allocator in this repo is **not** the target model. Historical notes
 
 ## Architecture
 
-**Target:** **one API**, one Postgres. Staff hostname + `live.berkeley.mt` (public routes omit sensitive fields). Room laptops use a room session. Paper backup if the site dies. “One web app” only means not six independently shipped sites — a separate public frontend is fine if it still calls this API. Spec: [integrated system](specs/2026-08-24-integrated-system.md).
+**Target:** **one API**, one Postgres, **six entry links** (catalog, allocator, HQ, volunteers, room, `live.berkeley.mt`) plus a public volunteer-apply page. Staff hostname + `live.berkeley.mt`. Not six independently shipped sites. Spec: [integrated system](specs/2026-08-24-integrated-system.md).
 
 Language, UI library, and folder layout are chosen at implementation. `docs/c4/` describes whatever code is in the current commit, not this target.
 

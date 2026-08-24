@@ -4,7 +4,8 @@
 
 ### Ops platform architecture (2026-08-22)
 
-- **One API** (one HTTP backend to Postgres). “One web app” only means not six independently shipped sites; staff vs `live.berkeley.mt` may be one or two frontends.
+- **Greenfield:** target parent [specs/2026-08-24-integrated-system.md](specs/2026-08-24-integrated-system.md). Allocator prototype is not a design constraint.
+- **One API** (one HTTP backend to Postgres). **Six entry links** (catalog, allocator, HQ, volunteers, room, public) plus volunteer-apply. Not six deploys. Staff origin + `live.berkeley.mt`.
 - Rooms catalog is the kernel; allocator, day-of ops, proctors, public maps, and volunteers are modules that join `rooms.id`
 - New seam: publish one sheet as the day-of plan; live state does not rewrite the grid
 - Figma maps and the old Dwinelle Navigator are not a second rooms list; Navigator-class routing is later than floor search

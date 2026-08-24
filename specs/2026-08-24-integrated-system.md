@@ -25,7 +25,7 @@ At implementation we may rewrite this repo or start a new tree. Specs describe t
 **Kept because we decided them in workshop**, not because code did:
 
 - One Postgres, one database, six screens sharing `rooms.id`
-- **One API** (defined below). How many browser bundles is softer.
+- **One API.** **Six entry links** (bookmarks), not six shipped sites. Hostnames: staff origin + `live.berkeley.mt` (+ optional room host).
 - Catalog is sacred: day-of never updates rooms
 - Draft grid → explicit import as frozen day plan; re-import keeps running clocks
 - No live co-edit on the grid
@@ -36,7 +36,7 @@ At implementation we may rewrite this repo or start a new tree. Specs describe t
 - `appears_on_grid` hedge; skip a Location supertype
 - Timers, clarifications, projector, print backup as already locked
 
-**Stack at build time is still open.** Architecture is: **one API**, one Postgres, staff screens + `live.berkeley.mt`, paper if the site dies. Language and UI library are not part of this design.
+**Stack at build time is still open.** Architecture is: **one API**, one Postgres, **six links**, staff hostname + `live.berkeley.mt`, paper if the site dies. Language and UI library are not part of this design.
 
 ## One API (the twin of one Postgres)
 
@@ -64,9 +64,34 @@ Browsers (staff, room laptop, guest)
 | Room laptop URL | proctor / projector | Yes (room cookie, not staff) |
 | `live.berkeley.mt` | guests | Yes (public routes only; omit names, phones, HQ notes) |
 
-Those can be **one JavaScript app** with three hosts/routes, or **two apps** (a staff+room bundle and a thinner public bundle). Both are fine. What we are not doing is a volunteer.berkeley.mt with its own server and its own rooms list.
+Those can be **one JavaScript app** with several routes, or a staff bundle plus a thinner public bundle. Both are fine. What we are not doing is six separately deployed sites with six release buttons.
 
-**“One web app”** was shorthand for “not six independently shipped sites.” The locked part next to Postgres is **one API**. Two frontends that only speak to that API are still the integrated product.
+**“One web app”** was shorthand for that. The locked part next to Postgres is **one API**. The locked part for humans is **six links** (below).
+
+## Six links (how people enter)
+
+Six screens should feel like six places you can bookmark. That is right. Last semester failed because those places were **six products**, not because they had six URLs.
+
+| Link | Who | What they do |
+| ---- | --- | ------------ |
+| Catalog | staff | Rooms, capacity, custom fields |
+| Allocator | staff | Time × room draft |
+| HQ | staff | Saturday list + map, timers, clarifications, roster |
+| Volunteers | staff | People, assignments, check-in, DNI, form builder |
+| Room | laptop in the testing room | Login as `DWIN155`, timer, projector. **No staff nav** (must not HDMI the catalog) |
+| Public | guests | `live.berkeley.mt` — announcements, maps |
+
+**Seventh link, same product:** volunteer **apply** (public form, no staff password). That is the volunteer screen’s public face, not a second volunteer app. Put it on `live.berkeley.mt` (e.g. `/volunteer`) or its own path on the staff host that does not require login. Do not make it an eighth database.
+
+**Hostnames (v1):**
+
+- **Staff origin** (name TBD: `ops.berkeley.mt` or similar) — catalog, allocator, HQ, volunteer admin as **paths**. Officers get four bookmarks; same login; a small nav between them is OK.
+- **`live.berkeley.mt`** — guests. No staff chrome.
+- **Room** — either `staff-origin/room` (stripped chrome) or a third host if HDMI-risk is high. Same API, room cookie. Printed packet lists this URL.
+
+Do **not** do `catalog.berkeley.mt` + `grid.berkeley.mt` + … as six deploys. Six subdomains that all serve the **same** app are optional later (pretty bookmarks). They are not six codebases.
+
+Exact path strings (`/catalog` vs `/rooms`) are chrome; pick them in implementation. The split above is the product.
 
 ## What the product is
 
