@@ -5,7 +5,7 @@
 ### Ops platform architecture (2026-08-22)
 
 - **Greenfield:** target parent [specs/2026-08-24-integrated-system.md](specs/2026-08-24-integrated-system.md). Allocator prototype is not a design constraint.
-- **Hosts:** keep **`swire.berkeley.mt`** (room clocks only; historical `/admin` moves to ops) and **`ops.berkeley.mt`** (volunteers + HQ dashboard). **`live.berkeley.mt`** for guests. Do not invent `hq.berkeley.mt`.
+- **Hosts:** **`swire.berkeley.mt`** (room clocks; `/admin` is a typed URL, not a button — redirect it to ops). **`ops.berkeley.mt`** (volunteers + HQ). **`live.berkeley.mt`** (guests). Do not invent `hq.berkeley.mt`.
 - **Chrome** (in these docs): buttons/tabs/menus around the page content — not the Google Chrome browser. Projector pages must not show officer menus.
 - Rooms catalog is the kernel; allocator, day-of ops, proctors, public maps, and volunteers are modules that join `rooms.id`
 - New seam: publish one sheet as the day-of plan; live state does not rewrite the grid

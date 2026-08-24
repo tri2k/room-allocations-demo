@@ -87,7 +87,7 @@ Six screens should feel like six places you can bookmark. That is right. Last se
 
 | Host | What it was | What was missing |
 | ---- | ----------- | ---------------- |
-| **`swire.berkeley.mt`** | Room timers (one page per room) plus **`/admin`** for Swire itself (HQ-style timer controls) | Clarifications, roster, maps, a rooms catalog — Swire was the clock product |
+| **`swire.berkeley.mt`** | Room timers (one page per room). Staff timer controls at **`/admin`** — a URL officers know, **not a button** on the room page | Clarifications, roster, maps, catalog. Swire was the clock product. HQ on ops was unfinished |
 | **`ops.berkeley.mt`** | Volunteers (this past semester) | Unmet ambition: **ops dashboard / HQ on this same host** |
 | **`live.berkeley.mt`** | Public contest site | Indoor maps joined to the catalog |
 
@@ -98,12 +98,12 @@ We are not inventing `hq.berkeley.mt`. HQ is the dashboard you already wanted **
 | Host | What lives there |
 | ---- | ---------------- |
 | **`ops.berkeley.mt`** | **Saturday bookmark.** HQ dashboard (list / map / other HQ **tabs on this host**). Volunteer **admin** on the same host (path or tab) — finish last semester’s ambition. Catalog and allocator can live here as **other paths** (not the default page officers open on Saturday). |
-| **`swire.berkeley.mt`** | Room / projector only. Username `DWIN155` + event password. Timer + clarifications. **No `/admin`.** Timer pause / add-time / clarifications composer live on **ops HQ**, not next to the HDMI page. Printed packet lists this URL. |
+| **`swire.berkeley.mt`** | Room / projector only. Username `DWIN155` + event password. Timer + clarifications. Pause / add-time / send clarifications live on **ops HQ** (staff login), not as a second Swire product. Keep **`swire.berkeley.mt/admin` as a redirect to ops** so muscle memory still works. Printed packet lists the room URL. |
 | **`live.berkeley.mt`** | Guests. Announcements, maps. Volunteer **apply** (e.g. `/volunteer`). No officer menus. |
 
 Same API, same Postgres. Cookie: staff session on the parent so ops paths share login. Swire uses the **room** cookie, not staff.
 
-List vs map stay tabs on `ops.berkeley.mt`, not extra subdomains. Do not put HQ on Swire — that recreates `/admin` on the room product and risks HDMI. Do not mint `hq.berkeley.mt` unless ops is retired as a name.
+List vs map stay tabs on `ops.berkeley.mt`, not extra subdomains. HQ belongs on ops because that was the ambition (volunteers + dashboard on one staff host), **not** because Swire showed an Admin button — it never did; officers typed `/admin`. Do not mint `hq.berkeley.mt` unless ops is retired as a name.
 
 ## What the product is
 
@@ -126,7 +126,7 @@ One PostgreSQL **server**, one **database**. Modules are screens plus related ta
 
 A **table group** is a cluster of related tables in that database. A **seam** is any copy (CSV, freeze a draft as the day plan, print). Keep seams when a snapshot is enough. Do not keep a catalog CSV into volunteers/maps/HQ — those need the live room list.
 
-**Chrome** (UI jargon, not Google Chrome): the **buttons, tabs, and menus around the content**. The timer on HDMI is content. A nav to catalog, an `/admin` link, and HQ’s list/map tabs are chrome. “No staff chrome on Swire” means the projector page must not show officer menus. “Do not freeze UI chrome yet” in other docs meant column headers and colors — picky layout, not the host map.
+**Chrome** (UI jargon, not Google Chrome): the **buttons, tabs, and menus around the content**. The timer on HDMI is content. HQ’s list/map tabs are chrome. Swire’s room page already has almost none — `/admin` is a **typed URL**, not a control on the projector. “Do not freeze UI chrome yet” in other docs meant column headers and colors — picky layout, not the host map.
 
 ```text
 One Postgres
