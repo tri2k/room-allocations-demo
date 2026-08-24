@@ -25,7 +25,12 @@ Parent: [ops platform](2026-08-22-ops-platform.md). Indoor maps: [2026-08-21-ind
 
 ### Persistence: one Postgres, not six databases
 
-**There is one PostgreSQL server and one database.** Today that is Docker Compose `postgres:16`, database name `roomalloc` (user `roomalloc`). Production is the same shape: one hosted Postgres, one database, Alembic migrations. Modules are **table groups + screens**, not extra servers.
+**There is one PostgreSQL server and one database.** Today that is Docker Compose `postgres:16`, database name `roomalloc` (user `roomalloc`). Production is the same shape: one hosted Postgres, one database, Alembic migrations. A **module** is a screen (catalog, grid, HQ, …) plus the tables it reads and writes — not its own server.
+
+**Jargon used below:**
+
+- **Table group** — a cluster of related tables inside that one database. Catalog is `buildings` / `floors` / `rooms`. Allocator is `sheets` / `allocations` / …. They can point at each other with foreign keys. This is a naming convenience, not a second database.
+- **Seam** — a **deliberate copy or import** between two products that do not share a database. Example: export a CSV from registration, import it here as the Saturday roster. The two sides can disagree after that; someone chose that. A volunteer app that retypes DWIN155 is an *accidental* copy, not a seam.
 
 When earlier docs say “the rooms database,” they mean the **catalog tables** (`buildings` / `floors` / `rooms`), not a second Postgres.
 
