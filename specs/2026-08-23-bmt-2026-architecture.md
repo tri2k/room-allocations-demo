@@ -23,7 +23,7 @@ Parent: [ops platform](2026-08-22-ops-platform.md). Indoor maps: [2026-08-21-ind
 
 ## Locked architecture
 
-### Persistence — one Postgres, not six databases
+### Persistence: one Postgres, not six databases
 
 **There is one PostgreSQL server and one database.** Today that is Docker Compose `postgres:16`, database name `roomalloc` (user `roomalloc`). Production is the same shape: one hosted Postgres, one database, Alembic migrations. Modules are **table groups + screens**, not extra servers.
 
@@ -59,6 +59,20 @@ Join key for almost everything that is “about a classroom”: **`rooms.id`** (
 **Also not in the plan:** Redis, a rooms microservice, one database per module, PostGIS (maps use JSONB on vanilla 16). `live.berkeley.mt` is another **hostname** in front of the same API, not another database.
 
 Indoor maps docs used to say “three stores.” That means three **kinds of row** (geometry, catalog facts, live overlay) in this one database, joined by room id.
+
+**Why not multiple databases?** Alternatives exist; they are worse for this product.
+
+| Split | What it actually is | Cost here |
+| ----- | ------------------- | --------- |
+| One DB per module (catalog DB, volunteer DB, maps DB, …) | Separate sources of truth | You cannot `FOREIGN KEY` to `rooms.id` across databases. You copy DWIN155 again. That is last semester. |
+| Two Postgres **instances** (staff vs public) | Two servers to run, backup, and fail | 50 rooms + 1800 roster rows will not saturate one instance. You still need the rooms list on both sides or public maps lie. |
+| Postgres **schemas** (`catalog`, `ops`, `maps` inside `roomalloc`) | Folders of tables, still one database | Fine later for cleanliness. Does not buy isolation or scale. Skip until the table list is annoying. |
+| Read **replica** | Same data, extra copy for reads / failover | A hosting option later if `live.berkeley.mt` should survive a primary blip. Still one source of truth. |
+| Static **export** (print packet, JSON dump of the day plan) | Paper / file fallback | Already required. This is how you survive the DB dying, not a second database. |
+
+When a second database *is* right: a **different product** with a different owner and a deliberate seam. Student registration is that. CSV in the morning is the seam. A volunteer app with its own room list was that pattern done wrong.
+
+Reliability if Postgres dies: printed plan + offline timers, not “maps still have yesterday’s rooms in another DB.” Isolation of **writes** is table permissions and app rules (day-of never `UPDATE rooms`), not extra servers.
 
 ### What may write what
 
