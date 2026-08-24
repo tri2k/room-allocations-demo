@@ -21,7 +21,7 @@ The costly redesign is not “we picked FastAPI.” It is **DWIN155 existing in 
 
 ## Recommendation
 
-**One org, one Postgres, one API, several screens.** A modular monolith. Not six backends. Not microservices. “One web app” only means not six independently shipped sites. Persistence: [one Postgres](2026-08-23-bmt-2026-architecture.md#persistence-one-postgres-not-six-databases). What one API means: [integrated system](2026-08-24-integrated-system.md#one-api-the-twin-of-one-postgres). Language and UI library are an implementation choice.
+**One org, one Postgres, one API, six links.** A modular monolith. Not six backends. Not six deploys. Persistence: [one Postgres](2026-08-23-bmt-2026-architecture.md#persistence-one-postgres-not-six-databases). Links and API: [integrated system](2026-08-24-integrated-system.md#six-links-how-people-enter). Language and UI library are an implementation choice.
 
 Rooms are the **kernel**. Everything else is either a rare catalog edit, a **draft plan**, a **published plan**, or a **live overlay** on that plan.
 

@@ -261,7 +261,7 @@ Clarification composer (admin): pick target set (activity, building, floor, mult
 
 Because last semester’s tools died:
 
-- One API, one database, one staff origin + `live.berkeley.mt`.
+- One API, one database, six entry links (staff origin + `live.berkeley.mt` + room).
 - Printed plan / shared room-password / assignment packet after import.
 - Offline timer with explicit desync, not silent drift.
 - Do not make the projector depend on a second “vibecoded” host.
