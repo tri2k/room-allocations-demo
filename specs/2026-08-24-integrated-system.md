@@ -97,9 +97,9 @@ We are not inventing `hq.berkeley.mt`. HQ is the dashboard you already wanted **
 
 | Host | What lives there |
 | ---- | ---------------- |
-| **`ops.berkeley.mt`** | **Saturday bookmark.** HQ dashboard (list / map / other HQ chrome as **tabs on this host**). Volunteer **admin** on the same host (path or tab) — finish last semester’s ambition. Catalog and allocator can live here as **other paths** (not the default page officers open on Saturday). |
+| **`ops.berkeley.mt`** | **Saturday bookmark.** HQ dashboard (list / map / other HQ **tabs on this host**). Volunteer **admin** on the same host (path or tab) — finish last semester’s ambition. Catalog and allocator can live here as **other paths** (not the default page officers open on Saturday). |
 | **`swire.berkeley.mt`** | Room / projector only. Username `DWIN155` + event password. Timer + clarifications. **No `/admin`.** Timer pause / add-time / clarifications composer live on **ops HQ**, not next to the HDMI page. Printed packet lists this URL. |
-| **`live.berkeley.mt`** | Guests. Announcements, maps. Volunteer **apply** (e.g. `/volunteer`). No staff chrome. |
+| **`live.berkeley.mt`** | Guests. Announcements, maps. Volunteer **apply** (e.g. `/volunteer`). No officer menus. |
 
 Same API, same Postgres. Cookie: staff session on the parent so ops paths share login. Swire uses the **room** cookie, not staff.
 
@@ -125,6 +125,8 @@ Guests and volunteer *applicants* do not use the staff login. Projectors do not 
 One PostgreSQL **server**, one **database**. Modules are screens plus related tables, not extra databases.
 
 A **table group** is a cluster of related tables in that database. A **seam** is any copy (CSV, freeze a draft as the day plan, print). Keep seams when a snapshot is enough. Do not keep a catalog CSV into volunteers/maps/HQ — those need the live room list.
+
+**Chrome** (UI jargon, not Google Chrome): the **buttons, tabs, and menus around the content**. The timer on HDMI is content. A nav to catalog, an `/admin` link, and HQ’s list/map tabs are chrome. “No staff chrome on Swire” means the projector page must not show officer menus. “Do not freeze UI chrome yet” in other docs meant column headers and colors — picky layout, not the host map.
 
 ```text
 One Postgres
