@@ -21,7 +21,7 @@ The costly redesign is not “we picked FastAPI.” It is **DWIN155 existing in 
 
 ## Recommendation
 
-**One org, one Postgres, one API.** HQ on **`ops.berkeley.mt`**. Volunteer **people** on **`volunteers.berkeley.mt`**. Rooms on **`swire.berkeley.mt`**. Guests on **`live.berkeley.mt`**. Persistence: [one Postgres](2026-08-23-bmt-2026-architecture.md#persistence-one-postgres-not-six-databases). Links: [integrated system](2026-08-24-integrated-system.md#six-links-how-people-enter).
+**One org, one Postgres, one API.** Catalog on **`catalog.berkeley.mt`**. HQ on **`ops.berkeley.mt`** (planner at `/planner`). Volunteer **people** on **`volunteers.berkeley.mt`**. Rooms on **`swire.berkeley.mt`**. Guests on **`live.berkeley.mt`**. Persistence: [one Postgres](2026-08-23-bmt-2026-architecture.md#persistence-one-postgres-not-six-databases). Links: [integrated system](2026-08-24-integrated-system.md#six-links-how-people-enter).
 
 Rooms are the **kernel**. Everything else is either a rare catalog edit, a **draft plan**, a **published plan**, or a **live overlay** on that plan.
 
@@ -85,7 +85,7 @@ Figma does **not** own rooms. The volunteer form does **not** own rooms. The pro
 | Roster | CSV morning-of after check-in; **names**; **move in-app**; two tests = two rows | Registration platform stays separate |
 | Public site | `live.berkeley.mt`, English, **no public clock** | Per-room guest detail undecided. Outdoor maps stretch |
 | Volunteers | **`volunteers.berkeley.mt`**, **Google**. Staff admin on ops (`can_open_ops`). Form builder; ~300 people; DNI | PII visible to managers |
-| Staff auth | **Google** for all Person accounts. Ops requires `can_open_ops`. Room password for Swire. Live: none | [architecture](2026-08-23-bmt-2026-architecture.md#one-person-one-id) |
+| Staff auth | **Google** for all Person accounts. Ops and catalog require `can_open_ops`. Room password for Swire. Live: none | [architecture](2026-08-23-bmt-2026-architecture.md#one-person-one-id) |
 | Realtime | Server-authoritative clocks; poll or push for clarifications | 50+ rooms is still a small JSON |
 | C4 | Update as-built diagrams only when code lands | This file is target, not current commit |
 

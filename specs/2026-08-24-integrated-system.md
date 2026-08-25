@@ -25,7 +25,7 @@ At implementation we may rewrite this repo or start a new tree. Specs describe t
 **Kept because we decided them in workshop**, not because code did:
 
 - One Postgres, one database, six screens sharing `rooms.id`
-- **One API.** **Six entry links** (bookmarks), not six shipped sites. Hostnames: staff origin + `live.berkeley.mt` (+ optional room host).
+- **One API.** **Six entry links** (bookmarks), not six shipped sites. Catalog is **`catalog.berkeley.mt`**. Planner is **`ops.berkeley.mt/planner`**. HQ is **`ops.berkeley.mt`** root. Plus volunteers, Swire, live.
 - Catalog is sacred: day-of never updates rooms
 - Draft grid → explicit import as frozen day plan; re-import keeps running clocks
 - No live co-edit on the grid
@@ -37,7 +37,7 @@ At implementation we may rewrite this repo or start a new tree. Specs describe t
 - `appears_on_grid` hedge; skip a Location supertype
 - Timers, clarifications, projector, print backup as already locked
 
-**Stack at build time is still open.** Architecture is: **one API**, one Postgres, hosts **`ops.berkeley.mt`**, **`volunteers.berkeley.mt`**, **`swire.berkeley.mt`**, **`live.berkeley.mt`**, paper if the site dies. Language and UI library are not part of this design.
+**Stack at build time is still open.** Architecture is: **one API**, one Postgres, hosts **`catalog.berkeley.mt`**, **`ops.berkeley.mt`**, **`volunteers.berkeley.mt`**, **`swire.berkeley.mt`**, **`live.berkeley.mt`**, paper if the site dies. Language and UI library are not part of this design.
 
 ## One API (the twin of one Postgres)
 
@@ -61,7 +61,8 @@ Browsers (staff, room laptop, guest)
 
 | Address | Who | Still the same API? |
 | ------- | --- | ------------------- |
-| `ops.berkeley.mt` | officers (HQ, volunteer admin, catalog/allocator) | Yes (Person cookie + `can_open_ops`) |
+| `catalog.berkeley.mt` | officers (rooms kernel, rare) | Yes (Person cookie + `can_open_ops`) |
+| `ops.berkeley.mt` | officers (HQ; planner at `/planner`) | Yes (Person cookie + `can_open_ops`) |
 | `volunteers.berkeley.mt` | volunteer people | Yes (Person cookie) |
 | `swire.berkeley.mt` | laptop in the room | Yes (room cookie) |
 | `live.berkeley.mt` | guests | Yes (public routes only; no login) |
@@ -74,14 +75,16 @@ Those can be **one JavaScript app** with several routes, or a staff bundle plus 
 
 Six screens should feel like six places you can bookmark. That is right. Last semester failed because those places were **six products**, not because they had six URLs.
 
-| Link | Who | Sign-in | What they do |
-| ---- | --- | ------- | ------------ |
-| Catalog | staff | Google + `can_open_ops` | Rooms, capacity, custom fields |
-| Allocator | staff | Same Google | Time × room draft |
-| HQ | staff | Same Google | Saturday list + map (tabs **on ops**), timers, clarifications, roster, volunteer **admin** (assign, DNI, check-in) |
+**Cadence:** catalog is rare (start of semester). The planner is regular (weeks of grid work). HQ is Saturday. Those three are **different bookmarks** and do not share primary chrome. Same Google, same API. Details: [staff links by cadence](2026-08-23-bmt-2026-architecture.md#staff-links-by-cadence).
+
+| Link | Who | Sign-in | Bookmark |
+| ---- | --- | ------- | -------- |
+| Catalog | staff | Google + `can_open_ops` | **`catalog.berkeley.mt`** — rooms, capacity, custom fields (rare) |
+| Allocator | staff | Same Google | **`ops.berkeley.mt/planner`** — time × room draft (regular) |
+| HQ | staff | Same Google | **`ops.berkeley.mt`** — Saturday list + map, timers, clarifications, roster, volunteer **admin** |
 | Volunteers | returning volunteers | Google → `people.id` | **`volunteers.berkeley.mt`** — own account, apply again, see assignment. Not ops. |
-| Room | laptop | `DWIN155` + event password | `swire.berkeley.mt` — timer, projector. Not Google |
-| Public | guests | None | `live.berkeley.mt` — announcements, maps |
+| Room | laptop | `DWIN155` + event password | **`swire.berkeley.mt`** — timer, projector. Not Google |
+| Public | guests | None | **`live.berkeley.mt`** — announcements, maps |
 
 **Seventh / apply:** first-time apply is on **`volunteers.berkeley.mt`** (logged out). Do not put the volunteer portal on `live.berkeley.mt` (parents) or on ops (roster, timers).
 
@@ -93,16 +96,19 @@ Six screens should feel like six places you can bookmark. That is right. Last se
 | **`ops.berkeley.mt`** | Volunteers (this past semester) | Unmet ambition: ops **dashboard / HQ** on this host. Putting ~300 volunteer logins on the same door as HQ is the tension |
 | **`live.berkeley.mt`** | Public contest site | Indoor maps joined to the catalog |
 
-We are not inventing `hq.berkeley.mt`. HQ lives on **ops**. Volunteer **people** get their own host so they can come back next semester without walking into the war room.
+We are not inventing `hq.berkeley.mt`. HQ lives on **ops**. Volunteer **people** get their own host so they can come back next semester without walking into the war room. Catalog is rare and sacred, so it gets **`catalog.berkeley.mt`** — a different link from the planner, not a fifth product.
 
 **Hostnames (target):**
 
 | Host | What lives there |
 | ---- | ---------------- |
-| **`ops.berkeley.mt`** | **Saturday bookmark for officers.** HQ dashboard (list / map as **tabs**). Volunteer **admin** (assign rooms, DNI, name-search check-in, form builder) — staff login, not volunteer login. Catalog and allocator can be other paths here. |
+| **`catalog.berkeley.mt`** | **Rooms kernel.** Year-round, used rarely. Catalog chrome only — not a tab on the planner or on Saturday HQ. Same Google as ops. |
+| **`ops.berkeley.mt`** | **Saturday bookmark for officers** (root = HQ). Planner at **`/planner`** (regular grid work). Volunteer **admin** (assign rooms, DNI, name-search check-in, form builder). Staff login, not volunteer login. **No catalog tab** on HQ or planner. |
 | **`volunteers.berkeley.mt`** | **Volunteer door.** Continue with Google. Apply / update this event, see assignment after check-in. Same `people` row as ops if they are staff. **Not** the room password. |
 | **`swire.berkeley.mt`** | Room / projector. `DWIN155` + event password. Timer + clarifications. Keep **`/admin` → ops HQ** for officers who still type it. |
 | **`live.berkeley.mt`** | Guests (parents, contestants). Announcements, maps. No volunteer login, no officer menus. Typed `/admin` redirects to ops (same pattern as Swire). |
+
+Cadence (rare catalog vs regular planner vs Saturday HQ): [architecture](2026-08-23-bmt-2026-architecture.md#staff-links-by-cadence).
 
 Same API, same Postgres. **Two cookies**, not four databases: **Person** (Google; staff if `can_open_ops`) and **room** (Swire only). Live guests: none. Auth per screen: [architecture](2026-08-23-bmt-2026-architecture.md#auth-by-screen-the-six).
 
