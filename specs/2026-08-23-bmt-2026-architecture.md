@@ -135,21 +135,7 @@ Three different things (easy to smash together):
 
 **Reasonable because:** officers and most Berkeley-adjacent volunteers already have Google (including `@berkeley.edu`). One id, one button, no volunteer password reset, kick one human by removing staff flag / that Google. **Cost:** you cannot volunteer without a Google account. Google OAuth must be **published** (Testing mode caps ~100 users — not enough for ~300 volunteers). Stolen staff Google opens HQ — same as any one-login design.
 
-**Rejected for v1:** extra ops password, second staff User table, email/password volunteer accounts, Google on projectors.
-
-### Adding Microsoft later (how hard)
-
-“Microsoft email” and “Sign in with Microsoft” are different.
-
-| What you might mean | Difficulty | Notes |
-| ------------------- | ---------- | ----- |
-| Store an Outlook / school email **on** a Person who still signs in with Google | Easy | Not a second login. They still need a Google account. |
-| **Sign in with Microsoft** (personal Outlook / Xbox MSA) **or** one school tenant (e.g. Berkeley Entra) | Moderate | Second OIDC provider next to Google. Same session after callback. Schema: `people_identities (person_id, issuer, subject)` instead of `google_sub` only. Two app registrations (Google Cloud + Azure). Buttons on both volunteers and ops. |
-| **Any** high school’s Microsoft 365 login | Hard | Each district is its own Azure tenant. “Accounts in any org” is a multi-tenant Azure app: publisher verification, admin consent at some schools, weird tenant policies. Not a second button; it’s a small identity product. |
-
-**The actually hard part** is not the Microsoft button. It is **one `people.id` when one human has two logins** (Gmail in August, school Microsoft in November). Options: (1) no linking — two People unless they use the same email, (2) “link this Microsoft to the Google you already used” while signed in, (3) merge tool for officers. Do that wrong and you get two biographies again.
-
-**v1:** stay Google-only. If Microsoft is required before November, budget a **second OIDC + identity table + a linking rule**, not a weekend. Prefer “personal Microsoft + Google” or “Google + Berkeley Entra” over “every high school tenant.” Swire and live still would not use Microsoft.
+**Rejected for this design pass:** extra ops password, second staff User table, email/password volunteer accounts, Microsoft (or any other issuer) as Person login, Google on projectors. A volunteer **form field** may still store a non-Gmail contact address; that is not a login. Identity is Google only until we reopen it on purpose.
 
 ### Where today’s volunteer-admin screens go
 
