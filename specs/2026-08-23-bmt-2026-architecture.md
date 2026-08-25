@@ -117,32 +117,71 @@ Day-of tools **must not** `UPDATE rooms`. “Closed,” “campus pulled,” “
 
 ## Account structure (officers are also volunteers)
 
-**Locked fact:** day-of, everyone is a volunteer. Internal staff fill the same volunteer form. So an officer is a **Person** (assignment, shirt, check-in) and also someone who opens **ops**. The room laptop is still not a person.
+**Locked fact:** day-of, everyone is a volunteer. Internal staff fill the same volunteer form. An officer is a **Person** (assignment, shirt, check-in) and also someone who opens **ops**.
 
-Do **not** invent three named accounts for the same human (volunteer + ops + HQ). HQ is ops. Swire is the laptop.
+**Same in every option**
 
-**Always separate:** `DWIN155` + room password. Never tie that to a Person login.
+- **HQ is ops.** There is no third “HQ account.”
+- **Swire is the laptop.** `DWIN155` + room password is never a Person. A proctor who is also a volunteer still uses the room login on the projector.
+- **`Person` exists.** Officers fill the form, so they have a volunteer row like everyone else.
+- **`live.berkeley.mt` has no login.**
+- One API, one Postgres. These options are about **cookies and secrets**, not extra databases.
 
-**Options for the human:**
+**What differs:** how an officer proves they may open ops, and whether that is the same secret as their volunteer account.
 
-| | A. Two doors, one Person | B. One login, staff flag | C. Two named accounts, linked | D. Google as the only human login |
-| - | ------------------------ | ------------------------ | ----------------------------- | -------------------------------- |
-| What exists | `Person` + **staff password** for ops (no staff user row) | `Person` with `can_open_ops` | `Person` **and** a staff `User`, linked by email | One Google; allowlist / flag for ops |
-| Officer Saturday | Volunteer site as themselves; ops via 1Password | Sign in once; both hosts if cookie is on the parent domain | Sign in twice, or SSO between them | Sign in with Google; ops rejects non-staff emails |
-| ~300 volunteers | Cannot open ops (they don't have the staff secret) | Must not have the flag. Bug = HQ leak | Cannot open ops | Must not be on the allowlist |
-| Stolen volunteer password of an officer | Ops still closed (need staff secret) | **Ops opens** | Ops still closed unless the staff account is stolen too | **Ops opens** if that Google is staff |
-| “Who paused the timer?” | “someone with the ops password” | The Person | The staff User | The Google |
-| Fits earlier staff-password lean | **Yes** | No — ops is the volunteer login | Heavy for ~3 officers who are also Persons | Only if you wanted Google anyway |
+### A — Two doors, one Person (recommend)
 
-**E. Staff password only, officers skip volunteer login** — they fill the form as email-only applications and never use `volunteers.berkeley.mt`. Fights “reuse an account semester to semester” for the people running the event. Skip.
+Named identity = `Person` on `volunteers.berkeley.mt`. Ops = a **shared staff password** (1Password). No staff `User` row.
 
-**Recommendation: A.** Named identity lives on **Person** (the volunteer platform), because that is the system everyone including staff actually belongs to. Ops is a **second door** with the shared staff secret — a capability, not a second biography. Officers will have a volunteer account **and** know the ops password. That is two secrets, one human in the database.
+Saturday: officer signs into volunteers as themselves (see assignment, check-in as a volunteer). Opens ops in another tab and types the staff password. Catalog / grid / HQ / volunteer-admin all sit behind that password.
 
-Use **B** only if you strongly want one login and accept that an officer’s volunteer password is also the HQ key.
+~300 volunteers never learn the ops password, so they cannot open HQ. If an officer’s volunteer password leaks, HQ stays closed. If the ops password leaks, HQ opens for whoever has it — audit is “someone with the password,” not “jsy@ paused DWIN155.”
 
-Never **C** unless you pick Google for ops and a different email/password for volunteers on purpose (unusual).
+Cost: two secrets for ~3 people. That is the point: volunteer identity and HQ capability are not the same thing.
 
-Room stays A-through-D: laptop ≠ Person.
+### B — One login, staff flag
+
+Only `Person` login. A flag `can_open_ops` (or equivalent) lets that Person into `ops.berkeley.mt`. Cookie on the parent domain → one sign-in, both hosts.
+
+Saturday: officer signs in once. Volunteers without the flag hitting ops get bounced.
+
+Cost: the officer’s volunteer password **is** the HQ key. A stolen volunteer password, or a flag set on the wrong Person, opens the 1800-name roster. Audit can say which Person paused the timer.
+
+### C — Two named accounts, linked
+
+A staff `User` (Google or email) **and** a `Person`, joined by email. Officer has two biographies that software knows are the same human.
+
+Isolation like A (volunteer leak ≠ HQ) plus named audit on ops (“this staff User”). Cost: two accounts to create, link, and reset, for people who are already Persons. Worth it only if ops must be Google *and* volunteers must be a different email/password on purpose.
+
+### D — Google as the only human login
+
+Every human (volunteer and officer) signs in with Google. Ops allowlists officer emails (or a flag on the Person created at first Google login). Same Google on both hosts.
+
+Feels like B, with Google as the IdP. Club turnover = change the allowlist. Stolen staff Gmail opens HQ. Volunteers not on the allowlist bounce off ops. Pick this only if you wanted Google anyway (kick one person, view-only later).
+
+### E — Skip (officers never use the volunteer site)
+
+Officers fill the form as a one-off application and only ever type the ops password. Fights “come back next semester as yourself” for the people running the event. Do not.
+
+### Comparison
+
+| | **A** two doors, one Person | **B** one login + flag | **C** two named accounts | **D** Google only |
+| - | --------------------------- | ---------------------- | ------------------------ | ----------------- |
+| Rows in the DB | `Person` only (for humans). Ops secret is not a user | `Person` + `can_open_ops` | `Person` + staff `User` + link | `Person` keyed by Google |
+| Officer passwords / IdPs | Volunteer account **and** ops password | Volunteer account only | Volunteer account **and** staff account | One Google |
+| Saturday tabs | Volunteers site + ops (second password) | One sign-in, both hosts | Two sign-ins, or extra SSO work | One Google, both hosts if allowlisted |
+| Volunteer opens ops? | No (no ops password) | Only if flagged — **bug = HQ leak** | No | Only if allowlisted — **bug = HQ leak** |
+| Officer volunteer password stolen | HQ closed | **HQ open** | HQ closed | **HQ open** (staff Gmail) |
+| Ops password / Gmail stolen | HQ open; volunteer site not auto-open | n/a (no separate ops secret) | HQ open | HQ open |
+| “Who paused the timer?” | Someone with the ops password | That Person | That staff User | That Google |
+| Kick one officer off HQ | Rotate ops password; tell the others | Clear their flag | Disable staff User | Remove Gmail from allowlist |
+| Semester return as volunteer | Same Person account | Same | Same Person; staff User is extra | Same Google |
+| Fits “everyone is a volunteer” | Yes — Person is the biography | Yes | Yes, plus a second biography | Yes if they have Gmail |
+| Build / ops cost | Low | Low | Highest | OAuth allowlist |
+
+**Recommendation: A.** One human in the database (`Person`). Ops is a **capability door**, not a second life story. Use **B** only if those ~3 officers refuse two secrets and accept HQ sitting on the volunteer password. Use **D** only if you want Google for other reasons. Skip **C** and **E**.
+
+Reply **A**, **B**, or **D** to lock.
 
 ### Four logins (doors, not biographies)
 
