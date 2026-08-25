@@ -59,7 +59,7 @@ Design first (this PR), then implement the six screens against the greenfield sp
 - Overlap in one room **on one draft**: reject. Two drafts may book the same room at the same time until one is imported as the day plan
 - Warnings over hard blocks for room-type and capacity exceptions
 - Printed day plan if the site dies
-- Day-of tools never update catalog rooms
+- Day-of tools never update roomsdb rooms
 
 ## Open Questions
 
@@ -71,6 +71,6 @@ Design first (this PR), then implement the six screens against the greenfield sp
 | Registration / scoring | **Decided:** other product; roster CSV into this database |
 | Draft vs day plan | **Decided:** Event is the contest; draft is the grid; day plan is a frozen import |
 | Multi-day events | **Decided:** one draft = one day; another draft on the same Event for another day |
-| Catalog history / plan pins | **Later.** [draft](specs/2026-08-13-catalog-history-and-plan-pins.md) |
+| Roomsdb history / plan pins | **Later.** [draft](specs/2026-08-13-catalog-history-and-plan-pins.md) |
 | Indoor floor maps | **Decided:** Figma import; Leaflet `CRS.Simple`; live data is a join. [spec](specs/2026-08-21-indoor-maps.md) |
 | Integrated ops platform | **Round 2 locked** plus [greenfield parent](specs/2026-08-24-integrated-system.md) |

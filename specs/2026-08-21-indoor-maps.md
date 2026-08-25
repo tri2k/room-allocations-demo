@@ -2,7 +2,7 @@
 
 **Status**: Draft (future — not Phase 2)
 
-Product context: [PRODUCT.md](../PRODUCT.md). Parent vision: [event operations platform](2026-08-22-ops-platform.md) (maps are a projection of the rooms kernel, not a second catalog). Depends on catalog **Building → Floor → Room** from [Phase 1](2026-08-11-phase-1-core-loop.md). Org-scope the catalog when [Phase 2c](2026-08-13-phase-2-accounts-orgs.md) lands; do not block a first slice on orgs or public HTTPS. Live exam overlay overlaps Phase 3 proctors. Do not implement until this spec is scheduled.
+Product context: [PRODUCT.md](../PRODUCT.md). Parent vision: [event operations platform](2026-08-22-ops-platform.md) (maps are a projection of the rooms kernel, not a second roomsdb). Depends on roomsdb **Building → Floor → Room** from [Phase 1](2026-08-11-phase-1-core-loop.md). Org-scope roomsdb when [Phase 2c](2026-08-13-phase-2-accounts-orgs.md) lands; do not block a first slice on orgs or public HTTPS. Live exam overlay overlaps Phase 3 proctors. Do not implement until this spec is scheduled.
 
 Source files (not in this repo yet): BMT Maps Spring 2026 Figma toggle maps — Dwinelle (`C` / `D` / `E`), Wheeler (`B` / `1` / `2`), VLSB (`2`). Print layouts stay in Figma; this app does not reproduce the poster.
 
@@ -12,7 +12,7 @@ The allocations **grid** answers “what is in DWIN155 at 10:45.” Day-of staff
 
 Those answers today live in Figma: stacked overlays, a type legend, and icons. Figma is a good drafting tool and a bad device map (no pinch-zoom, no search, no live exam status). Re-tracing rooms by hand will not survive the next building file.
 
-We need the catalog’s rooms to sit on a **to-scale indoor map** imported from those files, with a viewer built for touch, and a join path for capacity (already on `rooms`) and a later live-event feed (role, proctors, timers).
+We need roomsdb’s rooms to sit on a **to-scale indoor map** imported from those files, with a viewer built for touch, and a join path for capacity (already on `rooms`) and a later live-event feed (role, proctors, timers).
 
 ## Design
 
@@ -37,11 +37,11 @@ We need the catalog’s rooms to sit on a **to-scale indoor map** imported from 
 
 ```
 Figma .fig  --import-->  map tables (geom, kind, blank/internal/external fills)
-Catalog                  rooms (capacity, active)     -- already shipped, same Postgres
+Roomsdb                  rooms (capacity, active)     -- already shipped, same Postgres
 Event ops                live overlay (role, proctors, timer)    -- later, same Postgres
 ```
 
-Join is **building code + floor label + room code** (`DWIN` / `D` / `155`), plus `aliases[]` for stacked labels (`22A + 22AA`). Map spaces that are not bookable (stairs, bathrooms, courtyards) have **no** `room_id`. These are not three database servers. Geometry, catalog facts, and live overlay are **tables in `roomalloc`**.
+Join is **building code + floor label + room code** (`DWIN` / `D` / `155`), plus `aliases[]` for stacked labels (`22A + 22AA`). Map spaces that are not bookable (stairs, bathrooms, courtyards) have **no** `room_id`. These are not three database servers. Geometry, roomsdb facts, and live overlay are **tables in `roomalloc`**.
 
 ```text
 Browser
@@ -53,19 +53,19 @@ Browser
 
 Public routes do not dump HQ live fields into the cached map payload. They add auth (or omit fields) on the live overlay. Same Postgres.
 
-### How this attaches to the catalog
+### How this attaches to roomsdb
 
 Do **not** invent a parallel `buildings` table. Map rows hang off existing `floors`.
 
-| Catalog today | Map |
+| Roomsdb today | Map |
 | ------------- | --- |
 | `Building.code` (`DWIN`, `VLSB`) | Same. Add `WHEE` (or agreed code) when Wheeler is imported |
 | `Floor.label` | **Must match Figma floor codes** (`C`/`D`/`E`, `B`/`1`/`2`). v0 seed uses Dwinelle `1`/`2` as stand-ins; import cannot join until labels are real |
 | `Room.name` | Map `code`. Display label stays `{building.code}{room.name}` → `DWIN155` |
-| `Room.room_type` (`auditorium` \| `small` \| `large`) | Map **external `kind`** is a wider closed set (classroom, bathroom, stair, …). Bookable rooms keep catalog `room_type` for the grid; map `kind` is for paint and legend |
-| Capacity | Catalog only |
+| `Room.room_type` (`auditorium` \| `small` \| `large`) | Map **external `kind`** is a wider closed set (classroom, bathroom, stair, …). Bookable rooms keep roomsdb `room_type` for the grid; map `kind` is for paint and legend |
+| Capacity | Roomsdb only |
 
-A floor can have more **spaces** than **rooms**. Shafts, hallways, Ishi Court, VLSB courtyard, and restrooms are spaces (and sometimes POIs). Only tappable spaces with a catalog match become grid columns.
+A floor can have more **spaces** than **rooms**. Shafts, hallways, Ishi Court, VLSB courtyard, and restrooms are spaces (and sometimes POIs). Only tappable spaces with a roomsdb match become grid columns.
 
 ### Geometry the importer must keep
 
@@ -129,7 +129,7 @@ map_import_overrides
                    -- re-import merges by code and KEPT unless "reset from Figma"
 ```
 
-`floors` may grow optional `sort_order`-only fields; artboard size lives on `floor_maps` because a building can exist in the catalog before it has a map.
+`floors` may grow optional `sort_order`-only fields; artboard size lives on `floor_maps` because a building can exist in roomsdb before it has a map.
 
 No in-app polygon editor. Emergency geom fix = hide space, or re-import that floor from a new `.fig`.
 
@@ -155,7 +155,7 @@ GET /api/v1/maps/{buildingCode}/{floorLabel}?mode=external
 
 GET /api/v1/maps/spaces/{id}
   → space + building/floor + other modes’ labels + vertical neighbors
-    + catalog room fields when roomId is set
+    + roomsdb room fields when roomId is set
 
 GET /api/v1/search/maps?q=155&building=DWIN
   → [{ spaceId, code, buildingCode, floorLabel, kind }]
@@ -164,7 +164,7 @@ GET /api/v1/search/maps?q=155&building=DWIN
 
 `mode` is a query param, not a different floor. Unknown building/floor → **404**. Unknown mode → **400**.
 
-Capacity is inlined from `rooms` when joined so the bottom sheet does not need a second round-trip. Inactive catalog rooms can still appear as map spaces; the sheet should show inactive if `rooms.is_active` is false.
+Capacity is inlined from `rooms` when joined so the bottom sheet does not need a second round-trip. Inactive roomsdb rooms can still appear as map spaces; the sheet should show inactive if `rooms.is_active` is false.
 
 **Live (later slice, not v1 of the map):**
 
@@ -251,11 +251,11 @@ Rules:
 6. Skip `visible=false` unless the role is an overlay you opted into.
 7. POIs from icon frames even when a plate is also a space.
 8. `tappable: false` for Shaft, Building Outline, Corridor, unlabeled `????` until named.
-9. After insert, set `room_id` where `(building.code, floor.label, space.code)` matches a catalog room (also try aliases).
+9. After insert, set `room_id` where `(building.code, floor.label, space.code)` matches a roomsdb room (also try aliases).
 
 **Fail the import** (or CI) on: floor with zero tappable spaces; two tappable spaces with the same `code` on one floor; external overlay codes that do not exist on the blank layer; legend `kind` with no matching space; unknown top-level layer when `strict: true`.
 
-**Warn** on designer junk names, `????`, hidden old overlays, catalog rooms on that floor with no space.
+**Warn** on designer junk names, `????`, hidden old overlays, roomsdb rooms on that floor with no space.
 
 Dry-run prints a report, for example:
 
@@ -264,7 +264,7 @@ building: WHEE
 floors: B, 1, 2
 spaces: 84  (geom ok 84, missing geom 0, duplicate code 0)
 overlays: blank 84, external 31, internal 12
-joined catalog rooms: 12
+joined roomsdb rooms: 12
 unmapped layers: "lowk unsure (stairs??)"
 skipped: Print View, Page 2 (foreign: dwinelle)
 warnings: "22A + 22AA" has no aliases split
@@ -280,7 +280,7 @@ Treat each `.fig` as untrusted input:
 
 ```text
 .fig → parse → assign roles (aliases) → merge by room code
-    → validate (report) → write map DB → join catalog rooms
+    → validate (report) → write map DB → join roomsdb rooms
 ```
 
 ### Who may edit what
@@ -289,11 +289,11 @@ Treat each `.fig` as untrusted input:
 | ----- | --- | --- |
 | Polygons, floors, holes, multi-part rooms | Map maintainer | Figma → import |
 | Hide / unhide space, “not a floor”, kind override, aliases | Map maintainer | Overrides table; import report shows them |
-| Capacity, ADA notes, catalog `room_type` | Catalog editors (today: anyone signed in; later org members) | Existing `#/catalog` — not the map |
+| Capacity, ADA notes, roomsdb `room_type` | Roomsdb editors (today: anyone signed in; later org members) | Existing `#/catalog` — not the map |
 | Event role, proctors, timers, headcount | Event HQ (Phase 3) | Live overlay UI / event DB |
 | Public / students | Read map + public live fields | No writes |
 
-If it would still be true after BMT weekend, it is either Figma (shape) or the catalog (capacity). If it is only true for this session, it is the live overlay.
+If it would still be true after BMT weekend, it is either Figma (shape) or roomsdb (capacity). If it is only true for this session, it is the live overlay.
 
 ### Example payload (Dwinelle D, external)
 
@@ -336,8 +336,8 @@ Legend is the distinct `kind` values present on that floor in that mode (C’s l
 - Golden JSON fixtures once `.fig` files are in `server/data/maps/` (or a private fixture path)
 - Read APIs above; search
 - Leaflet map route, floor/mode chrome, bottom sheet, kind filters
-- Join to catalog rooms for capacity and `roomId`
-- Catalog floor **labels** aligned with Figma for buildings we import
+- Join to roomsdb rooms for capacity and `roomId`
+- Roomsdb floor **labels** aligned with Figma for buildings we import
 
 ## Not in Scope
 
@@ -357,7 +357,7 @@ Legend is the distinct `kind` values present on that floor in that mode (C’s l
 
 Each step is shippable without the later ones.
 
-1. **Catalog labels** — Dwinelle floors become C/D/E (or whatever the files use); add Wheeler building when we have a code. Grid seed rooms must sit on the correct floor (155 is not “floor 1” if the map says C).
+1. **Roomsdb labels** — Dwinelle floors become C/D/E (or whatever the files use); add Wheeler building when we have a code. Grid seed rooms must sit on the correct floor (155 is not “floor 1” if the map says C).
 2. **Schema + empty read API** — tables and `GET /maps/...` returning `[]` / 404.
 3. **Importer** — parse `.fig`, contract + report, write spaces; golden tests on Dwinelle D first, then Wheeler B/1/2 (boolean corridors), then VLSB 2 (tall courtyard).
 4. **Viewer** — Leaflet page, mode toggle, tap sheet, kind chips.
@@ -378,6 +378,6 @@ First interactive slice: **Dwinelle D** on this API. Wheeler proves numbered flo
 | Unauthenticated map GET | **Open:** v1 stays session-gated; public kiosk is a later auth decision |
 | `room_type` vs map `kind` | **Decided:** both exist. Grid keeps `auditorium`/`small`/`large`. Map paint uses `kind` |
 | Internal taxonomy | **Decided:** per-building `internal_label` strings, not a global event enum |
-| When to schedule vs Phase 2c–2e / Phase 3 | **Open:** geometry viewer can ship on 2b catalog; live overlay wants Event + roles |
+| When to schedule vs Phase 2c–2e / Phase 3 | **Open:** geometry viewer can ship on 2b roomsdb; live overlay wants Event + roles |
 | Where `.fig` files live | **Open:** git LFS / `server/data/maps/` vs CI-only secrets. Canonical JSON goldens must be in git |
 | Figma components / pluginData | **Later:** nice; not a v1 blocker |
