@@ -15,7 +15,7 @@
 - Room suite secret: today’s shared env password → per-event shared password (not per-room PIN, no redeploy to rotate)
 - Building codes: DWIN, WHLR, VLSB, MLK; GPBB out of scope; code is set at create, not edited like capacity
 - Documented building-code aliases: they keep CSV/login matching after a rename; uniqueness and dual labels are the cost. Skip for v1.
-- Account structure **open**, recommend **A:** `Person` is the biography (officers fill the volunteer form). Ops is a staff-password **door**. Elaborated A–D (+ skip E) in the architecture spec.
+- **One `people.id` per human.** Officers fill the volunteer form as that Person; ops uses the same id (recommend login **B**). Volunteer-admin screens: year-round table on volunteer `/admin` or ops; Saturday check-in + per-building proctors as **HQ tabs**. Same tables. Swire is rooms only.
 - Persistence: **one** Postgres, **one** database. A **seam** is any copy (catalog CSV into other tools included). Keep seams when a snapshot is enough (roster, day plan, print). Collapse catalog→ops/volunteers/maps by sharing `rooms`.
 - Spec: [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md)
 - Docs only; no application code in this change

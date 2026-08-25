@@ -115,21 +115,52 @@ Public content (announcements)
 
 Day-of tools **must not** `UPDATE rooms`. “Closed,” “campus pulled,” “moved to 182” are event rows.
 
-## Account structure (officers are also volunteers)
+## One person, one id
 
-**Locked fact:** day-of, everyone is a volunteer. Internal staff fill the same volunteer form. An officer is a **Person** (assignment, shirt, check-in) and also someone who opens **ops**.
+You want **one unique id** for a human, including officers who fill the volunteer form, and you want that tied to ops. That is possible. It is also the right design.
 
-**Same in every option**
+Three different things (easy to smash together):
 
-- **HQ is ops.** There is no third “HQ account.”
-- **Swire is the laptop.** `DWIN155` + room password is never a Person. A proctor who is also a volunteer still uses the room login on the projector.
-- **`Person` exists.** Officers fill the form, so they have a volunteer row like everyone else.
-- **`live.berkeley.mt` has no login.**
-- One API, one Postgres. These options are about **cookies and secrets**, not extra databases.
+| Thing | What it is | Example |
+| ----- | ---------- | ------- |
+| **Person id** | The human in Postgres (`people.id`) | One row: Jordan, email, shirt, DNI, assignments across semesters |
+| **Login** | How the browser proves it is that Person | Email link, password, or Google — TBD |
+| **Door** | A hostname that login may or may not open | `volunteers.berkeley.mt` (everyone with a Person). `ops.berkeley.mt` (only if that Person is staff). `swire.berkeley.mt` (**not** a Person — room name) |
 
-**What differs:** how an officer proves they may open ops, and whether that is the same secret as their volunteer account.
+**Locked:** one `people.id` per human. Officer fills the volunteer form → **same** row they use on ops, not a second account. Match on the login email (or they are already signed in, so the form *is* them).
 
-### A — Two doors, one Person (recommend)
+**Still not a Person:** Swire room login (`DWIN155`). The same human can be assigned as a volunteer *and* start a clock only after the laptop uses the room password. That is a door for a projector, not a second biography.
+
+**How the officer opens ops** (still pick one):
+
+- **B (fits “tie to the ops account”):** one login. Person has `can_open_ops`. Same cookie can open volunteers *and* ops. This is what you described. Cost: that login is also the HQ key.
+- **A:** still **one** `people.id`, but ops is a **shared password** instead of that login. Two secrets, not two people. Use only if you want HQ behind a different lock than the volunteer site.
+- **D:** B with Google as the login.
+- **C:** two ids linked by email — this is the thing you do **not** want. Skip.
+
+**Recommendation given this:** **B** (or **D** if the login is Google). A was “two passwords, one person.” You are asking for one person **and** one login across volunteer + ops. That is B/D.
+
+### Where today’s volunteer-admin screens go
+
+Today’s volunteer app has three officer views. They are **queries on the same tables**, not a second volunteer list. Put each view where Saturday vs year-round lives.
+
+| Today | Job | Where in the new product |
+| ----- | --- | ------------------------ |
+| Table of all volunteers | Year-round people: applications, dropouts, DNI, form | **Volunteer admin** — `volunteers.berkeley.mt/admin` (typed URL, like Swire `/admin`) **or** a tab on ops. Same API. Officers with `can_open_ops` (B) can use either host. |
+| Check-in | Saturday: mark arrived; then they (and HQ) see assignment | **Ops HQ tab** (war room). Volunteer site can **show** “you’re checked in, you’re in DWIN155” after that — not a second check-in database. |
+| Per-building proctor tables | Saturday: who is in which classroom | **Ops HQ tab** (this is the dashboard). Volunteer admin can show the same assignment list in October. One `assignments` table. |
+
+So: **both hosts, one data.** Do not copy the volunteer table into HQ. HQ is another screen on `people` / `applications` / `assignments`. Swire admin (timers) stays a **redirect to ops**, not a third volunteer list.
+
+Self-service on `volunteers.berkeley.mt` (no admin): sign up, edit own info, after check-in see own room. Officers use that too, as themselves.
+
+## Account structure (how the officer login works)
+
+**Same in A/B/D:** one `people.id`, HQ is ops, Swire is the laptop, live has no login, one Postgres.
+
+**What differs:** whether ops uses **that same login** (B/D) or a **second secret** (A).
+
+### A — Two secrets, still one Person
 
 Named identity = `Person` on `volunteers.berkeley.mt`. Ops = a **shared staff password** (1Password). No staff `User` row.
 
@@ -139,13 +170,13 @@ Saturday: officer signs into volunteers as themselves (see assignment, check-in 
 
 Cost: two secrets for ~3 people. That is the point: volunteer identity and HQ capability are not the same thing.
 
-### B — One login, staff flag
+### B — One login, staff flag (fits tying volunteer form to ops)
 
-Only `Person` login. A flag `can_open_ops` (or equivalent) lets that Person into `ops.berkeley.mt`. Cookie on the parent domain → one sign-in, both hosts.
+Only `Person` login. A flag `can_open_ops` lets that Person into `ops.berkeley.mt`. Cookie on the parent domain → one sign-in, both hosts.
 
-Saturday: officer signs in once. Volunteers without the flag hitting ops get bounced.
+Officer fills the volunteer form while signed in (or with the same email) → same `people.id`. Saturday: sign in once; volunteer site and ops both work. Volunteers without the flag hitting ops get bounced.
 
-Cost: the officer’s volunteer password **is** the HQ key. A stolen volunteer password, or a flag set on the wrong Person, opens the 1800-name roster. Audit can say which Person paused the timer.
+Cost: the officer’s volunteer login **is** the HQ key. A stolen login, or a flag on the wrong Person, opens the 1800-name roster. Audit can say which Person paused the timer.
 
 ### C — Two named accounts, linked
 
@@ -179,17 +210,17 @@ Officers fill the form as a one-off application and only ever type the ops passw
 | Fits “everyone is a volunteer” | Yes — Person is the biography | Yes | Yes, plus a second biography | Yes if they have Gmail |
 | Build / ops cost | Low | Low | Highest | OAuth allowlist |
 
-**Recommendation: A.** One human in the database (`Person`). Ops is a **capability door**, not a second life story. Use **B** only if those ~3 officers refuse two secrets and accept HQ sitting on the volunteer password. Use **D** only if you want Google for other reasons. Skip **C** and **E**.
+**Recommendation now: B** (or **D** if login is Google). You asked for one id **and** the volunteer form tied to the ops account — that is the same login opening both doors. Keep **A** only if you later want HQ behind a different password. Skip **C** and **E**.
 
-Reply **A**, **B**, or **D** to lock.
+Reply **B**, **D**, or **A** to lock.
 
 ### Four logins (doors, not biographies)
 
 | Who | How they sign in | What they see |
 | --- | ---------------- | ------------- |
-| **Staff / ops** | Shared **staff password** (option A) *or* Person with staff flag / Google (B/D) | Catalog, allocator, HQ, volunteer **admin**, roster |
-| **Volunteer** | Account on **`volunteers.berkeley.mt`**, attached to `Person` | Apply / return / own assignment. Officers have this too |
-| **Room** | `DWIN155` + event password | Timer, projection |
+| **Staff / ops** | Same Person login as volunteers, if `can_open_ops` (B/D); or extra staff password (A) | Catalog, allocator, HQ, volunteer **admin**, roster |
+| **Volunteer** | Login attached to `people.id` on **`volunteers.berkeley.mt`** | Apply / edit self / see own assignment after check-in. Officers: same Person |
+| **Room** | `DWIN155` + event password | Timer, projection — not a Person |
 | **Guest** | None | `live.berkeley.mt` |
 
 Proctor-as-person (the volunteer assigned to 155) is **not** the same as the room login. They may have a volunteer account; the laptop still uses `DWIN155`. Assignments point at `rooms.id`.

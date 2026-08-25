@@ -178,7 +178,7 @@ If Postgres or the site dies: printed day plan, printed room password, assignmen
 
 ## Open (product, not leftover prototype)
 
-- Account structure: officers are Persons too. **Recommend A** (Person account + staff password for ops). Alternatives: one login with staff flag (B), Google-only (D). Room never a Person. See [account structure](2026-08-23-bmt-2026-architecture.md#account-structure-officers-are-also-volunteers).
+- **One `people.id` per human** (officers included). Volunteer form ties to that id / ops login — **B** (or **D** if Google). Volunteer-admin **screens**: full table on volunteer `/admin` or ops; Saturday check-in + per-building proctors on **ops HQ**; same tables, not a copy. Swire `/admin` → ops (timers), not a third people list.
 - Volunteer login *mechanism* (email link / Google / password) still TBD if we pick A or B.
 - Catalog room form: **checkbox** vs **kind dropdown** for “show on allocator grid.”
 - HQ columns, activity names for focus tests, volunteer form fields, public per-room detail, clarification image storage, UI library / language.
