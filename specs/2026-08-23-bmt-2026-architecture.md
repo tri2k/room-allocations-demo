@@ -115,14 +115,42 @@ Public content (announcements)
 
 Day-of tools **must not** `UPDATE rooms`. “Closed,” “campus pulled,” “moved to 182” are event rows.
 
-### Four logins (not six products)
+## Account structure (officers are also volunteers)
+
+**Locked fact:** day-of, everyone is a volunteer. Internal staff fill the same volunteer form. So an officer is a **Person** (assignment, shirt, check-in) and also someone who opens **ops**. The room laptop is still not a person.
+
+Do **not** invent three named accounts for the same human (volunteer + ops + HQ). HQ is ops. Swire is the laptop.
+
+**Always separate:** `DWIN155` + room password. Never tie that to a Person login.
+
+**Options for the human:**
+
+| | A. Two doors, one Person | B. One login, staff flag | C. Two named accounts, linked | D. Google as the only human login |
+| - | ------------------------ | ------------------------ | ----------------------------- | -------------------------------- |
+| What exists | `Person` + **staff password** for ops (no staff user row) | `Person` with `can_open_ops` | `Person` **and** a staff `User`, linked by email | One Google; allowlist / flag for ops |
+| Officer Saturday | Volunteer site as themselves; ops via 1Password | Sign in once; both hosts if cookie is on the parent domain | Sign in twice, or SSO between them | Sign in with Google; ops rejects non-staff emails |
+| ~300 volunteers | Cannot open ops (they don't have the staff secret) | Must not have the flag. Bug = HQ leak | Cannot open ops | Must not be on the allowlist |
+| Stolen volunteer password of an officer | Ops still closed (need staff secret) | **Ops opens** | Ops still closed unless the staff account is stolen too | **Ops opens** if that Google is staff |
+| “Who paused the timer?” | “someone with the ops password” | The Person | The staff User | The Google |
+| Fits earlier staff-password lean | **Yes** | No — ops is the volunteer login | Heavy for ~3 officers who are also Persons | Only if you wanted Google anyway |
+
+**E. Staff password only, officers skip volunteer login** — they fill the form as email-only applications and never use `volunteers.berkeley.mt`. Fights “reuse an account semester to semester” for the people running the event. Skip.
+
+**Recommendation: A.** Named identity lives on **Person** (the volunteer platform), because that is the system everyone including staff actually belongs to. Ops is a **second door** with the shared staff secret — a capability, not a second biography. Officers will have a volunteer account **and** know the ops password. That is two secrets, one human in the database.
+
+Use **B** only if you strongly want one login and accept that an officer’s volunteer password is also the HQ key.
+
+Never **C** unless you pick Google for ops and a different email/password for volunteers on purpose (unusual).
+
+Room stays A-through-D: laptop ≠ Person.
+
+### Four logins (doors, not biographies)
 
 | Who | How they sign in | What they see |
 | --- | ---------------- | ------------- |
-| **Staff** | **Open:** Google *or* one shared **staff** password. ~3 people | Catalog, allocator, import day plan, HQ on ops, timers (all controls), clarifications, volunteer **admin**, roster, live announcements |
-| **Organizer** | Only if staff login is **named** (Google) or a second staff secret | **View only** on ops |
-| **Volunteer** | Own account on **`volunteers.berkeley.mt`** (mechanism TBD) | Apply / return / see own assignment. Not HQ, not roster of contestants |
-| **Room (proctor suite)** | **Username = room code** (`DWIN155`) + **one shared secret for the event** | Timer (**start only**), clarifications, projection. Names on operator view only |
+| **Staff / ops** | Shared **staff password** (option A) *or* Person with staff flag / Google (B/D) | Catalog, allocator, HQ, volunteer **admin**, roster |
+| **Volunteer** | Account on **`volunteers.berkeley.mt`**, attached to `Person` | Apply / return / own assignment. Officers have this too |
+| **Room** | `DWIN155` + event password | Timer, projection |
 | **Guest** | None | `live.berkeley.mt` |
 
 Proctor-as-person (the volunteer assigned to 155) is **not** the same as the room login. They may have a volunteer account; the laptop still uses `DWIN155`. Assignments point at `rooms.id`.
@@ -146,33 +174,7 @@ Room laptops never get the catalog. Guests never get it.
 
 ### Staff: Google vs a shared password
 
-The catalog should **not** be “Google admin” as a special case. Either **every human staff screen** is Google, or **every human staff screen** is one staff password. Catalog-only auth is the worst split: a third secret, and HQ (where roster names live) is still the real risk.
-
-The **proctor laptops** already use a shared **event** password. That is the right model for 50 machines. **Do not** reuse the **room** password for ops or for volunteer accounts. It is on 50 projectors and a print packet.
-
-| | Google (few named people) | One shared **staff** password |
-| - | ------------------------- | ----------------------------- |
-| Setup | OAuth client + allowlist | One secret in 1Password |
-| Revoke one person | Remove their Gmail | Rotate the password and tell everyone |
-| Audit | “jsy@ edited DWIN155 capacity” | “someone with the password did” |
-| Organizer view-only | A **role** on the same login | Does not exist unless you add a **second** staff password |
-| Blast radius | One account | Everyone who ever saw Slack / 1Password |
-| Saturday HQ + **roster names** | Tied to a person | Anyone with the staff password sees 1800 names |
-| Club turnover | New officer = new allowlist row | Password often never rotates |
-
-**How humans sign in** (year-round). Officers type rooms in the catalog weeks before the contest. Same login later opens the allocator, HQ, volunteer admin, and live-site admin. The catalog is not “a contest-day feature”; BMT 2026 is only the first event the **whole** platform has to survive.
-
-- **Google:** each officer uses their Gmail. You can later make someone view-only, or kick one person without rotating a shared secret.
-- **One staff password:** everyone types the same password (in 1Password). Simpler. Whoever has it can see and edit catalog, HQ, roster names. No view-only role unless you add a second password.
-- **Catalog-only password, something else for HQ:** **do not.** Extra secret, little gain.
-
-**Do not** use the **room** password (the one on projectors) as this staff password.
-
-**Recommendation:** staff password. ~3 people who all need write. Google can be added later without changing modules.
-
-A staff password would be hashed, rotatable without redeploy — same storage idea as the room password, **different secret**. We do not keep Google because a prototype once had it.
-
-Still **open:** reply **Google** or **staff password**.
+This is now nested in [account structure](#account-structure-officers-are-also-volunteers). Option **A** = staff password for ops. **B** = volunteer login opens ops if flagged. **D** = Google for humans. Catalog-only password is still **do not**. Room password is still a different secret.
 
 ### Catalog kernel
 

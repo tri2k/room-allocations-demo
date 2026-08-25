@@ -161,7 +161,7 @@ Join key: **`rooms.id`**. Display `DWIN155` is computed. Database name and hosti
 | Draft plan | Allocator grid. Visible to staff. Not a personal Google-owned document. |
 | Day plan | Frozen import of one draft. Saturday writes overrides here, never the catalog. |
 | Allocation | One activity in one room for one interval. One room × slot = one activity. |
-| Person | Volunteer across semesters. Not a student, not a staff login. |
+| Person | A human in the volunteer system across semesters. **Officers fill this form too** (day-of, everyone is a volunteer). Not a student. Not the room laptop. |
 | Assignment | Person + event + role + optional room/building. |
 | Roster seat | Imported student name + room + time. Two tests = two rows. Move in this app. |
 | Map space | Geometry. Optional `room_id` (bathrooms have none). |
@@ -178,8 +178,8 @@ If Postgres or the site dies: printed day plan, printed room password, assignmen
 
 ## Open (product, not leftover prototype)
 
-- Staff sign-in: **Google** or **one staff password** (recommend staff password). Not the room password. Not catalog-only.
-- Volunteer **person** login mechanism (email link / Google / password) — dedicated host is locked; how they prove it is not.
+- Account structure: officers are Persons too. **Recommend A** (Person account + staff password for ops). Alternatives: one login with staff flag (B), Google-only (D). Room never a Person. See [account structure](2026-08-23-bmt-2026-architecture.md#account-structure-officers-are-also-volunteers).
+- Volunteer login *mechanism* (email link / Google / password) still TBD if we pick A or B.
 - Catalog room form: **checkbox** vs **kind dropdown** for “show on allocator grid.”
 - HQ columns, activity names for focus tests, volunteer form fields, public per-room detail, clarification image storage, UI library / language.
 
