@@ -25,8 +25,8 @@ At implementation we may rewrite this repo or start a new tree. Specs describe t
 **Kept because we decided them in workshop**, not because code did:
 
 - One Postgres, one database, six screens sharing `rooms.id`
-- **One API.** **Six entry links** (bookmarks), not six shipped sites. Catalog is **`roomsdb.berkeley.mt`**. Planner is **`ops.berkeley.mt/planner`**. HQ is **`ops.berkeley.mt`** root. Plus volunteers, Swire, live.
-- Catalog is sacred: day-of never updates rooms
+- **One API.** **Six entry links** (bookmarks), not six shipped sites. Roomsdb is **`roomsdb.berkeley.mt`**. Planner is **`ops.berkeley.mt/planner`**. HQ is **`ops.berkeley.mt`** root. Plus volunteers, Swire, live.
+- Roomsdb is sacred: day-of never updates rooms
 - Draft grid → explicit import as frozen day plan; re-import keeps running clocks
 - No live co-edit on the grid
 - Room login = `{building code}{room name}` + one event password (not Google)
@@ -75,11 +75,11 @@ Those can be **one JavaScript app** with several routes, or a staff bundle plus 
 
 Six screens should feel like six places you can bookmark. That is right. Last semester failed because those places were **six products**, not because they had six URLs.
 
-**Cadence:** catalog is rare (start of semester). The planner is regular (weeks of grid work). HQ is Saturday. Those three are **different bookmarks** and do not share primary chrome. Same Google, same API. Details: [staff links by cadence](2026-08-23-bmt-2026-architecture.md#staff-links-by-cadence).
+**Cadence:** roomsdb is rare (start of semester). The planner is regular (weeks of grid work). HQ is Saturday. Those three are **different bookmarks** and do not share primary chrome. Same Google, same API. Details: [staff links by cadence](2026-08-23-bmt-2026-architecture.md#staff-links-by-cadence).
 
 | Link | Who | Sign-in | Bookmark |
 | ---- | --- | ------- | -------- |
-| Catalog | staff | Google + `can_open_ops` | **`roomsdb.berkeley.mt`** — rooms, capacity, custom fields (rare) |
+| Roomsdb | staff | Google + `can_open_ops` | **`roomsdb.berkeley.mt`** — rooms, capacity, custom fields (rare) |
 | Allocator | staff | Same Google | **`ops.berkeley.mt/planner`** — time × room draft (regular) |
 | HQ | staff | Same Google | **`ops.berkeley.mt`** — Saturday list + map, timers, clarifications, roster, volunteer **admin** |
 | Volunteers | returning volunteers | Google → `people.id` | **`volunteers.berkeley.mt`** — own account, apply again, see assignment. Not ops. |
@@ -102,7 +102,7 @@ We are not inventing `hq.berkeley.mt`. HQ lives on **ops**. Volunteer **people**
 
 | Host | What lives there |
 | ---- | ---------------- |
-| **`roomsdb.berkeley.mt`** | **Rooms kernel** (the catalog). Year-round, used rarely. This chrome only — not a tab on the planner or on Saturday HQ. Same Google as ops. Not Swire. |
+| **`roomsdb.berkeley.mt`** | **Rooms kernel.** Year-round, used rarely. This chrome only — not a tab on the planner or on Saturday HQ. Same Google as ops. Not Swire. |
 | **`ops.berkeley.mt`** | **Saturday bookmark for officers** (root = HQ). Planner at **`/planner`** (regular grid work). Volunteer **admin** (assign rooms, DNI, name-search check-in, form builder). Staff login, not volunteer login. **No catalog tab** on HQ or planner. |
 | **`volunteers.berkeley.mt`** | **Volunteer door.** Continue with Google. Apply / update this event, see assignment after check-in. Same `people` row as ops if they are staff. **Not** the room password. |
 | **`swire.berkeley.mt`** | Room / projector. `DWIN155` + event password. Timer + clarifications. Keep **`/admin` → ops HQ** for officers who still type it. |
@@ -118,11 +118,11 @@ Do not mint `hq.berkeley.mt` unless ops is retired as a name.
 
 ## What the product is
 
-Six screens, one catalog:
+Six screens, one roomsdb:
 
 | Screen | Job |
 | ------ | --- |
-| Catalog | Year-round rooms (capacity, custom fields). Typed by hand. |
+| Roomsdb | Year-round rooms (capacity, custom fields). Typed by hand. Bookmark **`roomsdb.berkeley.mt`**. |
 | Allocator | Time × room draft for an event. One person builds it. |
 | Day-of HQ | Frozen plan + live overlay (list and map). |
 | Proctor / projector | Timer (start only) + clarifications. Laptop in the room. |

@@ -32,7 +32,7 @@ Parent notes: [ops platform](2026-08-22-ops-platform.md). Indoor maps: [2026-08-
 - **Table group** — a cluster of related tables inside that one database. Catalog is `buildings` / `floors` / `rooms`. Allocator is `sheets` / `allocations` / …. They can point at each other with foreign keys. This is a naming convenience, not a second database.
 - **Seam** — any **copy** from one list to another (CSV, “import this sheet as the day plan,” retyping rooms into a volunteer app). After a copy, the two sides can disagree until you copy again. Catalog → six tools by CSV **is** a seam. It is just a bad one if those tools need the same rooms all semester.
 
-When earlier docs say “the rooms database,” they mean the **catalog tables** (`buildings` / `floors` / `rooms`), not a second Postgres.
+When earlier docs say “the rooms database” or “the catalog,” they mean the **roomsdb** tables (`buildings` / `floors` / `rooms`), not a second Postgres.
 
 ```text
 One Postgres
@@ -189,7 +189,7 @@ A Person cookie **must not** open a room. A room cookie **must not** open ops, c
 
 | # | Screen | Host (bookmark) | Sign-in | Who may use it | What this login may do | Must not |
 | - | ------ | --------------- | ------- | -------------- | ---------------------- | -------- |
-| 1 | **Catalog** | **`roomsdb.berkeley.mt`** | Google + `can_open_ops` | Officers | Create/edit buildings, floors, rooms, custom fields | Day-of “closed” as a catalog edit. Room laptops. Guests. Ordinary volunteers. Planner/HQ **tabs** |
+| 1 | **Roomsdb** | **`roomsdb.berkeley.mt`** | Google + `can_open_ops` | Officers | Create/edit buildings, floors, rooms, custom fields | Day-of “closed” as a roomsdb edit. Room laptops. Guests. Ordinary volunteers. Planner/HQ **tabs** |
 | 2 | **Allocator** | **`ops.berkeley.mt/planner`** | Same Google | Officers | Build one draft at a time; bulk-assign floors | Live co-edit. Import-as-day-plan is an HQ action (same people, **different link**). Catalog tabs. Guests / rooms / volunteers |
 | 3 | **Day-of HQ** | **`ops.berkeley.mt`** (root) | Same Google | Officers in the war room | Import/re-import day plan; list + map; pause/add time; clarifications; roster import + move; volunteer **admin** (assign, DNI, name-search check-in) | `UPDATE rooms`. Start every room’s clock in bulk. Volunteer self-service. Catalog in war-room chrome |
 | 4 | **Proctor / projector** | **`swire.berkeley.mt`** | Room username + **one** event password | Laptop (and operator phone on the same room session) | **Start** that room’s timer. See clarifications. Operator view: roster **names**. Projector: timer + clarifications only | Google. Pause / add time (HQ). Other rooms. Catalog. HQ chrome. `/admin` is typed → **redirect to ops**, not a button |
@@ -208,7 +208,7 @@ A Person cookie **must not** open a room. A room cookie **must not** open ops, c
 
 ### Staff links by cadence
 
-**Name:** officers type **`roomsdb.berkeley.mt`**. In specs the module is still the **catalog** (buildings / floors / rooms). Swire is the room *laptop*; roomsdb is the room *list*. We do not use `catalog.berkeley.mt`.
+**Name:** the kernel is **roomsdb** — host **`roomsdb.berkeley.mt`**, same word in specs. Swire is the room *laptop*; roomsdb is the room *list*. We do not use `catalog.berkeley.mt`. Older workshop sentences still say “catalog”; that is roomsdb, not a second module.
 
 Rare vs regular vs Saturday are **different bookmarks**, not tabs on one officer page. Same Google, same API, still one deploy. The rooms list is sacred and infrequent, so it is farther from Saturday than the planner is.
 
@@ -226,7 +226,7 @@ Do not put the catalog behind the planner’s primary chrome, or the planner beh
 
 Ops and volunteers share **Google**. Staff is a flag on `Person`, not a second password. Catalog-only password is still **do not**. Room password is still a different secret.
 
-### Catalog kernel
+### Roomsdb kernel
 
 - Identity: building **code** set at create (read-only after); editable pretty name; display `DWIN155`.
 - Built-in numeric: **`capacity` only**.

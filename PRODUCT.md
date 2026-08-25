@@ -1,12 +1,12 @@
 # BMT ops platform
 
-A rooms catalog plus the screens that share it: event room allocator, day-of HQ, proctor tools, a public map site, and volunteer tracking.
+A rooms list (**roomsdb**) plus the screens that share it: event room allocator, day-of HQ, proctor tools, a public map site, and volunteer tracking.
 
 ## Vision
 
 Event organizers (BmMT and similar) still run contests from a pile of spreadsheets and forms: a classroom/capacity sheet, a dense time × room grid, a volunteer Google Form whose room list is copied by hand, printed day-of status, and guest maps that do not know about any of the above. Each copy of DWIN155 drifts.
 
-The kernel is a **rooms catalog**. The allocator, day-of HQ, proctors, public maps, and volunteers are screens on that catalog — not extra room lists. Draft plans stay editable; one imported day plan plus a live overlay is what Saturday and guests see.
+The kernel is **roomsdb** (the rooms list). The allocator, day-of HQ, proctors, public maps, and volunteers are screens on that list — not extra room lists. Draft plans stay editable; one imported day plan plus a live overlay is what Saturday and guests see.
 
 **Target design (greenfield):** [specs/2026-08-24-integrated-system.md](specs/2026-08-24-integrated-system.md). First production event: **BMT 2026 (2026-11-14)**. The drag-and-drop app in this git repo is a prototype we can discard at implementation. Workshop locks: [architecture after round 2](specs/2026-08-23-bmt-2026-architecture.md).
 
