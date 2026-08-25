@@ -2,6 +2,35 @@
 
 ## Unreleased
 
+### Ops platform architecture (2026-08-22)
+
+- **Greenfield:** target parent [specs/2026-08-24-integrated-system.md](specs/2026-08-24-integrated-system.md). Allocator prototype is not a design constraint.
+- **Hosts:** **`roomsdb.berkeley.mt`** (rooms kernel, rare). **`ops.berkeley.mt`** (officer HQ; planner at `/planner`). **`volunteers.berkeley.mt`** (volunteer people, returning accounts — not ops). **`swire.berkeley.mt`** (rooms; `/admin` typed URL redirects to ops). **`live.berkeley.mt`** (guests).
+- **Chrome** (in these docs): buttons/tabs/menus around the page content — not the Google Chrome browser. Projector pages must not show officer menus. Roomsdb, planner, and HQ do not share primary chrome.
+- Roomsdb is the kernel; allocator, day-of ops, proctors, public maps, and volunteers are modules that join `rooms.id`
+- New seam: publish one sheet as the day-of plan; live state does not rewrite the grid
+- Figma maps and the old Dwinelle Navigator are not a second rooms list; Navigator-class routing is later than floor search
+- Locked: BMT 2026 (2026-11-14), one org, freeze-on-publish, independent per-room timers, replace volunteer app, roster CSV only, no year-one turn-by-turn
+- Locked: no live co-edit on the allocator grid; projector has no roster names; Individual = activity group; spaces later with `appears_on_grid` hedge
+- Room suite secret: today’s shared env password → per-event shared password (not per-room PIN, no redeploy to rotate)
+- Building codes: DWIN, WHLR, VLSB, MLK; GPBB out of scope; code is set at create, not edited like capacity
+- Documented building-code aliases: they keep CSV/login matching after a rename; uniqueness and dual labels are the cost. Skip for v1.
+- **Google** is the only Person login (`people.id` per Google). Ops = `can_open_ops`. Swire stays room password. Live stays none. OAuth client must be published (~300 volunteers). Other issuers (Microsoft, email/password as login) are out of this design pass.
+- **Auth by screen:** six screens, three proofs (Google Person, room password, none). Two cookies (Person + room). Volunteer admin and live `/admin` are staff on ops, not extra logins. Ordinary volunteers bounce off ops and roomsdb to the volunteer host.
+- **Staff cadence:** roomsdb is rare (`roomsdb.berkeley.mt`); planner is regular (`ops.berkeley.mt/planner`); HQ is Saturday (`ops.berkeley.mt` root). They do not share primary chrome. Same Google, same API.
+- **Name:** the rooms kernel is **roomsdb** in specs and at **`roomsdb.berkeley.mt`**. Target docs no longer say catalog for that module. Prototype UI `#/catalog` is unchanged.
+- Persistence: **one** Postgres, **one** database. A **seam** is any copy (roomsdb CSV into other tools included). Keep seams when a snapshot is enough (roster, day plan, print). Collapse roomsdb→ops/volunteers/maps by sharing `rooms`.
+- Spec: [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md)
+- Docs only; no application code in this change
+
+### Indoor maps architecture (2026-08-21)
+
+- Device-first indoor map from BMT toggle-map Figma files (Dwinelle, Wheeler, VLSB): Leaflet `CRS.Simple`, not a print poster
+- Geometry is Figma-import only; roomsdb `rooms` keep capacity; live exam overlay (role, proctors, timers) is a separate join
+- Importer is a fail-loud contract (role aliases, goldens), not a scrape of one `.fig` tree
+- Spec: [specs/2026-08-21-indoor-maps.md](specs/2026-08-21-indoor-maps.md)
+- Docs only; no application code in this change
+
 ### Phase 2b private sheets (2026-08-14)
 
 - Event is a label plus clock **defaults**; planning lives on an owner-only `sheets` row
