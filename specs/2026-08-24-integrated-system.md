@@ -61,10 +61,10 @@ Browsers (staff, room laptop, guest)
 
 | Address | Who | Still the same API? |
 | ------- | --- | ------------------- |
-| `ops.berkeley.mt` | officers (HQ, volunteer admin, catalog/allocator) | Yes (staff cookie) |
-| `volunteers.berkeley.mt` | volunteer people | Yes (volunteer cookie) |
+| `ops.berkeley.mt` | officers (HQ, volunteer admin, catalog/allocator) | Yes (Person cookie + `can_open_ops`) |
+| `volunteers.berkeley.mt` | volunteer people | Yes (Person cookie) |
 | `swire.berkeley.mt` | laptop in the room | Yes (room cookie) |
-| `live.berkeley.mt` | guests | Yes (public routes only) |
+| `live.berkeley.mt` | guests | Yes (public routes only; no login) |
 
 Those can be **one JavaScript app** with several routes, or a staff bundle plus a thinner public bundle. Both are fine. What we are not doing is six separately deployed sites with six release buttons.
 
@@ -74,14 +74,14 @@ Those can be **one JavaScript app** with several routes, or a staff bundle plus 
 
 Six screens should feel like six places you can bookmark. That is right. Last semester failed because those places were **six products**, not because they had six URLs.
 
-| Link | Who | What they do |
-| ---- | --- | ------------ |
-| Catalog | staff | Rooms, capacity, custom fields |
-| Allocator | staff | Time × room draft |
-| HQ | staff | Saturday list + map (tabs **on ops**), timers, clarifications, roster, volunteer **admin** (assign, DNI, check-in) |
-| Volunteers | returning volunteers | **`volunteers.berkeley.mt`** — own account, apply again, see assignment. Not ops. |
-| Room | laptop | `swire.berkeley.mt` — login as `DWIN155`, timer, projector |
-| Public | guests | `live.berkeley.mt` — announcements, maps |
+| Link | Who | Sign-in | What they do |
+| ---- | --- | ------- | ------------ |
+| Catalog | staff | Google + `can_open_ops` | Rooms, capacity, custom fields |
+| Allocator | staff | Same Google | Time × room draft |
+| HQ | staff | Same Google | Saturday list + map (tabs **on ops**), timers, clarifications, roster, volunteer **admin** (assign, DNI, check-in) |
+| Volunteers | returning volunteers | Google → `people.id` | **`volunteers.berkeley.mt`** — own account, apply again, see assignment. Not ops. |
+| Room | laptop | `DWIN155` + event password | `swire.berkeley.mt` — timer, projector. Not Google |
+| Public | guests | None | `live.berkeley.mt` — announcements, maps |
 
 **Seventh / apply:** first-time apply is on **`volunteers.berkeley.mt`** (logged out). Do not put the volunteer portal on `live.berkeley.mt` (parents) or on ops (roster, timers).
 
@@ -102,9 +102,9 @@ We are not inventing `hq.berkeley.mt`. HQ lives on **ops**. Volunteer **people**
 | **`ops.berkeley.mt`** | **Saturday bookmark for officers.** HQ dashboard (list / map as **tabs**). Volunteer **admin** (assign rooms, DNI, name-search check-in, form builder) — staff login, not volunteer login. Catalog and allocator can be other paths here. |
 | **`volunteers.berkeley.mt`** | **Volunteer door.** Continue with Google. Apply / update this event, see assignment after check-in. Same `people` row as ops if they are staff. **Not** the room password. |
 | **`swire.berkeley.mt`** | Room / projector. `DWIN155` + event password. Timer + clarifications. Keep **`/admin` → ops HQ** for officers who still type it. |
-| **`live.berkeley.mt`** | Guests (parents, contestants). Announcements, maps. No volunteer login, no officer menus. |
+| **`live.berkeley.mt`** | Guests (parents, contestants). Announcements, maps. No volunteer login, no officer menus. Typed `/admin` redirects to ops (same pattern as Swire). |
 
-Same API, same Postgres. Four cookies, not four databases: **staff**, **volunteer person**, **room**, **none** (live).
+Same API, same Postgres. **Two cookies**, not four databases: **Person** (Google; staff if `can_open_ops`) and **room** (Swire only). Live guests: none. Auth per screen: [architecture](2026-08-23-bmt-2026-architecture.md#auth-by-screen-the-six).
 
 Last semester’s “HQ on the same link as volunteers” was officers wanting one bookmark. That still works if **admin** stays on ops and **volunteer accounts** move. ~300 people should not sign into `ops.berkeley.mt`.
 
@@ -144,7 +144,8 @@ One Postgres
   maps         floor plates + polygons (optional room_id)
   public       announcements
   staff auth   Google + can_open_ops on people
-  volunteer auth  Google → people.id
+  volunteer auth  same Google → people.id (not a second cookie)
+  room auth    DWIN155 + event password (swire cookie only)
 ```
 
 Join key: **`rooms.id`**. Display `DWIN155` is computed. Database name and hosting are an implementation choice.

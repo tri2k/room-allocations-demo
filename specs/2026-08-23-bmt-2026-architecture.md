@@ -110,7 +110,8 @@ Volunteers (people, applications, assignments, DNI)
   writers: volunteer account (own person + this-event application); staff-with-write (assignments, DNI, check-in, form)
 
 Public content (announcements)
-  writers: live.berkeley.mt admin panel (staff-with-write)
+  writers: staff-with-write on ops (live `/admin` redirects here)
+  never: guests, room sessions, volunteer self-service
 ```
 
 Day-of tools **must not** `UPDATE rooms`. “Closed,” “campus pulled,” “moved to 182” are event rows.
@@ -170,20 +171,40 @@ Proctor-as-person (the volunteer assigned to 155) is **not** the same as the roo
 
 Today the suite uses a **shared password in an environment variable** (all rooms, one secret, change = redeploy). Target: same UX (**one password for every room that event**), stored on the Event/day plan (hashed), **printable** on the backup packet, rotatable by admin **without** a redeploy. Unique per-room PINs are not v1.
 
-### Six UIs, not six products
+### Auth by screen (the six)
 
-The six “platforms” are **screens on one product**, not six account databases. Last semester’s breakage came from five separate deploys, not from having too few password types.
+The six “platforms” are **screens**, not six logins and not six account databases. There are **three ways to prove who you are**:
 
-| UI | Typical person | How they prove who they are |
-| -- | -------------- | --------------------------- |
-| Catalog | staff | **Google** (same Person as volunteer; must have `can_open_ops`) |
-| Allocator | staff | Same Google |
-| Ops / HQ dashboard | war room | Same Google |
-| Proctor + projector | laptop in DWIN155 | **Room username + shared event password** (not Google) |
-| `live.berkeley.mt` | students, parents, coaches | **None** |
-| Volunteer signup / return | volunteer | **Google** on `volunteers.berkeley.mt` |
+| Proof | Cookie | Who |
+| ----- | ------ | --- |
+| **Google** → `people.id` | **Person** cookie (HTTP-only). Shared by `ops.berkeley.mt` and `volunteers.berkeley.mt` (parent domain, or both host cookies set at OAuth). | Every human in this product |
+| **`DWIN155` + event password** | **Room** cookie, scoped to **`swire.berkeley.mt` only** | The laptop in that room, not a human |
+| **Nothing** | None | Guests on `live.berkeley.mt` |
 
-Room laptops never get the catalog. Guests never get it.
+Staff vs volunteer is **not** a second Google button. It is `can_open_ops` on that Person. For this design pass, `can_open_ops` is also write (catalog, drafts, HQ, volunteer admin, roster, announcements). Organizer view-only is later.
+
+A Person cookie **must not** open a room. A room cookie **must not** open ops, catalog, or volunteer admin. Live guest pages **must not** grow officer menus just because a Person cookie exists (typed `/admin` is the exception, same pattern as Swire).
+
+**Locked (live publish):** compose announcements on **ops**. `live.berkeley.mt/admin` is a typed URL that **redirects to ops**, like Swire `/admin`. Guests never see a sign-in button on live.
+
+| # | Screen | Host (bookmark) | Sign-in | Who may use it | What this login may do | Must not |
+| - | ------ | --------------- | ------- | -------------- | ---------------------- | -------- |
+| 1 | **Catalog** | Path on **`ops.berkeley.mt`** | Google + `can_open_ops` | Officers | Create/edit buildings, floors, rooms, custom fields | Day-of “closed” as a catalog edit. Room laptops. Guests. Ordinary volunteers |
+| 2 | **Allocator** | Path on **`ops.berkeley.mt`** | Same Google | Officers | Build one draft at a time; bulk-assign floors | Live co-edit. Import-as-day-plan is an HQ action (same people, different screen). Guests / rooms / volunteers |
+| 3 | **Day-of HQ** | **`ops.berkeley.mt`** homepage for Saturday | Same Google | Officers in the war room | Import/re-import day plan; list + map; pause/add time; clarifications; roster import + move; volunteer **admin** (assign, DNI, name-search check-in) | `UPDATE rooms`. Start every room’s clock in bulk. Volunteer self-service |
+| 4 | **Proctor / projector** | **`swire.berkeley.mt`** | Room username + **one** event password | Laptop (and operator phone on the same room session) | **Start** that room’s timer. See clarifications. Operator view: roster **names**. Projector: timer + clarifications only | Google. Pause / add time (HQ). Other rooms. Catalog. HQ chrome. `/admin` is typed → **redirect to ops**, not a button |
+| 5 | **Public** | **`live.berkeley.mt`** | None | Students, parents, coaches | Read announcements and maps | Login. Public countdown. Volunteer apply. Officer menus |
+| 6 | **Volunteers** (self-service) | **`volunteers.berkeley.mt`** | Google → same `people.id` | Returning and first-time volunteers, including officers as themselves | Apply / edit **own** person + this-event application. After check-in, see **own** assignment | Ops HQ, catalog, other people’s rows, room password, check-in (staff does that on HQ) |
+
+**Volunteer admin is not a seventh login.** It is screen 3 (and optionally typed `volunteers.berkeley.mt/admin`) for people who already have `can_open_ops`. Same tables as screen 6.
+
+**OAuth:** one **published** Google client (Testing-mode user cap is too small for ~300 volunteers). Authorized origins include ops and volunteers, not Swire or live. First visit: Continue with Google, then the form. Return visit: same Google → same `people.id`.
+
+**Bounce:** a Person **without** `can_open_ops` who opens `ops.berkeley.mt` does not see HQ. Send them to `volunteers.berkeley.mt`. Stolen staff Google still opens HQ — accepted.
+
+**Saturday mix-up (locked):** the human assigned to proctor 155 may be signed into Google on their phone (screen 6). The HDMI laptop still uses the **room** login (screen 4). Those are not interchangeable.
+
+**Cookie hygiene:** if an officer’s Google session is on a projector laptop (parent-domain Person cookie), Swire still requires the room password and still shows no HQ chrome. Live still shows no officer chrome.
 
 ### Staff vs volunteer (same Google)
 

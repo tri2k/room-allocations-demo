@@ -45,7 +45,7 @@ Language, UI library, and folder layout are chosen at implementation. `docs/c4/`
 | UI | Browser app (staff, projector, public). Library TBD |
 | Persistence | One PostgreSQL database |
 | API | One HTTP API |
-| Identity | **Google** → `people.id`. Ops if `can_open_ops`. Rooms: username + event password. Guests: none |
+| Identity | **Google** → `people.id`. Ops if `can_open_ops`. Rooms: username + event password. Guests: none. [Auth by screen](specs/2026-08-23-bmt-2026-architecture.md#auth-by-screen-the-six) |
 | Realtime | Server-authoritative timers; poll or push for clarifications |
 
 ## Phased Delivery

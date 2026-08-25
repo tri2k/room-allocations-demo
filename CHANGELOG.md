@@ -16,6 +16,7 @@
 - Building codes: DWIN, WHLR, VLSB, MLK; GPBB out of scope; code is set at create, not edited like capacity
 - Documented building-code aliases: they keep CSV/login matching after a rename; uniqueness and dual labels are the cost. Skip for v1.
 - **Google** is the only Person login (`people.id` per Google). Ops = `can_open_ops`. Swire stays room password. Live stays none. OAuth client must be published (~300 volunteers). Other issuers (Microsoft, email/password as login) are out of this design pass.
+- **Auth by screen:** six screens, three proofs (Google Person, room password, none). Two cookies (Person + room). Volunteer admin and live `/admin` are staff on ops, not extra logins. Ordinary volunteers bounce off ops to the volunteer host.
 - Persistence: **one** Postgres, **one** database. A **seam** is any copy (catalog CSV into other tools included). Keep seams when a snapshot is enough (roster, day plan, print). Collapse catalog→ops/volunteers/maps by sharing `rooms`.
 - Spec: [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md)
 - Docs only; no application code in this change
