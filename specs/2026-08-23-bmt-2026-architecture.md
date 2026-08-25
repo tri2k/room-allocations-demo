@@ -38,7 +38,7 @@ When earlier docs say “the rooms database,” they mean the **catalog tables**
 One Postgres
   catalog     buildings, floors, rooms, later custom field defs
   allocator   events, draft plans, activities, time blocks, allocations
-  identity    staff login (Google *or* staff password — open)
+  identity    Google → people.id; can_open_ops for ops
   day plan    frozen copy of one draft + day-of overrides (closed, moved)
   live        timers, clarifications, roster seats  (join rooms.id)
   volunteers  people, applications, assignments     (assignments.room_id)
@@ -124,21 +124,18 @@ Three different things (easy to smash together):
 | Thing | What it is | Example |
 | ----- | ---------- | ------- |
 | **Person id** | The human in Postgres (`people.id`) | One row: Jordan, email, shirt, DNI, assignments across semesters |
-| **Login** | How the browser proves it is that Person | Email link, password, or Google — TBD |
+| **Login** | How the browser proves it is that Person | **Google** (locked). Same Google on volunteers and ops |
 | **Door** | A hostname that login may or may not open | `volunteers.berkeley.mt` (everyone with a Person). `ops.berkeley.mt` (only if that Person is staff). `swire.berkeley.mt` (**not** a Person — room name) |
 
-**Locked:** one `people.id` per human. Officer fills the volunteer form → **same** row they use on ops, not a second account. Match on the login email (or they are already signed in, so the form *is* them).
+**Locked:** one `people.id` per human. Officer fills the volunteer form → **same** row they use on ops. Match on the **Google email** (or they are already signed in, so the form *is* them).
 
-**Still not a Person:** Swire room login (`DWIN155`). The same human can be assigned as a volunteer *and* start a clock only after the laptop uses the room password. That is a door for a projector, not a second biography.
+**Locked: all Person accounts are Google.** Continue with Google on `volunteers.berkeley.mt` and `ops.berkeley.mt`. A Person may open ops only if flagged staff (`can_open_ops` or equivalent). Ordinary volunteers bounce off ops. Cookie on the parent domain so one Google sign-in can cover both hosts.
 
-**How the officer opens ops** (still pick one):
+**Still not Google, not a Person:** Swire (`DWIN155` + event password). **`live.berkeley.mt`:** no login.
 
-- **B (fits “tie to the ops account”):** one login. Person has `can_open_ops`. Same cookie can open volunteers *and* ops. This is what you described. Cost: that login is also the HQ key.
-- **A:** still **one** `people.id`, but ops is a **shared password** instead of that login. Two secrets, not two people. Use only if you want HQ behind a different lock than the volunteer site.
-- **D:** B with Google as the login.
-- **C:** two ids linked by email — this is the thing you do **not** want. Skip.
+**Reasonable because:** officers and most Berkeley-adjacent volunteers already have Google (including `@berkeley.edu`). One id, one button, no volunteer password reset, kick one human by removing staff flag / that Google. **Cost:** you cannot volunteer without a Google account. Google OAuth must be **published** (Testing mode caps ~100 users — not enough for ~300 volunteers). Stolen staff Google opens HQ — same as any one-login design.
 
-**Recommendation given this:** **B** (or **D** if the login is Google). A was “two passwords, one person.” You are asking for one person **and** one login across volunteer + ops. That is B/D.
+**Rejected:** A (extra ops password — second secret you do not want). C (second staff User). Email/password volunteer accounts. Google on projectors.
 
 ### Where today’s volunteer-admin screens go
 
@@ -146,7 +143,7 @@ Today’s volunteer app has three officer views. They are **queries on the same 
 
 | Today | Job | Where in the new product |
 | ----- | --- | ------------------------ |
-| Table of all volunteers | Year-round people: applications, dropouts, DNI, form | **Volunteer admin** — `volunteers.berkeley.mt/admin` (typed URL, like Swire `/admin`) **or** a tab on ops. Same API. Officers with `can_open_ops` (B) can use either host. |
+| Table of all volunteers | Year-round people: applications, dropouts, DNI, form | **Volunteer admin** — `volunteers.berkeley.mt/admin` (typed URL, like Swire `/admin`) **or** a tab on ops. Same API. Officers with `can_open_ops` can use either host. |
 | Check-in | Saturday: mark arrived; then they (and HQ) see assignment | **Ops HQ tab** (war room). Volunteer site can **show** “you’re checked in, you’re in DWIN155” after that — not a second check-in database. |
 | Per-building proctor tables | Saturday: who is in which classroom | **Ops HQ tab** (this is the dashboard). Volunteer admin can show the same assignment list in October. One `assignments` table. |
 
@@ -154,73 +151,19 @@ So: **both hosts, one data.** Do not copy the volunteer table into HQ. HQ is ano
 
 Self-service on `volunteers.berkeley.mt` (no admin): sign up, edit own info, after check-in see own room. Officers use that too, as themselves.
 
-## Account structure (how the officer login works)
+## Account structure (locked: Google for people)
 
-**Same in A/B/D:** one `people.id`, HQ is ops, Swire is the laptop, live has no login, one Postgres.
+**Locked:** Google is the only Person login. One `people.id` per Google. Staff = that Person plus `can_open_ops`. Room password and live stay as they were.
 
-**What differs:** whether ops uses **that same login** (B/D) or a **second secret** (A).
-
-### A — Two secrets, still one Person
-
-Named identity = `Person` on `volunteers.berkeley.mt`. Ops = a **shared staff password** (1Password). No staff `User` row.
-
-Saturday: officer signs into volunteers as themselves (see assignment, check-in as a volunteer). Opens ops in another tab and types the staff password. Catalog / grid / HQ / volunteer-admin all sit behind that password.
-
-~300 volunteers never learn the ops password, so they cannot open HQ. If an officer’s volunteer password leaks, HQ stays closed. If the ops password leaks, HQ opens for whoever has it — audit is “someone with the password,” not “jsy@ paused DWIN155.”
-
-Cost: two secrets for ~3 people. That is the point: volunteer identity and HQ capability are not the same thing.
-
-### B — One login, staff flag (fits tying volunteer form to ops)
-
-Only `Person` login. A flag `can_open_ops` lets that Person into `ops.berkeley.mt`. Cookie on the parent domain → one sign-in, both hosts.
-
-Officer fills the volunteer form while signed in (or with the same email) → same `people.id`. Saturday: sign in once; volunteer site and ops both work. Volunteers without the flag hitting ops get bounced.
-
-Cost: the officer’s volunteer login **is** the HQ key. A stolen login, or a flag on the wrong Person, opens the 1800-name roster. Audit can say which Person paused the timer.
-
-### C — Two named accounts, linked
-
-A staff `User` (Google or email) **and** a `Person`, joined by email. Officer has two biographies that software knows are the same human.
-
-Isolation like A (volunteer leak ≠ HQ) plus named audit on ops (“this staff User”). Cost: two accounts to create, link, and reset, for people who are already Persons. Worth it only if ops must be Google *and* volunteers must be a different email/password on purpose.
-
-### D — Google as the only human login
-
-Every human (volunteer and officer) signs in with Google. Ops allowlists officer emails (or a flag on the Person created at first Google login). Same Google on both hosts.
-
-Feels like B, with Google as the IdP. Club turnover = change the allowlist. Stolen staff Gmail opens HQ. Volunteers not on the allowlist bounce off ops. Pick this only if you wanted Google anyway (kick one person, view-only later).
-
-### E — Skip (officers never use the volunteer site)
-
-Officers fill the form as a one-off application and only ever type the ops password. Fights “come back next semester as yourself” for the people running the event. Do not.
-
-### Comparison
-
-| | **A** two doors, one Person | **B** one login + flag | **C** two named accounts | **D** Google only |
-| - | --------------------------- | ---------------------- | ------------------------ | ----------------- |
-| Rows in the DB | `Person` only (for humans). Ops secret is not a user | `Person` + `can_open_ops` | `Person` + staff `User` + link | `Person` keyed by Google |
-| Officer passwords / IdPs | Volunteer account **and** ops password | Volunteer account only | Volunteer account **and** staff account | One Google |
-| Saturday tabs | Volunteers site + ops (second password) | One sign-in, both hosts | Two sign-ins, or extra SSO work | One Google, both hosts if allowlisted |
-| Volunteer opens ops? | No (no ops password) | Only if flagged — **bug = HQ leak** | No | Only if allowlisted — **bug = HQ leak** |
-| Officer volunteer password stolen | HQ closed | **HQ open** | HQ closed | **HQ open** (staff Gmail) |
-| Ops password / Gmail stolen | HQ open; volunteer site not auto-open | n/a (no separate ops secret) | HQ open | HQ open |
-| “Who paused the timer?” | Someone with the ops password | That Person | That staff User | That Google |
-| Kick one officer off HQ | Rotate ops password; tell the others | Clear their flag | Disable staff User | Remove Gmail from allowlist |
-| Semester return as volunteer | Same Person account | Same | Same Person; staff User is extra | Same Google |
-| Fits “everyone is a volunteer” | Yes — Person is the biography | Yes | Yes, plus a second biography | Yes if they have Gmail |
-| Build / ops cost | Low | Low | Highest | OAuth allowlist |
-
-**Recommendation now: B** (or **D** if login is Google). You asked for one id **and** the volunteer form tied to the ops account — that is the same login opening both doors. Keep **A** only if you later want HQ behind a different password. Skip **C** and **E**.
-
-Reply **B**, **D**, or **A** to lock.
+A/B/C (staff password, email/password, second User table) are **out**. The old comparison table is history.
 
 ### Four logins (doors, not biographies)
 
 | Who | How they sign in | What they see |
 | --- | ---------------- | ------------- |
-| **Staff / ops** | Same Person login as volunteers, if `can_open_ops` (B/D); or extra staff password (A) | Catalog, allocator, HQ, volunteer **admin**, roster |
-| **Volunteer** | Login attached to `people.id` on **`volunteers.berkeley.mt`** | Apply / edit self / see own assignment after check-in. Officers: same Person |
-| **Room** | `DWIN155` + event password | Timer, projection — not a Person |
+| **Staff / ops** | **Google**, Person has `can_open_ops` | Catalog, allocator, HQ, volunteer **admin**, roster |
+| **Volunteer** | **Google**, same Person on **`volunteers.berkeley.mt`** | Apply / edit self / see own assignment after check-in. Officers: same Person |
+| **Room** | `DWIN155` + event password | Timer, projection — not a Person, not Google |
 | **Guest** | None | `live.berkeley.mt` |
 
 Proctor-as-person (the volunteer assigned to 155) is **not** the same as the room login. They may have a volunteer account; the laptop still uses `DWIN155`. Assignments point at `rooms.id`.
@@ -233,18 +176,18 @@ The six “platforms” are **screens on one product**, not six account database
 
 | UI | Typical person | How they prove who they are |
 | -- | -------------- | --------------------------- |
-| Catalog | staff looking up a room | **Same staff login as HQ** (not a catalog-only secret, not the room password) |
-| Allocator | person who builds the grid | Same staff login |
-| Ops / HQ dashboard | war room | Same staff login |
-| Proctor + projector | laptop in DWIN155 | **Room username + shared event password** |
+| Catalog | staff | **Google** (same Person as volunteer; must have `can_open_ops`) |
+| Allocator | staff | Same Google |
+| Ops / HQ dashboard | war room | Same Google |
+| Proctor + projector | laptop in DWIN155 | **Room username + shared event password** (not Google) |
 | `live.berkeley.mt` | students, parents, coaches | **None** |
-| Volunteer signup / return | volunteer | **Volunteer account** on `volunteers.berkeley.mt`. Managers who assign people use **staff login on ops** |
+| Volunteer signup / return | volunteer | **Google** on `volunteers.berkeley.mt` |
 
 Room laptops never get the catalog. Guests never get it.
 
-### Staff: Google vs a shared password
+### Staff vs volunteer (same Google)
 
-This is now nested in [account structure](#account-structure-officers-are-also-volunteers). Option **A** = staff password for ops. **B** = volunteer login opens ops if flagged. **D** = Google for humans. Catalog-only password is still **do not**. Room password is still a different secret.
+Ops and volunteers share **Google**. Staff is a flag on `Person`, not a second password. Catalog-only password is still **do not**. Room password is still a different secret.
 
 ### Catalog kernel
 
@@ -315,7 +258,7 @@ Clarification composer (admin): pick target set (activity, building, floor, mult
 ### Volunteers (shape only)
 
 - Host: **`volunteers.berkeley.mt`** for the people; staff **admin** on ops.
-- Returning volunteers **reuse an account** (login mechanism TBD). First-time apply can be logged out on that same host.
+- Returning volunteers **reuse Google** → same `people.id`. First-time: Continue with Google, then the form.
 - Form **builder** (admin on ops), not a hardcoded Google Form clone.
 - Roles **customizable**.
 - **Shifts** exist (schema: assignment has a time window); UI details later.
@@ -383,7 +326,7 @@ v1: if pickup is **in a named room**, it is a catalog **room**. If it is a table
 | HQ list columns / red meaning | Can ship list+map with a minimal column set |
 | Public per-room detail | Flag |
 | Outdoor maps | Stretch |
-| Staff login: Google vs one staff password | Catalog Q5; organizer view-only |
+| Organizer view-only | Optional later: Person without write flags |
 | Shift editor, form fields, 73–79 artifacts | Volunteer/catalog content, not kernel |
 | Projection vs operator as one URL or two | Same session either way |
 

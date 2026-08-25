@@ -45,7 +45,7 @@ Language, UI library, and folder layout are chosen at implementation. `docs/c4/`
 | UI | Browser app (staff, projector, public). Library TBD |
 | Persistence | One PostgreSQL database |
 | API | One HTTP API |
-| Identity | Staff: Google **or** shared staff password (open). Rooms: room username + event password. Guests: none |
+| Identity | **Google** → `people.id`. Ops if `can_open_ops`. Rooms: username + event password. Guests: none |
 | Realtime | Server-authoritative timers; poll or push for clarifications |
 
 ## Phased Delivery
@@ -65,10 +65,10 @@ Design first (this PR), then implement the six screens against the greenfield sp
 
 | Question | Status |
 | -------- | ------ |
-| Staff login | **Open:** Google or one staff password (recommend staff password) |
-| Slot granularity | **Decided:** 15 min default; per draft (Event stores defaults copied at create) |
+| Staff / volunteer login | **Decided:** Google only for Person accounts. Ops = `can_open_ops`. Swire = room password. Live = none |
+| Auth | **Decided:** Google for people. Publish the OAuth client (Testing cap is too small for ~300 volunteers) |
+| Slot granularity | **Decided:** 15 min default; per draft |
 | Registration / scoring | **Decided:** other product; roster CSV into this database |
-| Auth | **Open** — not Google-only because a prototype had OAuth |
 | Draft vs day plan | **Decided:** Event is the contest; draft is the grid; day plan is a frozen import |
 | Multi-day events | **Decided:** one draft = one day; another draft on the same Event for another day |
 | Catalog history / plan pins | **Later.** [draft](specs/2026-08-13-catalog-history-and-plan-pins.md) |

@@ -29,7 +29,8 @@ At implementation we may rewrite this repo or start a new tree. Specs describe t
 - Catalog is sacred: day-of never updates rooms
 - Draft grid → explicit import as frozen day plan; re-import keeps running clocks
 - No live co-edit on the grid
-- Room login = `{building code}{room name}` + one event password (not the staff password)
+- Room login = `{building code}{room name}` + one event password (not Google)
+- **Google** for every Person; staff is `can_open_ops` on that Person
 - Roster is a CSV snapshot from the registration product; students are not volunteer people
 - Custom room fields; built-in `capacity` only (≥ 0)
 - Building codes DWIN, WHLR, VLSB, MLK; code set at create
@@ -99,7 +100,7 @@ We are not inventing `hq.berkeley.mt`. HQ lives on **ops**. Volunteer **people**
 | Host | What lives there |
 | ---- | ---------------- |
 | **`ops.berkeley.mt`** | **Saturday bookmark for officers.** HQ dashboard (list / map as **tabs**). Volunteer **admin** (assign rooms, DNI, name-search check-in, form builder) — staff login, not volunteer login. Catalog and allocator can be other paths here. |
-| **`volunteers.berkeley.mt`** | **Volunteer door.** Create/reuse an account, apply / update this event, see “you are in DWIN155.” Same Postgres `people` rows. **Not** the staff password, **not** the room password, **not** ops HQ. Exact login (email link vs Google vs password) TBD in the volunteer module spec. |
+| **`volunteers.berkeley.mt`** | **Volunteer door.** Continue with Google. Apply / update this event, see assignment after check-in. Same `people` row as ops if they are staff. **Not** the room password. |
 | **`swire.berkeley.mt`** | Room / projector. `DWIN155` + event password. Timer + clarifications. Keep **`/admin` → ops HQ** for officers who still type it. |
 | **`live.berkeley.mt`** | Guests (parents, contestants). Announcements, maps. No volunteer login, no officer menus. |
 
@@ -142,8 +143,8 @@ One Postgres
   volunteers   people, applications, assignments
   maps         floor plates + polygons (optional room_id)
   public       announcements
-  staff auth   staff login (Google or staff password — open)
-  volunteer auth  login attached to `people` (mechanism TBD)
+  staff auth   Google + can_open_ops on people
+  volunteer auth  Google → people.id
 ```
 
 Join key: **`rooms.id`**. Display `DWIN155` is computed. Database name and hosting are an implementation choice.
@@ -161,7 +162,7 @@ Join key: **`rooms.id`**. Display `DWIN155` is computed. Database name and hosti
 | Draft plan | Allocator grid. Visible to staff. Not a personal Google-owned document. |
 | Day plan | Frozen import of one draft. Saturday writes overrides here, never the catalog. |
 | Allocation | One activity in one room for one interval. One room × slot = one activity. |
-| Person | A human in the volunteer system across semesters. **Officers fill this form too** (day-of, everyone is a volunteer). Not a student. Not the room laptop. |
+| Person | One human id (`people.id`) across semesters. Officers fill the volunteer form as this row. Login may also open ops if staff. Not a student. Not `DWIN155`. |
 | Assignment | Person + event + role + optional room/building. |
 | Roster seat | Imported student name + room + time. Two tests = two rows. Move in this app. |
 | Map space | Geometry. Optional `room_id` (bathrooms have none). |
@@ -178,8 +179,6 @@ If Postgres or the site dies: printed day plan, printed room password, assignmen
 
 ## Open (product, not leftover prototype)
 
-- **One `people.id` per human** (officers included). Volunteer form ties to that id / ops login — **B** (or **D** if Google). Volunteer-admin **screens**: full table on volunteer `/admin` or ops; Saturday check-in + per-building proctors on **ops HQ**; same tables, not a copy. Swire `/admin` → ops (timers), not a third people list.
-- Volunteer login *mechanism* (email link / Google / password) still TBD if we pick A or B.
 - Catalog room form: **checkbox** vs **kind dropdown** for “show on allocator grid.”
 - HQ columns, activity names for focus tests, volunteer form fields, public per-room detail, clarification image storage, UI library / language.
 

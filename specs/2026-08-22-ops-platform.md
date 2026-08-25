@@ -26,7 +26,7 @@ The costly redesign is not “we picked FastAPI.” It is **DWIN155 existing in 
 Rooms are the **kernel**. Everything else is either a rare catalog edit, a **draft plan**, a **published plan**, or a **live overlay** on that plan.
 
 ```text
-Identity (staff login — Google or staff password)
+Identity (Google → people.id; can_open_ops for ops)
         │
         ▼
 Catalog  Building → Floor → Room          ← kernel (capacity, custom fields, …)
@@ -84,8 +84,8 @@ Figma does **not** own rooms. The volunteer form does **not** own rooms. The pro
 | Contest rounds | **Power**, **Individual**, **Guts**. Individual: 2 of 4 focus **or** 1 general | One room × one slot = one activity |
 | Roster | CSV morning-of after check-in; **names**; **move in-app**; two tests = two rows | Registration platform stays separate |
 | Public site | `live.berkeley.mt`, English, **no public clock** | Per-room guest detail undecided. Outdoor maps stretch |
-| Volunteers | Form builder; custom roles; shifts later; ~300 people; name-search check-in; prefill + DNI | PII visible to managers |
-| Staff auth | **Open:** Google *or* one shared **staff** password for all human UIs. **Different** room password for projectors. Do not catalog-only-password | See [architecture](2026-08-23-bmt-2026-architecture.md#staff-google-vs-a-shared-password) |
+| Volunteers | **`volunteers.berkeley.mt`**, **Google**. Staff admin on ops (`can_open_ops`). Form builder; ~300 people; DNI | PII visible to managers |
+| Staff auth | **Google** for all Person accounts. Ops requires `can_open_ops`. Room password for Swire. Live: none | [architecture](2026-08-23-bmt-2026-architecture.md#one-person-one-id) |
 | Realtime | Server-authoritative clocks; poll or push for clarifications | 50+ rooms is still a small JSON |
 | C4 | Update as-built diagrams only when code lands | This file is target, not current commit |
 
@@ -194,7 +194,7 @@ Never join on free-text `"Dwinelle 155"` in production paths. Import/search may 
 | Volunteer admin | Read | — | — | Full | Yes |
 | Org admin | Full | Policy | Publish rights | Full | Yes |
 
-Exact roles: [BMT 2026 architecture](2026-08-23-bmt-2026-architecture.md). Human staff = one login (Google *or* shared staff password). Proctor suite = room login. Do not invent a third permission system per module.
+Exact roles: [BMT 2026 architecture](2026-08-23-bmt-2026-architecture.md). Humans = Google → `people.id`. Ops = staff flag. Proctor suite = room login.
 
 ### What to build first (avoid the redesign without boiling the ocean)
 
