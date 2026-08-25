@@ -30,7 +30,7 @@ At implementation we may rewrite this repo or start a new tree. Specs describe t
 - Draft grid → explicit import as frozen day plan; re-import keeps running clocks
 - No live co-edit on the grid
 - Room login = `{building code}{room name}` + one event password (not Google)
-- **Google** for every Person; staff is `can_open_ops` on that Person
+- **Google** for every Person; staff is `can_open_ops` on that Person. Dual login (Google + Microsoft) is later — see [Adding Microsoft later](2026-08-23-bmt-2026-architecture.md#adding-microsoft-later-how-hard); v1 stays Google-only
 - Roster is a CSV snapshot from the registration product; students are not volunteer people
 - Custom room fields; built-in `capacity` only (≥ 0)
 - Building codes DWIN, WHLR, VLSB, MLK; code set at create
