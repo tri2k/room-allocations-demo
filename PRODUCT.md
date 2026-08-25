@@ -34,7 +34,7 @@ The v0–2b allocator in this repo is **not** the target model. Historical notes
 
 ## Architecture
 
-**Target:** **one API**, one Postgres. **`catalog.berkeley.mt`** = rooms kernel (rare). **`ops.berkeley.mt`** = officer HQ (+ planner at `/planner`). **`volunteers.berkeley.mt`** = volunteer people (returning accounts). **`swire.berkeley.mt`** = room timers (`/admin` redirects to ops). **`live.berkeley.mt`** = guests. Spec: [integrated system](specs/2026-08-24-integrated-system.md).
+**Target:** **one API**, one Postgres. **`roomsdb.berkeley.mt`** = rooms kernel (rare). **`ops.berkeley.mt`** = officer HQ (+ planner at `/planner`). **`volunteers.berkeley.mt`** = volunteer people (returning accounts). **`swire.berkeley.mt`** = room timers (`/admin` redirects to ops). **`live.berkeley.mt`** = guests. Spec: [integrated system](specs/2026-08-24-integrated-system.md).
 
 Language, UI library, and folder layout are chosen at implementation. `docs/c4/` describes whatever code is in the current commit, not this target.
 

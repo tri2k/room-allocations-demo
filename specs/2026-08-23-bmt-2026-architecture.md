@@ -126,11 +126,11 @@ Three different things (easy to smash together):
 | ----- | ---------- | ------- |
 | **Person id** | The human in Postgres (`people.id`) | One row: Jordan, email, shirt, DNI, assignments across semesters |
 | **Login** | How the browser proves it is that Person | **Google** (locked). Same Google on volunteers and ops |
-| **Door** | A hostname that login may or may not open | `volunteers.berkeley.mt` (everyone with a Person). `ops.berkeley.mt` and `catalog.berkeley.mt` (only if that Person is staff). `swire.berkeley.mt` (**not** a Person — room name) |
+| **Door** | A hostname that login may or may not open | `volunteers.berkeley.mt` (everyone with a Person). `ops.berkeley.mt` and `roomsdb.berkeley.mt` (only if that Person is staff). `swire.berkeley.mt` (**not** a Person — room name) |
 
 **Locked:** one `people.id` per human. Officer fills the volunteer form → **same** row they use on ops. Match on the **Google email** (or they are already signed in, so the form *is* them).
 
-**Locked: all Person accounts are Google.** Continue with Google on `volunteers.berkeley.mt`, `ops.berkeley.mt`, and `catalog.berkeley.mt`. A Person may open ops or catalog only if flagged staff (`can_open_ops` or equivalent). Ordinary volunteers bounce off those hosts to `volunteers.berkeley.mt`. Cookie on the parent domain so one Google sign-in can cover staff and volunteer hosts.
+**Locked: all Person accounts are Google.** Continue with Google on `volunteers.berkeley.mt`, `ops.berkeley.mt`, and `roomsdb.berkeley.mt`. A Person may open ops or roomsdb only if flagged staff (`can_open_ops` or equivalent). Ordinary volunteers bounce off those hosts to `volunteers.berkeley.mt`. Cookie on the parent domain so one Google sign-in can cover staff and volunteer hosts.
 
 **Still not Google, not a Person:** Swire (`DWIN155` + event password). **`live.berkeley.mt`:** no login.
 
@@ -177,7 +177,7 @@ The six “platforms” are **screens**, not six logins and not six account data
 
 | Proof | Cookie | Who |
 | ----- | ------ | --- |
-| **Google** → `people.id` | **Person** cookie (HTTP-only). Shared by `ops.berkeley.mt`, `catalog.berkeley.mt`, and `volunteers.berkeley.mt` (parent domain, or host cookies set together at OAuth). | Every human in this product |
+| **Google** → `people.id` | **Person** cookie (HTTP-only). Shared by `ops.berkeley.mt`, `roomsdb.berkeley.mt`, and `volunteers.berkeley.mt` (parent domain, or host cookies set together at OAuth). | Every human in this product |
 | **`DWIN155` + event password** | **Room** cookie, scoped to **`swire.berkeley.mt` only** | The laptop in that room, not a human |
 | **Nothing** | None | Guests on `live.berkeley.mt` |
 
@@ -189,7 +189,7 @@ A Person cookie **must not** open a room. A room cookie **must not** open ops, c
 
 | # | Screen | Host (bookmark) | Sign-in | Who may use it | What this login may do | Must not |
 | - | ------ | --------------- | ------- | -------------- | ---------------------- | -------- |
-| 1 | **Catalog** | **`catalog.berkeley.mt`** | Google + `can_open_ops` | Officers | Create/edit buildings, floors, rooms, custom fields | Day-of “closed” as a catalog edit. Room laptops. Guests. Ordinary volunteers. Planner/HQ **tabs** |
+| 1 | **Catalog** | **`roomsdb.berkeley.mt`** | Google + `can_open_ops` | Officers | Create/edit buildings, floors, rooms, custom fields | Day-of “closed” as a catalog edit. Room laptops. Guests. Ordinary volunteers. Planner/HQ **tabs** |
 | 2 | **Allocator** | **`ops.berkeley.mt/planner`** | Same Google | Officers | Build one draft at a time; bulk-assign floors | Live co-edit. Import-as-day-plan is an HQ action (same people, **different link**). Catalog tabs. Guests / rooms / volunteers |
 | 3 | **Day-of HQ** | **`ops.berkeley.mt`** (root) | Same Google | Officers in the war room | Import/re-import day plan; list + map; pause/add time; clarifications; roster import + move; volunteer **admin** (assign, DNI, name-search check-in) | `UPDATE rooms`. Start every room’s clock in bulk. Volunteer self-service. Catalog in war-room chrome |
 | 4 | **Proctor / projector** | **`swire.berkeley.mt`** | Room username + **one** event password | Laptop (and operator phone on the same room session) | **Start** that room’s timer. See clarifications. Operator view: roster **names**. Projector: timer + clarifications only | Google. Pause / add time (HQ). Other rooms. Catalog. HQ chrome. `/admin` is typed → **redirect to ops**, not a button |
@@ -198,9 +198,9 @@ A Person cookie **must not** open a room. A room cookie **must not** open ops, c
 
 **Volunteer admin is not a seventh login.** It is screen 3 (and optionally typed `volunteers.berkeley.mt/admin`) for people who already have `can_open_ops`. Same tables as screen 6.
 
-**OAuth:** one **published** Google client (Testing-mode user cap is too small for ~300 volunteers). Authorized origins include ops, catalog, and volunteers — not Swire or live. First visit: Continue with Google, then the form. Return visit: same Google → same `people.id`.
+**OAuth:** one **published** Google client (Testing-mode user cap is too small for ~300 volunteers). Authorized origins include ops, roomsdb, and volunteers — not Swire or live. First visit: Continue with Google, then the form. Return visit: same Google → same `people.id`.
 
-**Bounce:** a Person **without** `can_open_ops` who opens `ops.berkeley.mt` or `catalog.berkeley.mt` does not see those tools. Send them to `volunteers.berkeley.mt`. Stolen staff Google still opens HQ and catalog — accepted.
+**Bounce:** a Person **without** `can_open_ops` who opens `ops.berkeley.mt` or `roomsdb.berkeley.mt` does not see those tools. Send them to `volunteers.berkeley.mt`. Stolen staff Google still opens HQ and catalog — accepted.
 
 **Saturday mix-up (locked):** the human assigned to proctor 155 may be signed into Google on their phone (screen 6). The HDMI laptop still uses the **room** login (screen 4). Those are not interchangeable.
 
@@ -208,15 +208,17 @@ A Person cookie **must not** open a room. A room cookie **must not** open ops, c
 
 ### Staff links by cadence
 
-Rare vs regular vs Saturday are **different bookmarks**, not tabs on one officer page. Same Google, same API, still one deploy. Catalog is sacred and infrequent, so it is farther from Saturday than the planner is.
+**Name:** officers type **`roomsdb.berkeley.mt`**. In specs the module is still the **catalog** (buildings / floors / rooms). Swire is the room *laptop*; roomsdb is the room *list*. We do not use `catalog.berkeley.mt`.
+
+Rare vs regular vs Saturday are **different bookmarks**, not tabs on one officer page. Same Google, same API, still one deploy. The rooms list is sacred and infrequent, so it is farther from Saturday than the planner is.
 
 | Cadence | Bookmark | Chrome on that link |
 | ------- | -------- | ------------------- |
-| **Rare** (start of semester, or when a room actually changes) | **`catalog.berkeley.mt`** | Catalog only. No HQ tab bar. No planner grid. A text link to the planner is fine. |
+| **Rare** (start of semester, or when a room actually changes) | **`roomsdb.berkeley.mt`** | Catalog only. No HQ tab bar. No planner grid. A text link to the planner is fine. |
 | **Regular** (weeks of building the grid) | **`ops.berkeley.mt/planner`** | Allocator only. A link to HQ (import lives there) is fine. **No Catalog tab.** |
 | **Saturday** | **`ops.berkeley.mt`** (root) | HQ war room. **No Catalog** in that chrome. |
 
-Why catalog gets its own host: stuffing it on ops as “another path” is how it becomes a tab you open by accident while planning or on Saturday. Why the planner stays on ops: the next step is **import** on HQ; it is still a **different URL** than Saturday root. We are not inventing `hq.berkeley.mt`. Catalog is still the same tables and the same API.
+Why roomsdb gets its own host: stuffing the catalog on ops as “another path” is how it becomes a tab you open by accident while planning or on Saturday. Why the planner stays on ops: the next step is **import** on HQ; it is still a **different URL** than Saturday root. We are not inventing `hq.berkeley.mt`. Same tables, same API.
 
 Do not put the catalog behind the planner’s primary chrome, or the planner behind HQ’s Saturday tabs.
 
@@ -313,7 +315,7 @@ Clarification composer (admin): pick target set (activity, building, floor, mult
 
 Because last semester’s tools died:
 
-- One API, one database, hosts `catalog.berkeley.mt` + `ops.berkeley.mt` + `volunteers.berkeley.mt` + `swire.berkeley.mt` + `live.berkeley.mt`.
+- One API, one database, hosts `roomsdb.berkeley.mt` + `ops.berkeley.mt` + `volunteers.berkeley.mt` + `swire.berkeley.mt` + `live.berkeley.mt`.
 - Printed plan / shared room-password / assignment packet after import.
 - Offline timer with explicit desync, not silent drift.
 - Do not make the projector depend on a second “vibecoded” host.

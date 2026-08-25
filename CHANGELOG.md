@@ -5,7 +5,7 @@
 ### Ops platform architecture (2026-08-22)
 
 - **Greenfield:** target parent [specs/2026-08-24-integrated-system.md](specs/2026-08-24-integrated-system.md). Allocator prototype is not a design constraint.
-- **Hosts:** **`catalog.berkeley.mt`** (rooms kernel, rare). **`ops.berkeley.mt`** (officer HQ; planner at `/planner`). **`volunteers.berkeley.mt`** (volunteer people, returning accounts — not ops). **`swire.berkeley.mt`** (rooms; `/admin` typed URL redirects to ops). **`live.berkeley.mt`** (guests).
+- **Hosts:** **`roomsdb.berkeley.mt`** (rooms kernel, rare). **`ops.berkeley.mt`** (officer HQ; planner at `/planner`). **`volunteers.berkeley.mt`** (volunteer people, returning accounts — not ops). **`swire.berkeley.mt`** (rooms; `/admin` typed URL redirects to ops). **`live.berkeley.mt`** (guests).
 - **Chrome** (in these docs): buttons/tabs/menus around the page content — not the Google Chrome browser. Projector pages must not show officer menus. Catalog, planner, and HQ do not share primary chrome.
 - Rooms catalog is the kernel; allocator, day-of ops, proctors, public maps, and volunteers are modules that join `rooms.id`
 - New seam: publish one sheet as the day-of plan; live state does not rewrite the grid
@@ -17,7 +17,7 @@
 - Documented building-code aliases: they keep CSV/login matching after a rename; uniqueness and dual labels are the cost. Skip for v1.
 - **Google** is the only Person login (`people.id` per Google). Ops = `can_open_ops`. Swire stays room password. Live stays none. OAuth client must be published (~300 volunteers). Other issuers (Microsoft, email/password as login) are out of this design pass.
 - **Auth by screen:** six screens, three proofs (Google Person, room password, none). Two cookies (Person + room). Volunteer admin and live `/admin` are staff on ops, not extra logins. Ordinary volunteers bounce off ops and catalog to the volunteer host.
-- **Staff cadence:** catalog is rare (`catalog.berkeley.mt`); planner is regular (`ops.berkeley.mt/planner`); HQ is Saturday (`ops.berkeley.mt` root). They do not share primary chrome. Same Google, same API.
+- **Staff cadence:** rooms kernel is rare (`roomsdb.berkeley.mt`); planner is regular (`ops.berkeley.mt/planner`); HQ is Saturday (`ops.berkeley.mt` root). They do not share primary chrome. Same Google, same API. Specs still say **catalog** for the module; the bookmark is **roomsdb**, not `catalog.berkeley.mt`.
 - Persistence: **one** Postgres, **one** database. A **seam** is any copy (catalog CSV into other tools included). Keep seams when a snapshot is enough (roster, day plan, print). Collapse catalog→ops/volunteers/maps by sharing `rooms`.
 - Spec: [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md)
 - Docs only; no application code in this change
