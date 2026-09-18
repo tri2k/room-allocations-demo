@@ -130,7 +130,7 @@ Three different things (easy to smash together):
 
 **Locked:** one `people.id` per human. Officer fills the volunteer form → **same** row they use on ops. Match on the **Google email** (or they are already signed in, so the form *is* them).
 
-**Locked: all Person accounts are Google.** Continue with Google on `volunteers.berkeley.mt`, `ops.berkeley.mt`, and `roomsdb.berkeley.mt`. A Person may open ops or roomsdb only if flagged staff (`can_open_ops` or equivalent). Ordinary volunteers bounce off those hosts to `volunteers.berkeley.mt`. Cookie on the parent domain so one Google sign-in can cover staff and volunteer hosts.
+**Locked: all Person accounts are Google.** Continue with Google on `volunteers.berkeley.mt`, `ops.berkeley.mt`, and `roomsdb.berkeley.mt`. A Person may open ops or roomsdb only if flagged staff (`can_open_ops` or equivalent). Ordinary volunteers bounce off those hosts to `volunteers.berkeley.mt`. One Google sign-in covers those three hosts by setting **host-scoped** Person cookies together at OAuth — not a cookie on all of `berkeley.mt`.
 
 **Still not Google, not a Person:** Swire (`DWIN155` + event password). **`live.berkeley.mt`:** no login.
 
@@ -177,7 +177,7 @@ The six “platforms” are **screens**, not six logins and not six account data
 
 | Proof | Cookie | Who |
 | ----- | ------ | --- |
-| **Google** → `people.id` | **Person** cookie (HTTP-only). Shared by `ops.berkeley.mt`, `roomsdb.berkeley.mt`, and `volunteers.berkeley.mt` (parent domain, or host cookies set together at OAuth). | Every human in this product |
+| **Google** → `people.id` | **Person** cookie (HTTP-only, `Secure`, `SameSite`). Set on **`ops`**, **`roomsdb`**, and **`volunteers` only** (host-scoped, issued together at OAuth). **Not** sent to Swire or live. | Every human in this product |
 | **`DWIN155` + event password** | **Room** cookie, scoped to **`swire.berkeley.mt` only** | The laptop in that room, not a human |
 | **Nothing** | None | Guests on `live.berkeley.mt` |
 
@@ -204,7 +204,24 @@ A Person cookie **must not** open a room. A room cookie **must not** open ops, r
 
 **Saturday mix-up (locked):** the human assigned to proctor 155 may be signed into Google on their phone (screen 6). The HDMI laptop still uses the **room** login (screen 4). Those are not interchangeable.
 
-**Cookie hygiene:** if an officer’s Google session is on a projector laptop (parent-domain Person cookie), Swire still requires the room password and still shows no HQ chrome. Live still shows no officer chrome.
+**Cookie hygiene:** Person cookies must not use `Domain=.berkeley.mt`. That would send a staff/volunteer session to `live` and `swire` as well. Swire still requires the room password and shows no HQ chrome. Live still shows no officer chrome and must not receive a Person cookie at all.
+
+### Hosts are public; isolation is the API
+
+Assume every hostname is known. Certificate logs, DNS, and guessing `ops.` / `swire.` / `roomsdb.` will find them. **`live.berkeley.mt` is supposed to be public.** Hiding the others is not a control.
+
+Google OAuth for Person login is the strong door. The weak door is **Swire**: room usernames are public (`DWIN155` is on the door), and v1 uses **one shared event password**. Finding `swire.berkeley.mt` does not by itself open HQ — a room cookie must not call staff routes — but it can open **that Saturday’s projector/operator view** (timer start, clarifications, roster **names** on the operator view). Treat the event password like the print packet: rotate it, do not reuse a club default, do not put it on live.
+
+One API and one Postgres mean **one outage takes every screen down**. That is the reliability trade we already took (paper backup). It does **not** have to mean one stolen Swire password is HQ, or one volunteer Google is roomsdb. That coupling is a bug in **authorization**, not a property of subdomains.
+
+| If this is wrong | Blast |
+| ---------------- | ----- |
+| Person cookie on `.berkeley.mt` | XSS or a bad script on **live** can ride a staff session. Do not do this. |
+| Room cookie accepted as staff | Shared room password becomes HQ. Do not do this. |
+| Live public JSON includes roster names / HQ fields | Guests see Saturday internals. Public routes stay public-shaped even if someone is signed in elsewhere. |
+| Any route skips the cookie check (“same API, trust the SPA”) | One missed check is the whole database. Last semester’s six sites failed this in six places; we have **one** place that must not. |
+
+**Locked:** hostnames are not secrets. Person cookies are host-scoped to ops / roomsdb / volunteers. Room cookies stay on Swire. Live sends no session. The API enforces write-boundaries (`rooms` never from day-of, room session may only start **that** room’s timer). Stolen staff Google still opens HQ — accepted. Stolen room password opens that room’s Swire session, not ops.
 
 ### Staff links by cadence
 

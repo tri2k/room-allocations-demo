@@ -110,7 +110,7 @@ We are not inventing `hq.berkeley.mt`. HQ lives on **ops**. Volunteer **people**
 
 Cadence (rare roomsdb vs regular planner vs Saturday HQ): [architecture](2026-08-23-bmt-2026-architecture.md#staff-links-by-cadence).
 
-Same API, same Postgres. **Two cookies**, not four databases: **Person** (Google; staff if `can_open_ops`) and **room** (Swire only). Live guests: none. Auth per screen: [architecture](2026-08-23-bmt-2026-architecture.md#auth-by-screen-the-six).
+Same API, same Postgres. **Two cookies**, not four databases: **Person** (Google; host-scoped to ops / roomsdb / volunteers; staff if `can_open_ops`) and **room** (Swire only). Live guests: none. Do not set Person cookies on `.berkeley.mt` (that would include live and Swire). Hosts are public; isolation is API authorization. Details: [hosts are public](2026-08-23-bmt-2026-architecture.md#hosts-are-public-isolation-is-the-api).
 
 Last semester’s “HQ on the same link as volunteers” was officers wanting one bookmark. That still works if **admin** stays on ops and **volunteer accounts** move. ~300 people should not sign into `ops.berkeley.mt`.
 

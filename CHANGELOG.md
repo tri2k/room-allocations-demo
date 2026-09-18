@@ -17,6 +17,7 @@
 - Documented building-code aliases: they keep CSV/login matching after a rename; uniqueness and dual labels are the cost. Skip for v1.
 - **Google** is the only Person login (`people.id` per Google). Ops = `can_open_ops`. Swire stays room password. Live stays none. OAuth client must be published (~300 volunteers). Other issuers (Microsoft, email/password as login) are out of this design pass.
 - **Auth by screen:** six screens, three proofs (Google Person, room password, none). Two cookies (Person + room). Volunteer admin and live `/admin` are staff on ops, not extra logins. Ordinary volunteers bounce off ops and roomsdb to the volunteer host.
+- **Doors are public:** hostnames are not secrets. Person cookies are host-scoped (ops / roomsdb / volunteers), not `Domain=.berkeley.mt`. A room cookie must not open HQ. One API outage takes every screen down (paper backup); one stolen Swire password must not.
 - **Staff cadence:** roomsdb is rare (`roomsdb.berkeley.mt`); planner is regular (`ops.berkeley.mt/planner`); HQ is Saturday (`ops.berkeley.mt` root). They do not share primary chrome. Same Google, same API.
 - **Name:** the rooms kernel is **roomsdb** in specs and at **`roomsdb.berkeley.mt`**. Target docs no longer say catalog for that module. Prototype UI `#/catalog` is unchanged.
 - Persistence: **one** Postgres, **one** database. A **seam** is any copy (roomsdb CSV into other tools included). Keep seams when a snapshot is enough (roster, day plan, print). Collapse roomsdb→ops/volunteers/maps by sharing `rooms`.
