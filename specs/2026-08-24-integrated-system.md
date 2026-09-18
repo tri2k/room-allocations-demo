@@ -71,6 +71,25 @@ Those can be **one JavaScript app** with several routes, or a staff bundle plus 
 
 **“One web app”** was shorthand for that. The locked part next to Postgres is **one API**. The locked part for humans is **six links** (below).
 
+### API paths (one backend, not one blob per host)
+
+The browser may call `live.berkeley.mt/api/...` (proxied) or `api.berkeley.mt/...`. Same process. Paths are **`/api/v1/...`**.
+
+Do **not** make `/api/v1/roomsdb` a single dump, or give every host its own copy of rooms. Auth is the cookie + the route, not the prefix.
+
+**Do namespace the guest live surface.** Those routes are unauthenticated and must stay **public-shaped** (no roster names, no HQ). Today’s live app already splits “the snapshot guests poll” from “email subscribe.” Under one API that becomes:
+
+| Today (live app) | Target |
+| ---------------- | ------ |
+| `GET /api/live` | `GET /api/v1/live` (schedule, announcements, delays, venues, info) |
+| `POST /api/email/subscribe` | `POST /api/v1/live/email/subscribe` |
+| `GET /api/email/unsubscribe` | `GET /api/v1/live/email/unsubscribe` |
+| Admin CRUD (`/api/schedule`, …) | Staff routes, `can_open_ops` (compose on ops). Not on the guest prefix. |
+
+Staff roomsdb is **resources**: `GET/PATCH /api/v1/buildings`, `/api/v1/rooms`, field defs — not `/api/v1/roomsdb`. Swire timers live under something like `/api/v1/rooms/{id}/timer` and require a **room** cookie. Volunteer self-service is `/api/v1/me/...` with a Person cookie and no `can_open_ops`.
+
+Email subscribers for **public announcements** stay under `/live/`. That list is not volunteer people and not staff mail.
+
 ## Six links (how people enter)
 
 Six screens should feel like six places you can bookmark. That is right. Last semester failed because those places were **six products**, not because they had six URLs.
