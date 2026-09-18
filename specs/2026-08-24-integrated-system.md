@@ -110,6 +110,29 @@ Planner sits on the **ops** host, so its API sits under **`/ops/`** (e.g. `/ops/
 
 Auth is still cookie + route. A `/live/` path that returns roster names is a bug even with a perfect folder name.
 
+### Cross-module callers (contracts, not memos)
+
+One API means a live developer **can** call `/volunteers/` or `/roomsdb/`. It also means a volunteer change can break live **if** live depended on a private shape. That communication cost is real. It is still cheaper than last semester’s copy of DWIN155 in five apps.
+
+**Locked:** each folder has a **public surface** (other modules may call) and **internals** (same folder only). Internals may change without a club-wide ping. Public surface is additive:
+
+- New JSON fields are fine; callers ignore unknown keys.
+- Rename, remove, or change meaning of a public field is a **break**. Keep the old field or add `/api/v2/...` and say so in CHANGELOG.
+- Who is allowed to call what is listed on the module spec, not “any path in the folder.”
+
+**v1 public surfaces (until a module spec tightens them):**
+
+| Caller | May call | Must not call |
+| ------ | -------- | ------------- |
+| Live (no cookie) | `/live/*` as today; **public GET** of roomsdb rooms/maps (labels, capacity, grid bit — no staff-only custom fields unless we mark them public) | `/ops/*`; volunteer people list / DNI; Swire operator roster |
+| Volunteers (Person) | `/volunteers/me/...`; public rooms GET if the form picks a room | `/ops/*` except bounce; other people’s rows |
+| Ops / roomsdb staff | `/roomsdb/*` writes; `/ops/*`; staff volunteer routes | Swire as a Person cookie |
+| Swire (room cookie) | `/swire/*` for **that** room | `/roomsdb` writes; `/ops`; `/volunteers` |
+
+Live depending on “whatever `/volunteers/people` returns this week” is how the memo problem starts. If live needs apply, that is an explicit public POST (or a link to `volunteers.berkeley.mt`), not a private volunteer admin shape.
+
+Module specs name the public fields. That is the contract. Slack is the backup, not the design.
+
 ## Six links (how people enter)
 
 Six screens should feel like six places you can bookmark. That is right. Last semester failed because those places were **six products**, not because they had six URLs.
