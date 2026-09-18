@@ -1,0 +1,394 @@
+# Event operations platform
+
+**Status**: Draft (round 2 locked). **Target parent:** [greenfield integrated system](2026-08-24-integrated-system.md). Do not treat the allocator prototype as the product.
+
+Product context: [PRODUCT.md](../PRODUCT.md). Indoor maps: [2026-08-21-indoor-maps.md](2026-08-21-indoor-maps.md). Do **protect the kernel** so modules do not grow a second rooms list.
+
+## Problem
+
+BMT-style contests are run from a pile of spreadsheets and forms that all mention the same halls:
+
+| Today | Pain |
+| ----- | ---- |
+| Classroom/capacity sheet | Source of truth until someone forgets to copy a column |
+| Time × room grid | Must share roomsdb, not a private room list |
+| Volunteer Google Form → attached sheet → LLM cleanup → another app | Room names typed again; dropouts edited in a sheet; no semester-to-semester person |
+| Day-of status | Slack, memory, a printed grid |
+| Proctor timers / clarifications | Separate from the plan that said “Indiv in DWIN155” |
+| Guest maps (Figma, old Dwinelle Navigator) | Geometry and room codes not joined to the capacity sheet |
+
+The costly redesign is not “we picked FastAPI.” It is **DWIN155 existing in six places**. Going straight for an integrated product only helps if those six UIs share one roomsdb and one published plan. It fails if we boil the ocean and ship none of them.
+
+## Recommendation
+
+**One org, one Postgres, one API.** Roomsdb on **`roomsdb.berkeley.mt`**. HQ on **`ops.berkeley.mt`** (planner at `/planner`). Volunteer **people** on **`volunteers.berkeley.mt`**. Rooms on **`swire.berkeley.mt`**. Guests on **`live.berkeley.mt`**. Persistence: [one Postgres](2026-08-23-bmt-2026-architecture.md#persistence-one-postgres-not-six-databases). Links: [integrated system](2026-08-24-integrated-system.md#six-links-how-people-enter).
+
+Rooms are the **kernel**. Everything else is either a rare roomsdb edit, a **draft plan**, a **published plan**, or a **live overlay** on that plan.
+
+```text
+Identity (Google → people.id; can_open_ops for ops)
+        │
+        ▼
+Roomsdb  Building → Floor → Room          ← kernel (capacity, custom fields, …)
+        │                 │
+        │                 └── MapSpace (Figma geom; optional room_id)
+        ▼
+Event (BMT 2026, then BmMT and later semesterly contests)
+        │
+        ├── People (volunteers across semesters; org-lifetime)
+        │       └── Applications (this event)
+        │       └── Assignments (this event: role + optional room/building)
+        │
+        ├── Draft plans (allocator grids; staff-visible)
+        │       └── Allocations (activity × room × time)
+        │
+        ├── DayPlan (frozen import of one draft)
+        │
+        ├── LiveRoomState (timer, headcount, status — day-of only)
+        │       └── Clarifications (HQ → proctors)
+        │
+        └── PublicContent (announcements guests may see)
+```
+
+Figma does **not** own rooms. The volunteer form does **not** own rooms. The proctor timer does **not** own rooms. They all point at `rooms.id` (and display `DWIN155`).
+
+## Design
+
+### Decisions (this spec)
+
+| Topic | Decision | Why |
+| ----- | -------- | --- |
+| Shape | Modular monolith | Student-org turnover; one deploy; custom room fields instead of a migration per column |
+| Kernel | Roomsdb: building / floor / room | One org; no tenant marketplace |
+| Live vs plan | Live state is a **separate** row keyed by event + room (and time window) | Reality diverges without rewriting the frozen snapshot |
+| People vs users | `Person` (volunteer record) ≠ staff login | Volunteers exist without a staff account; students from CSV are not volunteers |
+| Assignments | `(person, event, role, room?, building?)` | Proctors and other roles share one table |
+| Maps | [Indoor maps spec](2026-08-21-indoor-maps.md): Figma geom; join by code → `room_id` | Unjoined spaces still draw; they never become grid columns |
+| Public vs staff | Same API; public routes **omit** fields | Guests never get rosters, phones, HQ notes |
+| First production event | **BMT 2026**, Saturday **2026-11-14** | Defines v1. Same org then runs semesterly events (BmMT, next BMT, …) |
+| Tenancy | **One org (BMT)** in product; `org_id` still in the schema | Do not build a multi-org marketplace this year |
+| Scale (design load) | ~**1800** contestants, **50+** testing rooms (growth 500 F22 → 1800 Sp26) | Timers, clarifications, maps, volunteer assign must work at this size |
+| Student registration | **Out of scope.** Roster may be a **CSV import** | Separate platform exists; do not join it for v1 |
+| Volunteer product | **Replace** the current volunteer app | Shared roomsdb + assignments beats another room CSV |
+| Indoor turn-by-turn | **Not year one** | Public maps: floor finder + search + pinch-zoom |
+| Custom room fields | **One built-in `capacity`.** All other room facts are **admin-defined fields** | Spreadsheet columns keep growing; do not ship a migration per field |
+| Building codes | **Set at building create, then read-only** in the roomsdb UI | Join key for Figma/CSV/room login; pretty name stays editable |
+| Roomsdb vs day-of | **Day-of never writes the roomsdb** | Closed rooms and campus pulls live on the event overlay |
+| Nov 14 scope | **All six modules** plus **printed backup** | Last semester 4/5 vibecoded tools broke |
+| Staff roles | **Admin** (everything). **Organizer** (view only) only if staff login is named (Google) | Building leads use admin. Live announcements use the same staff login |
+| Proctor login | **Room as username** + **one shared event password** | Not staff login; not a unique PIN per room in v1 |
+| Timer start | **Proctor may only start.** HQ does pause / add time / rest | No bulk-start |
+| Offline timer | Local countdown; **desync banner on proctor and HQ** | Server is source of truth when connected |
+| Clarifications | One-way; **no ack**; text + images; **projected** | Subset targeting; other activities do not see it |
+| Plan load | Ops **admin imports** an allocator sheet (frozen). Re-import **keeps clocks** | Grid rebuilt in-app; bulk floor-assign yes |
+| Contest rounds | **Power**, **Individual**, **Guts**. Individual: 2 of 4 focus **or** 1 general | One room × one slot = one activity |
+| Roster | CSV morning-of after check-in; **names**; **move in-app**; two tests = two rows | Registration platform stays separate |
+| Public site | `live.berkeley.mt`, English, **no public clock** | Per-room guest detail undecided. Outdoor maps stretch |
+| Volunteers | **`volunteers.berkeley.mt`**, **Google**. Staff admin on ops (`can_open_ops`). Form builder; ~300 people; DNI | PII visible to managers |
+| Staff auth | **Google** for all Person accounts. Ops and roomsdb require `can_open_ops`. Room password for Swire. Live: none | [architecture](2026-08-23-bmt-2026-architecture.md#one-person-one-id) |
+| Realtime | Server-authoritative clocks; poll or push for clarifications | 50+ rooms is still a small JSON |
+| C4 | Update as-built diagrams only when code lands | This file is target, not current commit |
+
+### Component map
+
+#### 1. Roomsdb (kernel)
+
+Replace the capacity spreadsheet. Edits to existing classrooms are rare; **adding a building** and **adding a column** are the two growth moves.
+
+| Move | How |
+| ---- | --- |
+| New building + rooms | Roomsdb UI already: insert `buildings`, `floors`, `rooms` |
+| New field on every room | Admin-defined field (not a code migration), except built-in `capacity` |
+| Wrong capacity last year vs this year | [Roomsdb history / pins](2026-08-13-catalog-history-and-plan-pins.md) when scheduled — do not snapshot-copy rooms into volunteer or map tables |
+
+**Built-in:** identity (building, floor, name, active) + `capacity`. Everything else is a user-created field. Manual roomsdb entry is enough (no capacity-sheet importer required for Nov 14).
+
+**Do not** store polygons, timers, proctor names, or “closed today” here. Day-of never writes this database.
+
+Identity: UUID plus stable display `{building.code}{room.name}`. Floor `label` must be the real code (`C`/`D`/`E`, not v0 `1`/`2`) before maps or volunteers can join without a translation table.
+
+#### 2. Event room allocator
+
+Time × room grid. Allocations reference `room_id`. Drafts belong to the Event and to staff, not to a personal Google account. One writer at a time.
+
+**Seam:** ops **imports** a chosen draft as the frozen **day plan**. The draft can keep changing; ops is unaffected until they import again. Re-import **keeps clocks** already running. Until a plan is imported, HQ and the proctor suite have no schedule.
+
+#### 3. Day-of operations dashboard
+
+Input: published plan. Output: list + later map of **plan vs live**.
+
+Per room, HQ might see: assigned activity, assigned proctors (from Assignments), headcount vs capacity, timer, flags (late, extra time, closed).
+
+Views are **projections** of the same rows:
+
+- List and map, **toggle** (columns / colors later)
+- Same `LiveRoomState` on both views
+
+Ops **writes live fields only**. It does not edit the roomsdb. Moving a round between rooms on the day is a day-plan override, not a roomsdb edit.
+
+#### 4. Proctor suite
+
+Timer + clarifications for 50+ rooms. Attached to **this event’s assignment + published allocation**, not to roomsdb forever.
+
+- Timer: each **testing** room has its own clock. **Proctor session may only start.** Admin HQ may pause / add time / rest. No bulk-start. Offline: client keeps ticking and both sides show **out of sync**.
+- Auto **5 minutes remaining**. Non-testing rooms: no timer.
+- Clarifications: one-way HQ → subset of rooms; no ack; text + images; **projected** in the room. Other activities do not see that a message went out.
+
+Login: **username = room**, not Google. Volunteer-to-room assignment is a separate table.
+
+Pulling the roomsdb: **yes, by id**, so we never type “Dwinelle 155” into a fourth sheet.
+
+#### 5. Public live site (guests)
+
+Host: **`live.berkeley.mt`**. English. **No public countdown.** Announcements from that site’s admin panel. Per-room guest detail undecided. Outdoor maps are a stretch (no Figma yet).
+
+Primary: contest status. Secondary: indoor maps.
+
+Same map viewer as ops, **different live payload**:
+
+| Show publicly | Hide |
+| ------------- | ---- |
+| Building/floor maps, room codes, bathrooms, exits | Proctor names, radios |
+| Coarse activity (“Team round”) and maybe a shared countdown | Student names, seat maps, scores |
+| Announcements HQ marked public | Internal HQ notes, volunteer emails |
+
+Figma toggle maps (Dwinelle C/D/E, Wheeler B/1/2, VLSB 2) are the right **floor plates**. They relate to roomsdb as: **one `MapSpace` per named plate → optional `room_id`**. Public “155 is Team” is `published allocation` + `live state` on that room, painted onto the polygon.
+
+**Dwinelle Navigator** ([dkess.me/dwinelle](https://dkess.me/dwinelle), graph under ODbL) is a different artifact: a **3D hallway graph** with turn-by-turn. Recreating that for every hall is a later project (import a graph, or draw connectors). Do not pretend Figma room rectangles are a routing mesh. v1 public maps: pick a building, pick a floor, search a room, pinch-zoom, “you are at entrance X” as a POI — not first-person flythrough.
+
+#### 6. Volunteer check-in (across semesters)
+
+Replace: Google Form → attached sheet → hand edits → LLM-shaped import into a separate volunteer app that has its own room list.
+
+| Object | Lifetime | Owns |
+| ------ | -------- | ---- |
+| `Person` | Org, many semesters | Name, email, phone, notes, “do not contact” |
+| `Application` | One Event | Availability, shirt, dietary, this-year answers |
+| `Assignment` | One Event | Role + room and/or building |
+
+Admin UI: a signup form in this product (replacing Google Form), edit dropouts **in the app**, assign people to rooms **picked from roomsdb**. The volunteer module’s building/room list **is** roomsdb.
+
+Contest **students** are not volunteers. A roster CSV may attach names to rooms for the Event; they are not `Person` rows unless we later decide they should be (open). The existing registration platform stays separate.
+
+### How the pieces share a room
+
+```text
+rooms.id  =  9c2e…     code display DWIN155
+    ▲
+    │  allocations.room_id          (draft + published plan)
+    │  assignments.room_id          (proctor, building lead)
+    │  live_room_states.room_id     (timer, headcount)
+    │  map_spaces.room_id           (nullable; bathrooms have none)
+```
+
+Never join on free-text `"Dwinelle 155"` in production paths. Import/search may fuzzy-match once, then store the UUID.
+
+### AuthZ sketch
+
+| Actor | Roomsdb | Sheets | Published + live | Volunteer PII | Public site |
+| ----- | ------- | ------ | ---------------- | ------------- | ----------- |
+| Guest | — | — | Coarse public live + maps | — | Yes |
+| Volunteer / proctor | — | — | Own room + timer + clarifications | Own record | Yes |
+| Ops HQ | Read | Read published | Read/write live | Read assignments | Yes |
+| Planner | Edit | Own drafts; maybe publish | — | — | Yes |
+| Volunteer admin | Read | — | — | Full | Yes |
+| Org admin | Full | Policy | Publish rights | Full | Yes |
+
+Exact roles: [BMT 2026 architecture](2026-08-23-bmt-2026-architecture.md). Humans = Google → `people.id`. Ops = staff flag. Proctor suite = room login.
+
+### What to build first (avoid the redesign without boiling the ocean)
+
+Protect the kernel, then cut **vertical slices** that reuse it:
+
+1. **Roomsdb quality** — real floor labels, enough fields for the capacity sheet, add-building flow you trust. (Mostly productizing what exists.)
+2. **Allocator + publish** — finish the grid; add “this sheet is the plan.” Without publish, every later tool will scrape a spreadsheet again.
+3. **People + assignments** — kills the volunteer room-list copy; gives proctor suite a join key.
+4. **Ops list view** — published allocations + empty live fields. Map view when indoor maps land.
+5. **Proctor timer / clarifications** — writes the same `LiveRoomState`.
+6. **Public site** — maps + public live subset.
+7. **Wayfinding graph** — only if guests still get lost after floor search.
+
+Maps can be prototyped in parallel **as soon as room codes match Figma**, because geometry does not depend on volunteers. Do not block roomsdb on Leaflet.
+
+Public HTTPS is required for guests and proctor phones. One org in product; no tenant marketplace in v1.
+
+## In Scope (as a vision doc)
+
+- Kernel vs overlay split
+- Publish-plan seam
+- How Figma spaces, ops, proctors, and volunteers attach to `rooms.id`
+- Build order that avoids a second rooms database
+- Honest bound on Dwinelle Navigator vs Figma maps
+
+## Not in Scope
+
+- Implementing all six products now
+- Microservices, extra Postgres instances, or a “rooms microservice”
+- Student contest **registration / scoring** (separate platform; CSV roster only)
+- Recreating Kessler’s 3D navigator in year one
+- Replacing Figma as the drafting tool for walls
+- Multi-org product
+- Student registration/scoring join
+- Recreating Kessler’s 3D navigator in year one
+
+## Round 2
+
+Answered 2026-08-23. Questionnaire below is kept for traceability; **do not re-ask locked items**. Misread items (14, 21, 27, 31) are explained in [2026-08-23-bmt-2026-architecture.md](2026-08-23-bmt-2026-architecture.md).
+
+## Open questions (round 2, original text)
+
+### A. What must actually run on 2026-11-14
+
+Eleven weeks is not enough for every module at full fidelity. Stack-rank with **must / should / later (BmMT spring or BMT 2027)**.
+
+11. For each module, what is the **minimum** that must work on Nov 14 vs can stay spreadsheet/Slack?
+    - Roomsdb (rooms + capacity)
+    - Allocator grid + publish
+    - Volunteer signup + room assignment
+    - Day-of HQ **list**
+    - Day-of HQ **map**
+    - Proctor **timer**
+    - Proctor **clarifications**
+    - Public **announcements**
+    - Public **indoor maps**
+    - Roster CSV on HQ/proctor screens
+12. Is a **printed paper backup** still required if the site dies (Dwinelle Wi‑Fi)? For whom — HQ, proctors, guests?
+13. Who is in the war room on Nov 14 (count + roles: HQ, building leads, tech)? Who is allowed to publish, start timers, send clarifications, post public announcements?
+14. Do planners need **two people on the same sheet** before Nov 14, or is owner-only (Phase 2b) enough if only one person builds the grid?
+
+### B. Contest day (BMT, not BmMT)
+
+The seed data in this repo is a **BmMT** day (Puzzle / Indiv / Team / Relay). BMT focus tests are a different shape.
+
+15. Paste or describe the **Nov 14 schedule**: named rounds, start/end times, lunch, awards. Which rounds use 50+ rooms vs a few halls?
+16. List the **focus tests / subjects** (Algebra, Geometry, …). How many does a student take, and are they **sequential slots** or overlapping?
+17. On the grid, is “Algebra focus in DWIN155 9:00–10:30” an **activity** (like Puzzle), or an activity **plus a subject tag** so two rooms can both be “Indiv” but different subjects?
+18. Can one room host **two subjects in one time slot** (split room)? Today the allocator forbids overlapping allocations on one room.
+19. Besides testing rooms, what **non-testing** spaces must exist as roomsdb rooms or map-only spaces: HQ, check-in, grading, scanning, food, lounge, merchandise, bathrooms, stairs?
+20. How many **buildings** on Nov 14 (Dwinelle, Wheeler, VLSB, others)? Any outdoor / overflow tents?
+
+### C. Roomsdb
+
+These five are about the **rooms database** (the spreadsheet of classrooms), not the time×room grid, not Figma, not volunteers. A “wrong” answer here would mean we store the wrong fields or treat a one-day outage as a permanent roomsdb change.
+
+The app today already stores, per room: building code (`DWIN`), floor label (`1` — this will need to become `C`/`D`/`E` for Dwinelle), room name (`155`), type (`auditorium` / `small` / `large`), `capacity`, `optimalCapacity`, active/inactive.
+
+21. **What columns exist on the capacity spreadsheet you use today?**
+    - **What this is:** Open the Google Sheet (or Excel) that lists every classroom and its size. Copy the **header row** (the names of the columns), not the data.
+    - **Why:** We need to know which facts belong in roomsdb forever (capacity, ADA, projector) vs which are event-only (this year’s proctor count). If we guess, we either omit a field you use every week or add junk you will never fill in.
+    - **How to answer:** Paste headers, e.g. `Building | Room | Floor | Capacity | Testing seats | ADA | Notes`. Then mark each as **required** (cannot plan without it) or **nice**.
+    - **Not asking:** The volunteer form fields, or the grid’s time axis.
+
+22. **Do you keep two different “how many people fit” numbers?**
+    - **What this is:** Some orgs store (a) the official/fire-code max and (b) how many contestants they will actually seat (desks, spacing, no broken chairs). The app already has two integers: `capacity` and `optimalCapacity`. I do not know if your sheet uses both, one, or something else (e.g. chairs vs desks).
+    - **Why:** The allocator, volunteer “how many proctors,” and HQ “87 / 120” all need to know **which** number to show. Using the fire-code number for seating would overfill; using the testing number for a public occupancy badge might be wrong.
+    - **How to answer:** One of: “only one number, call it X”; “yes, fire vs testing seats”; “yes, something else (explain)”. If you have both, which one is the default on the grid?
+    - **Not asking:** Headcount of students who actually showed up (that is live/day-of, not roomsdb).
+
+23. **If something is wrong with a room on Saturday morning, do we change roomsdb or only the live day?**
+    - **What this is:** Example: DWIN155’s projector dies, or the room is too hot, or you decide not to use it for *this* contest. Two different writes:
+      - **Roomsdb edit:** changes the room for every future event (capacity 400 → 380 forever, or mark inactive).
+      - **Day-of closed/flag:** “not in use today” on the published plan / live overlay. Next semester the room is still in roomsdb as usual.
+    - **Why:** Mixing these is how last year’s “we lost 155 for one Saturday” becomes “155 disappeared from the database.” Planners vs HQ may also be different people; who is allowed to do which?
+    - **How to answer:** For a broken projector / room pulled for one day, is that a roomsdb edit, a day-of “closed” flag, or both (and who may click it: planner, HQ, anyone with Google)?
+    - **Not asking:** Moving Algebra from 155 to 182 on the grid (that is question 27, allocator).
+
+24. **Campus tells you Friday that you cannot have a room you already put on the plan. What should the software do?**
+    - **What this is:** The room was real in roomsdb and on the frozen plan. Then registrar/campus rescinds it.
+    - **Why:** Three behaviors feel similar but are not:
+      1. **Deactivate in roomsdb** — room vanishes from the picker for *future* plans; old published plan still lists it unless you also close it day-of.
+      2. **Hide from picker only** — still in the database, just hard to pick.
+      3. **Leave on the published plan as “closed”** — HQ still sees a row so they know it was planned and dropped; volunteers are not assigned there.
+    - **How to answer:** Pick 1/2/3 or a combo (“deactivate + mark closed on this event”). Also: must HQ be blocked from assigning proctors to a closed room?
+    - **Not asking:** How Figma draws the polygon (the shape can stay; we just would not treat it as bookable that day).
+
+25. **What short code should appear in labels like `DWIN155` for buildings you actually use?**
+    - **What this is:** The product displays `{building code}{room number}` → `DWIN155`. The demo seed has `DWIN` and `VLSB` only. Wheeler (and others) need a **stable short code** people will type and search. Campus/registrar codes are often 4 letters; you might prefer something staff already say (`WHEE`, `WHEELER`, `WHE`).
+    - **Why:** This code is the join key to Figma names, roster CSV rooms, and volunteer assignments. Changing it later breaks every import. It is not the pretty name (“Wheeler Hall”).
+    - **How to answer:** A table: `Dwinelle → DWIN`, `Wheeler → ?`, `VLSB → VLSB` (or whatever you use), plus any other hall for Nov 14. If you do not care, say “pick 3–4 letters and stick to them.”
+    - **Not asking:** Floor letters (`C`/`D`/`E` vs `1`/`2`) — that is implied by Figma, but if your spreadsheet uses different floor names, mention it under 21.
+
+### D. Allocator + freeze
+
+26. Who is the **one owner** of the Nov 14 sheet, and who else needs **view** (not edit) of the draft before publish?
+27. After freeze, if DWIN155’s Algebra round must move to DWIN182 **during the day**, is that: republish from a fixed sheet, a day-of “move” that flags divergence, or paper-only?
+28. On **republish**, what happens to rooms whose timers already started — keep live clocks, reset, or block republish until HQ confirms a diff?
+29. Do you need **import from the old grid spreadsheet** for Nov 14, or will someone rebuild in the app?
+30. Bulk assign “all of Dwinelle D is Algebra 9:00–10:30”: is that a real workflow, or do you place rooms one-by-one / by multi-select?
+
+### E. Roster CSV (students)
+
+31. What are the **CSV headers** you can actually export from the registration platform (name, room, subject, school, id, …)?
+32. When does that file **stabilize** — T−7 days, night before, morning of, continuously?
+33. Should HQ/proctors see **names in a room**, or only a **headcount** / “87 of 120”?
+34. If a student is **in the wrong room**, do you need to move them in this app, or is that only in the registration platform (and a new CSV)?
+35. One student, **two focus tests**: two rows in the CSV (two rooms/times)? Same room twice?
+
+### F. Volunteers
+
+36. Paste the **current Google Form questions** (or a screenshot list). Which must survive in-app?
+37. What **roles** do you assign (proctor, runner, HQ, grading, scanning, check-in, building lead, food, …)? Can one person have **two roles** the same day (proctor morning, grading afternoon)?
+38. Is assignment **per room for the whole day**, or **per round** (proctor in 155 for Indiv only)?
+39. How do you pick how many proctors a room needs — by capacity, by room type, by hand?
+40. **Day-of volunteer check-in**: name search, QR, both, or just “they showed up” in HQ’s head?
+41. Returning volunteers: should last semester’s `Person` **pre-fill** the next Event application, and how do you handle “do not invite back”?
+42. Typical **volunteer count** for an 1800-student BMT? How many are proctors vs other?
+43. Shirt sizes / dietary / minor (under 18) / emergency contact: store in this app? Visible to whom?
+44. Signup **deadline** and waitlist, or open until the day before?
+
+### G. Proctor suite (timer)
+
+45. Who is allowed to **start / pause / add time** on a room — only HQ, only the assigned proctor, or both?
+46. What **add-time** increments do you actually use (1 min, 5 min, “until 11:07”)?
+47. Does the proctor screen show **end-of-test clock time** (“stop at 10:32”) as well as remaining minutes?
+48. If a proctor’s **phone dies or loses Wi‑Fi**, should the last countdown keep ticking locally, or freeze until reconnect (server is source of truth either way)?
+49. Need **prep / 5-minute warnings** (“5 minutes remaining” auto-banner) or is that the proctor’s watch?
+50. Rooms that are **not testing** (HQ, lunch): hide timers entirely?
+51. Bulk start: “start every room whose **current published allocation** is Algebra” — is that the main HQ action, or will they always tap rooms individually?
+
+### H. Clarifications
+
+52. Targeting shortcuts you need on Nov 14 (check all that apply): by **activity**, by **subject/focus**, by **building**, by **floor**, by **saved group**, by **multi-select rooms**, by “all rooms with a running timer.”
+53. Is a clarification **one-way HQ → proctor**, or can a proctor **ask a question** back (and should other rooms see that)?
+54. Must the proctor **acknowledge** before HQ considers it delivered? Escalation if 3 rooms have not acked?
+55. **Math formatting**: plain text, image upload of a handwritten note, both?
+56. Do **students** ever see clarifications on a screen, or only via the proctor reading them aloud?
+57. Visibility: should Algebra rooms **see** that a Geometry clarification went out (no body), or only their own?
+
+### I. Day-of HQ dashboard
+
+58. Default HQ view: **spreadsheet-like list** of all testing rooms, or a map? (Map can exist without being the home screen.)
+59. Columns you want on that list (timer remaining, activity/subject, proctors, headcount/capacity, last ack, flags, building…).
+60. Filters: building, floor, subject, “timer not started,” “needs ack,” “over capacity.”
+61. What does **red** mean on day-of (timer overdue, no proctor signed in, room closed, over capacity)?
+62. Building leads: do they get the **same HQ dashboard filtered to one building**, or a different app?
+
+### J. Public site
+
+63. Public URL preference (`bmt.berkeley.edu/…`, a new subdomain, unset)?
+64. What may guests see **per room** — nothing (only campus-wide “Team round in progress”), or “DWIN155 · Algebra” without names?
+65. **Countdown** on the public site: contest-wide (“Indiv ends at 11:00”) even though room timers differ? Or no public countdown?
+66. Announcements: who writes them, and is there an **approve** step before they hit the guest site?
+67. Languages: English only for Nov 14?
+68. Need **campus outdoor** context (which building from Sather Gate) or only indoor floors?
+
+### K. Identity and access
+
+69. Phase 2c currently has only **org admin vs regular**. For Nov 14 do you need distinct **HQ / volunteer-admin / planner / proctor** roles, or is “a small allowlist of Google accounts can do everything staff-shaped, proctors only see their room” enough?
+70. How does a proctor **get access** — HQ assigns their Google email to a room, then they sign in and see that assignment? (No claim code?)
+71. Shared **HQ laptop** vs each HQ member signed in as themselves (audit trail: who sent a clarification)?
+72. After the event, should proctors **lose** live controls immediately, keep read-only, or keep nothing?
+
+### L. Artifacts to attach when you can
+
+Not questions so much as source material for the detailed module specs:
+
+73. Capacity spreadsheet (headers + a few example rows; redact if needed).
+74. Last BMT’s time × room grid (screenshot or sheet).
+75. Volunteer Google Form + the “clean” columns you imported.
+76. Sample **roster CSV** (fake names OK).
+77. Day-of HQ run-of-show / radio codes if they encode room status.
+78. Figma files in the repo or a Drive link (Dwinelle, Wheeler, VLSB).
+79. Anything you already consider **non-negotiable UX** (e.g. “proctor must start timer in two taps”).
+
+If you only have time for a subset, **A (11–14) + B (15–18) + H (52–53) + roster headers (31)** unblock the next spec pass the most. We will write per-module specs (roomsdb, allocator/publish, volunteers, ops, proctor, public) only after those answers, so the first code matches Nov 14 rather than a generic tournament.
