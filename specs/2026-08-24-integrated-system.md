@@ -71,30 +71,36 @@ Those can be **one JavaScript app** with several routes, or a staff bundle plus 
 
 **“One web app”** was shorthand for that. The locked part next to Postgres is **one API**. The locked part for humans is **six links** (below).
 
-### API paths (one backend, not one blob per host)
+### API paths (one backend, folders not six APIs)
 
-The browser may call `live.berkeley.mt/api/...` (proxied) or `api.berkeley.mt/...`. Same process. Paths are **`/api/v1/...`**.
+The browser may call `live.berkeley.mt/api/...` (proxied) or `api.berkeley.mt/...`. Same process. Paths are **`/api/v1/{folder}/...`**.
 
-Do **not** make `/api/v1/roomsdb` a single dump of the kernel, or give every host its own copy of rooms. Auth is the cookie + the route, not the prefix. **Do** put roomsdb *resources* under that prefix so staff URLs are obvious, the same way guest live is under `/live/`.
+**Locked: prefix by module**, the way you already name hosts. Each folder is many endpoints, not one dump.
 
-**Do namespace the guest live surface.** Those routes are unauthenticated and must stay **public-shaped** (no roster names, no HQ). Today’s live app already splits “the snapshot guests poll” from “email subscribe.” Under one API that becomes:
+| Folder | Who may call it | Owns |
+| ------ | ---------------- | ---- |
+| `/api/v1/roomsdb/` | Person + `can_open_ops` | buildings, floors, rooms, field defs |
+| `/api/v1/ops/` | Person + `can_open_ops` | drafts/planner, day plan, HQ overlay, roster import, volunteer **admin** (check-in, DNI, assign) |
+| `/api/v1/volunteers/` | Person (self) or staff | `me` (apply, own assignment). Staff may use staff routes here **or** under `/ops/` — pick one owner in the module spec, not both |
+| `/api/v1/swire/` | Room cookie | that room’s timer, clarifications, operator roster |
+| `/api/v1/live/` | none (GET); POST subscribe | public snapshot, announcement email subscribe |
 
-| Today (live app) | Target |
-| ---------------- | ------ |
-| `GET /api/live` | `GET /api/v1/live` (schedule, announcements, delays, venues, info) |
-| `POST /api/email/subscribe` | `POST /api/v1/live/email/subscribe` |
-| `GET /api/email/unsubscribe` | `GET /api/v1/live/email/unsubscribe` |
-| Admin CRUD (`/api/schedule`, …) | Staff routes, `can_open_ops` (compose on ops). Not on the guest prefix. |
+**Rule:** a resource has **one** folder. HQ reads rooms from `/roomsdb/rooms`, not `/ops/rooms`. Live guests do not GET `/ops/`. Swire does not GET `/roomsdb/` to edit capacity.
 
-Staff roomsdb:
+Guest live (today → target): `GET /api/live` → `GET /api/v1/live`; `POST /api/email/subscribe` → `POST /api/v1/live/email/subscribe`. Public-shaped only.
 
-| Resource | Target |
-| -------- | ------ |
-| Buildings, floors, rooms, field defs | `/api/v1/roomsdb/buildings`, `/floors`, `/rooms`, `/field-defs` — Person cookie + `can_open_ops` |
+#### Tradeoff vs the other shapes
 
-HQ, planner, volunteers, and maps **read** those same paths (or a slim read model). They do not get a second rooms list under `/api/v1/ops/rooms`. Swire timers are `/api/v1/swire/rooms/{id}/timer` (or equivalent) and require a **room** cookie. Volunteer self-service is `/api/v1/me/...` with a Person cookie and no `can_open_ops`.
+| Shape | What it is | Helps | Costs |
+| ----- | ---------- | ----- | ----- |
+| **Prefix by module** (locked) | `/roomsdb/rooms`, `/live/email/subscribe`, `/ops/day-plan` | Matches screens and hosts. Easy to review “is this public?” Folder lists the blast radius. New endpoints have an obvious home. | Cross-cutting jobs (import a draft as day plan) still touch two folders. Shared rooms must be **read from roomsdb**, not copied. Prefix is **documentation**; the API must still check cookies. Temptation to split folders into six deploys later — do not. |
+| **Flat resources** | `/api/v1/rooms`, `/announcements`, `/people` | Canonical REST. No fight over which folder owns rooms. | Public vs staff is not visible in the path (`GET /announcements` is easy to ship with roster fields). Does not match how this club talks. |
+| **Unprefixed per host** | `roomsdb.berkeley.mt/api/rooms`, `live.berkeley.mt/api/live` | Host is the namespace; live never sees `/rooms` on its origin if you do not proxy it. | Same backend still has every route. Easy to accidentally proxy all of `/api` onto live. Harder to share a staff SPA that calls rooms + day plan. |
+| **Six HTTP APIs** | one service per screen | Isolation if they really cannot share a process | Last semester. Two rooms lists. Write-boundaries lie. |
 
-Email subscribers for **public announcements** stay under `/live/`. That list is not volunteer people and not staff mail.
+Planner sits on the **ops** host, so its API sits under **`/ops/`** (e.g. `/ops/drafts`), not a sixth folder, unless we later mint a planner host.
+
+Auth is still cookie + route. A `/live/` path that returns roster names is a bug even with a perfect folder name.
 
 ## Six links (how people enter)
 
