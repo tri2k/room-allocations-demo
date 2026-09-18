@@ -75,7 +75,7 @@ Those can be **one JavaScript app** with several routes, or a staff bundle plus 
 
 The browser may call `live.berkeley.mt/api/...` (proxied) or `api.berkeley.mt/...`. Same process. Paths are **`/api/v1/...`**.
 
-Do **not** make `/api/v1/roomsdb` a single dump, or give every host its own copy of rooms. Auth is the cookie + the route, not the prefix.
+Do **not** make `/api/v1/roomsdb` a single dump of the kernel, or give every host its own copy of rooms. Auth is the cookie + the route, not the prefix. **Do** put roomsdb *resources* under that prefix so staff URLs are obvious, the same way guest live is under `/live/`.
 
 **Do namespace the guest live surface.** Those routes are unauthenticated and must stay **public-shaped** (no roster names, no HQ). Today’s live app already splits “the snapshot guests poll” from “email subscribe.” Under one API that becomes:
 
@@ -86,7 +86,13 @@ Do **not** make `/api/v1/roomsdb` a single dump, or give every host its own copy
 | `GET /api/email/unsubscribe` | `GET /api/v1/live/email/unsubscribe` |
 | Admin CRUD (`/api/schedule`, …) | Staff routes, `can_open_ops` (compose on ops). Not on the guest prefix. |
 
-Staff roomsdb is **resources**: `GET/PATCH /api/v1/buildings`, `/api/v1/rooms`, field defs — not `/api/v1/roomsdb`. Swire timers live under something like `/api/v1/rooms/{id}/timer` and require a **room** cookie. Volunteer self-service is `/api/v1/me/...` with a Person cookie and no `can_open_ops`.
+Staff roomsdb:
+
+| Resource | Target |
+| -------- | ------ |
+| Buildings, floors, rooms, field defs | `/api/v1/roomsdb/buildings`, `/floors`, `/rooms`, `/field-defs` — Person cookie + `can_open_ops` |
+
+HQ, planner, volunteers, and maps **read** those same paths (or a slim read model). They do not get a second rooms list under `/api/v1/ops/rooms`. Swire timers are `/api/v1/swire/rooms/{id}/timer` (or equivalent) and require a **room** cookie. Volunteer self-service is `/api/v1/me/...` with a Person cookie and no `can_open_ops`.
 
 Email subscribers for **public announcements** stay under `/live/`. That list is not volunteer people and not staff mail.
 
