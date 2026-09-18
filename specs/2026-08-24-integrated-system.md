@@ -110,6 +110,8 @@ Planner sits on the **ops** host, so its API sits under **`/ops/`** (e.g. `/ops/
 
 Auth is still cookie + route. A `/live/` path that returns roster names is a bug even with a perfect folder name.
 
+C3 of this API (folders + gate, not the prototype): [2026-08-24-api-c3.md](2026-08-24-api-c3.md).
+
 ### Cross-module callers (contracts, not memos)
 
 One API means a live developer **can** call `/volunteers/` or `/roomsdb/`. It also means a volunteer change can break live **if** live depended on a private shape. That communication cost is real. It is still cheaper than last semester’s copy of DWIN155 in five apps.

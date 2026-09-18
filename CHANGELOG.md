@@ -20,6 +20,7 @@
 - **Doors are public:** hostnames are not secrets. Person cookies are host-scoped (ops / roomsdb / volunteers), not `Domain=.berkeley.mt`. A room cookie must not open HQ. One API outage takes every screen down (paper backup); one stolen Swire password must not.
 - **API paths:** `/api/v1/{module}/...` (roomsdb, ops, volunteers, swire, live). One owner per resource. Prefixes do not block live from calling `/roomsdb/` — auth does. Public GETs of rooms for maps are allowed; volunteer PII and `/ops/` are not. Folders in one process, not six APIs.
 - **API contracts:** each folder has a public surface (additive JSON) vs internals. Other platforms may only call the public surface so volunteer internals can change without breaking live.
+- **Target C3 (API):** [specs/2026-08-24-api-c3.md](specs/2026-08-24-api-c3.md) — one API process, five `/api/v1/{folder}` components, public vs staff surfaces. Not the as-built prototype in `docs/c4/`.
 - **Staff cadence:** roomsdb is rare (`roomsdb.berkeley.mt`); planner is regular (`ops.berkeley.mt/planner`); HQ is Saturday (`ops.berkeley.mt` root). They do not share primary chrome. Same Google, same API.
 - **Name:** the rooms kernel is **roomsdb** in specs and at **`roomsdb.berkeley.mt`**. Target docs no longer say catalog for that module. Prototype UI `#/catalog` is unchanged.
 - Persistence: **one** Postgres, **one** database. A **seam** is any copy (roomsdb CSV into other tools included). Keep seams when a snapshot is enough (roster, day plan, print). Collapse roomsdb→ops/volunteers/maps by sharing `rooms`.
