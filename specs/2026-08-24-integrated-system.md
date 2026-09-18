@@ -77,15 +77,23 @@ The browser may call `live.berkeley.mt/api/...` (proxied) or `api.berkeley.mt/..
 
 **Locked: prefix by module**, the way you already name hosts. Each folder is many endpoints, not one dump.
 
-| Folder | Who may call it | Owns |
-| ------ | ---------------- | ---- |
-| `/api/v1/roomsdb/` | Person + `can_open_ops` | buildings, floors, rooms, field defs |
+This is **not** a bad idea for “live might call roomsdb.” Folders name **who owns the tables**. They do not stop `live.berkeley.mt` from `fetch('/api/v1/roomsdb/rooms')`. The live origin should proxy **`/api/v1`** (or call `api.berkeley.mt`) so cross-folder reads are one hop. Do **not** proxy only `/api/v1/live` if we want maps on live.
+
+| Folder | Default caller | Owns |
+| ------ | -------------- | ---- |
+| `/api/v1/roomsdb/` | Staff write: Person + `can_open_ops`. **Some GETs may be public** (labels, capacity, `appears_on_grid` for maps) | buildings, floors, rooms, field defs |
 | `/api/v1/ops/` | Person + `can_open_ops` | drafts/planner, day plan, HQ overlay, roster import, volunteer **admin** (check-in, DNI, assign) |
 | `/api/v1/volunteers/` | Person (self) or staff | `me` (apply, own assignment). Staff may use staff routes here **or** under `/ops/` — pick one owner in the module spec, not both |
 | `/api/v1/swire/` | Room cookie | that room’s timer, clarifications, operator roster |
 | `/api/v1/live/` | none (GET); POST subscribe | public snapshot, announcement email subscribe |
 
-**Rule:** a resource has **one** folder. HQ reads rooms from `/roomsdb/rooms`, not `/ops/rooms`. Live guests do not GET `/ops/`. Swire does not GET `/roomsdb/` to edit capacity.
+**Rule:** a resource has **one** folder. HQ and live both read `/roomsdb/rooms` (live gets the **public projection**). There is no `/ops/rooms` and no copy of rooms under `/live/rooms` unless that path is a thin alias.
+
+What actually blocks a bad cross-call is **auth**, not the prefix:
+
+- Live **unauthenticated** may read public rooms / public maps. It must not read roster names, DNI, or `/ops/`.
+- Volunteer **PII** needs a Person cookie. We still do not put that cookie on `live.berkeley.mt`. So live can **link** to `volunteers.berkeley.mt` to apply, or we add an explicit public apply POST later — not “guest GET `/volunteers/people`.”
+- Swire still cannot PATCH `/roomsdb/rooms`.
 
 Guest live (today → target): `GET /api/live` → `GET /api/v1/live`; `POST /api/email/subscribe` → `POST /api/v1/live/email/subscribe`. Public-shaped only.
 
