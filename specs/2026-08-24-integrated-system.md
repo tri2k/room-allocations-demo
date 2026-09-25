@@ -33,7 +33,7 @@ At implementation we may rewrite this repo or start a new tree. Specs describe t
 - No live co-edit on the grid
 - Room login (`{building code}{room name}` + one event password) is **Swire’s**, not a cookie on this API
 - **Auth is an open question** for the OAuth doors: volunteers at minimum, likely HQ, possibly roomsdb and the planner. Google-only was a sketch, not a lock, until that question is answered. Live `/admin` is also not settled. Swire does not use this auth.
-- Roster is a CSV snapshot from the registration product; students are not volunteer people
+- Roster is a snapshot from the registration product, and **only for rounds that have one**. Power, Guts, and the middle-school all-day room do. Individual room assignment is optional until the org decides. Students are not volunteer people.
 - Custom room fields; built-in `capacity` only (≥ 0)
 - Building codes DWIN, WHLR, VLSB, MLK; code set at create
 - `appears_on_grid` hedge; skip a Location supertype
@@ -272,7 +272,7 @@ Join key: **`rooms.id`**. Display `DWIN155` is computed. Swire should key procto
 | Allocation | One activity in one room for one interval. One room × slot = one activity. |
 | Person | One human id (`people.id`) across semesters. Officers fill the volunteer form as this row. Login may also open ops if staff. Not a student. Not `DWIN155`. |
 | Assignment | Person + event + role + optional room/building. |
-| Roster seat | Imported student name + room + time. Two tests = two rows. Move in this app. |
+| Roster seat | Optional per room. Power, Guts, and middle-school all-day rooms have one. Individual may have none. When present: imported student or team + room + time. Not a volunteer. |
 | Map space | Geometry. Optional `room_id` (bathrooms have none). |
 
 One org in product (BMT). No `org_id` required for v1.
@@ -292,7 +292,7 @@ If Postgres or the site dies: printed day plan, printed room password, assignmen
 - **Where maps live** (year-round vs per event) and how Figma files get in.
 - Roomsdb room form: **checkbox** vs **kind dropdown** for “show on allocator grid.”
 - HQ columns, activity names for focus tests, volunteer form fields, public per-room detail, UI library / language.
-- Student roster (registration CSV, move a student Saturday) was specified earlier and is not in the component summary above. Confirm whether HQ or another admin owns it.
+- **Individual room roster.** Power, Guts, and middle-school all-day rooms have a roster. Whether Individual students are assigned to rooms at coach check-in is **not decided**. The software must run a room with no names. Last event’s 30 / 1300 mismatches (2.3%) are why this stays optional.
 
 ## Next
 

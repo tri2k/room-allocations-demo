@@ -265,7 +265,7 @@ Individual: **two focus tests out of four**, or **one general**.
 
 - Activities on the sheet are the units HQ and clarifications target: e.g. `Power`, `Guts`, `General`, `Algebra`, `Geometry`, … (exact labels TBD).
 - An **activity group** `Individual` wraps General + the four focus activities so HQ can still say “all Individual rooms.”
-- **Student choice** (2 focus vs general) lives on the **roster**, not on the room. Two tests = two roster rows.
+- **Student choice** (2 focus vs general) is a fact about the student, not about the room. When an Individual roster exists, two focus tests are two rows. A room still runs one activity. An Individual room is allowed to have **no roster**.
 - Timers do **not** special-case Individual. A room is testing or it is not.
 
 ### Day plan import
@@ -305,12 +305,16 @@ Live does **not** call Swire. Maps stay on this platform.
 
 ### Roster
 
-- Import CSV **morning-of**, shortly after check-in.
-- Column **mapper** (we do not know headers yet).
-- Match room via building code mapping + room name; unmatched rows go to a review queue.
-- Two tests → two rows → two `(student, room, time)` seats.
-- **Move in-app** (wrong room) updates the event roster only.
-- Students are **not** volunteer `Person`s. The registration **product** stays separate; this app only holds the imported roster slice.
+A per-room student roster is **optional**. HQ and any room view must work when that room has no names.
+
+| Round | Roster? |
+| ----- | ------- |
+| **Power** | Yes. Teams are assigned to a power room. |
+| **Guts** | Yes. Teams are assigned to a guts room. |
+| **Middle school** (every other semester) | Yes. A team is assigned to one room and stays there all day. |
+| **Individual** (BMT) | **Not decided.** Students pick the general test or 2 of 4 subject tests. Coaches do the final check-in, and not every student finalizes that choice. Last event: 30 mismatches out of 1300 students (2.3%). The org has not decided whether to assign those students to rooms at check-in. The software must allow an Individual room with no roster. |
+
+When a roster does exist, it is a snapshot from the registration product (CSV, column mapper, match room by code + name). Students are not volunteer people. Moving a student updates this snapshot only. Two focus tests, if both are known, are two rows.
 
 ### Volunteers (shape only)
 
