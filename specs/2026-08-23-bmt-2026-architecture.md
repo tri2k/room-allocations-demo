@@ -103,7 +103,7 @@ Day plan (frozen copy of one sheet)
   never: roomsdb tables
 
 This database does not store timers or clarifications.
-  Swire owns those. HQ calls Swire’s API. Roster seats stay here (CSV import + in-app move).
+  Swire owns those. HQ may only read Swire’s API. Roster seats stay here (CSV import + in-app move).
 
 Volunteers (people, applications, assignments, DNI)
   writers: volunteer account (own person + this-event application); staff-with-write (assignments, DNI, check-in, form)
@@ -191,7 +191,7 @@ A Person cookie **must not** open a Swire room. Swire’s room session **must no
 | - | ------ | --------------- | ------- | -------------- | ---------------------- | -------- |
 | 1 | **Roomsdb** | **`roomsdb.berkeley.mt`** | Google + `can_open_ops` | Officers | Create/edit buildings, floors, rooms, custom fields | Day-of “closed” as a roomsdb edit. Room laptops. Guests. Ordinary volunteers. Planner/HQ **tabs** |
 | 2 | **Allocator** | **`ops.berkeley.mt/planner`** | Same Google | Officers | Build one draft at a time; bulk-assign floors | Live co-edit. Import-as-day-plan is an HQ action (same people, **different link**). Roomsdb tabs. Guests / rooms / volunteers |
-| 3 | **Day-of HQ** | **`ops.berkeley.mt`** (root) | Same Google | Officers in the war room | Import/re-import day plan; list + map; roster import + move; volunteer **admin**. Pause/add time and clarifications **by calling Swire** | `UPDATE rooms`. Start every room’s clock in bulk. Volunteer self-service. Roomsdb in war-room chrome. Owning timer tables |
+| 3 | **Day-of HQ** | **`ops.berkeley.mt`** (root) | Same Google | Officers in the war room | Import/re-import day plan; list + map; roster import + move; volunteer **admin**. **Read** Swire for timer display | `UPDATE rooms`. Any write to Swire (start, pause, add time, clarifications). Volunteer self-service. Roomsdb in war-room chrome. Owning timer tables |
 | 4 | **Proctor / projector** | **`swire.berkeley.mt` (external)** | Room username + **one** event password, **on Swire** | Laptop (and operator phone on Swire’s session) | **Start** that room’s timer. See clarifications. Operator view: roster names **if Swire fetches them under their contract**. Projector: timer + clarifications only | This platform’s Google. Other rooms. Writing roomsdb. HQ chrome |
 | 5 | **Public** | **`live.berkeley.mt`** | None | Students, parents, coaches | Read announcements and **maps on this API** | Login. Public countdown. Volunteer apply. Officer menus. Calling Swire |
 | 6 | **Volunteers** (self-service) | **`volunteers.berkeley.mt`** | Google → same `people.id` | Returning and first-time volunteers, including officers as themselves | Apply / edit **own** person + this-event application. After check-in, see **own** assignment | Ops HQ, roomsdb, other people’s rows, room password, check-in (staff does that on HQ) |
@@ -285,7 +285,7 @@ Per testing room, **on Swire** (not in this database):
 
 **On this platform:** roster lines currently seated (names), closed / unused-today flag, day plan, maps.
 
-HQ dashboard: **list ↔ map toggle**. Timer columns come from Swire’s API when it answers. Column set, red rules, filters: later.
+HQ dashboard: **list ↔ map toggle**. Timer columns are a **read** of Swire’s API when it answers. HQ does not write clocks or clarifications. Column set, red rules, filters: later.
 
 ### Proctor suite + projection (Swire, external)
 
@@ -296,9 +296,9 @@ HQ dashboard: **list ↔ map toggle**. Timer columns come from Swire’s API whe
 
 5-minute remaining banner on both.
 
-HQ admin pause/add time goes **through Swire’s API**, not a table in this Postgres. If Swire is down, HQ still shows the day plan, map, roster, and volunteers; the timer panel says unavailable. If this platform is down, proctors still run Swire.
+**Swire’s exposed API is read-only.** Start, pause, add time, and clarifications are Swire’s own screens. HQ only GETs status to paint the list and map. If Swire is down, HQ still shows the day plan, map, roster, and volunteers; the timer panel says unavailable. If this platform is down, proctors still run Swire.
 
-Clarification composer may live on HQ and **POST to Swire**, or live on Swire. Either way the messages are Swire’s data. One-way. No ack. Algebra does not learn that Geometry got a message.
+Clarifications are one-way on Swire. No ack. Algebra does not learn that Geometry got a message. This platform does not compose them.
 
 Live does **not** call Swire. Maps stay on this platform.
 

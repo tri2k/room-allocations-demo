@@ -80,7 +80,7 @@ Figma does **not** own rooms. The volunteer form does **not** own rooms. The pro
 | Nov 14 scope | Roomsdb, allocator, HQ, volunteers, live/maps, printed backup. **Swire stays their deploy** | Last semester 4/5 vibecoded tools broke; proctor suite is isolated on purpose |
 | Staff roles | **Admin** (everything on this platform). **Organizer** (view only) only if staff login is named (Google) | Building leads use admin. Live announcements use the same staff login |
 | Proctor login | **On Swire:** room as username + **one shared event password** | Not this API; not a unique PIN per room in v1 |
-| Timer start | **Proctor may only start (on Swire).** HQ pause / add time goes through **Swire’s API** | No bulk-start. Swire down ≠ HQ down |
+| Timer writes | **All on Swire** (start, pause, add time, clarifications). Exposed API is **read-only**. HQ displays it | Swire down ≠ HQ down. HQ cannot move a clock |
 | Offline timer | Local countdown; **desync banner on proctor and HQ** | Server is source of truth when connected |
 | Clarifications | One-way; **no ack**; text + images; **projected** | Subset targeting; other activities do not see it |
 | Plan load | Ops **admin imports** an allocator sheet (frozen). Re-import **keeps clocks** | Grid rebuilt in-app; bulk floor-assign yes |
@@ -89,7 +89,7 @@ Figma does **not** own rooms. The volunteer form does **not** own rooms. The pro
 | Public site | `live.berkeley.mt`, English, **no public clock** | Per-room guest detail undecided. Outdoor maps stretch |
 | Volunteers | **`volunteers.berkeley.mt`**, **Google**. Staff admin on ops (`can_open_ops`). Form builder; ~300 people; DNI | PII visible to managers |
 | Staff auth | **Google** for Person accounts on this platform. Ops and roomsdb require `can_open_ops`. Live: none. Room password is **Swire’s** | [architecture](2026-08-23-bmt-2026-architecture.md#one-person-one-id) |
-| Realtime | Swire owns clocks. This platform polls or is pushed **Swire’s API** for HQ. Live does not show a clock | 50+ rooms is still a small JSON on Swire |
+| Realtime | Swire owns clocks. HQ **reads** Swire’s API. Live does not show a clock | 50+ rooms is still a small JSON on Swire |
 | C4 | Update as-built diagrams only when code lands | This file is target, not current commit |
 
 ### Component map
@@ -133,7 +133,7 @@ Ops **writes live fields only**. It does not edit the roomsdb. Moving a round be
 
 Timer + clarifications for 50+ rooms. Attached to **this event’s assignment + published allocation**, not to roomsdb forever.
 
-- Timer: each **testing** room has its own clock. **Proctor session may only start.** Admin HQ may pause / add time / rest. No bulk-start. Offline: client keeps ticking and both sides show **out of sync**.
+- Timer: each **testing** room has its own clock, **on Swire**. This platform only reads that state. Offline: Swire’s client keeps ticking and shows **out of sync** when it reconnects. HQ shows “unavailable” when the read fails.
 - Auto **5 minutes remaining**. Non-testing rooms: no timer.
 - Clarifications: one-way HQ → subset of rooms; no ack; text + images; **projected** in the room. Other activities do not see that a message went out.
 
