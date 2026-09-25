@@ -21,7 +21,7 @@ The costly redesign is not “we picked FastAPI.” It is **DWIN155 existing in 
 
 ## Recommendation
 
-**One org, one Postgres, one API** for roomsdb, planner, HQ, volunteers, and live (maps). Roomsdb on **`roomsdb.berkeley.mt`**. HQ on **`ops.berkeley.mt`** (planner at `/planner`). Volunteer **people** on **`volunteers.berkeley.mt`**. Guests on **`live.berkeley.mt`**. **Swire is off this platform** (`swire.berkeley.mt`): proctor tools only, they expose an API. Persistence: [one Postgres](2026-08-23-bmt-2026-architecture.md#persistence-one-postgres-not-six-databases). Links: [integrated system](2026-08-24-integrated-system.md#links-how-people-enter).
+**One org, one Postgres, one API** for roomsdb, planner, HQ, volunteers, maps, and live. Roomsdb on **`roomsdb.berkeley.mt`**. HQ on **`ops.berkeley.mt`** (planner at `/planner`). Volunteer **people** on **`volunteers.berkeley.mt`**. Guests on **`live.berkeley.mt`**. **Swire is off this platform** (`swire.berkeley.mt`): proctor tools only, they expose an API. Persistence: [one Postgres](2026-08-23-bmt-2026-architecture.md#persistence-one-postgres-not-six-databases). Links: [integrated system](2026-08-24-integrated-system.md#links-how-people-enter).
 
 Rooms are the **kernel**. Everything else is either a rare roomsdb edit, a **draft plan**, a **published plan**, or a **live overlay** on that plan.
 
@@ -46,7 +46,8 @@ Event (BMT 2026, then BmMT and later semesterly contests)
         │
         ├── Roster seats (imported; not Swire)
         │
-        └── PublicContent + maps (live.berkeley.mt)
+        ├── Maps (floor plates; HQ and live both read)
+        └── PublicContent (announcements on live.berkeley.mt)
 
 Swire (separate deploy, own API): timers, clarifications, room password, projector
         points at rooms.id — does not own rooms

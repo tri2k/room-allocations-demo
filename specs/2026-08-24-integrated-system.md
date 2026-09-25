@@ -24,10 +24,11 @@ At implementation we may rewrite this repo or start a new tree. Specs describe t
 
 **Kept because we decided them in workshop**, not because code did:
 
-- One Postgres, one database. **This** platform: roomsdb, planner, HQ, volunteers, live (maps). They share `rooms.id`.
+- One Postgres, one database. **This** platform: roomsdb, planner, HQ, volunteers, live, and **maps**. They share `rooms.id`.
 - **One API** for that platform. Bookmarks: **`roomsdb.berkeley.mt`**, **`ops.berkeley.mt/planner`**, **`ops.berkeley.mt`**, **`volunteers.berkeley.mt`**, **`live.berkeley.mt`**.
-- **Swire is not on this platform.** Proctor tools (timer, clarifications, projector) stay a separate deploy that **exposes an API**. If Swire dies, roomsdb / ops / volunteers / live stay up. If this API dies, proctors still have Swire.
-- **Live stays here** so guest maps join this rooms list without a second copy of DWIN155.
+- **Maps are their own folder** (`/api/v1/maps/`), not a live feature. HQ’s map view and the guest site both read that geometry. What gets painted on it differs (staff day plan vs public labels).
+- **Swire is not on this platform.** Proctor tools (timer, clarifications, projector) stay a separate deploy that **exposes an API**. If Swire dies, roomsdb / ops / volunteers / live / maps stay up. If this API dies, proctors still have Swire.
+- **Live stays here** so guests read the same maps HQ uses, without a second copy of DWIN155.
 - Roomsdb is sacred: day-of never updates rooms. Swire does not write rooms either.
 - Draft grid → explicit import as frozen day plan; re-import keeps running clocks (clocks live on Swire; re-import must not reset them — call Swire or agree the rule in their API)
 - No live co-edit on the grid
@@ -43,7 +44,7 @@ At implementation we may rewrite this repo or start a new tree. Specs describe t
 
 ## One API (the twin of one Postgres)
 
-**One API** means one HTTP backend that is the only writer to that Postgres. Roomsdb, allocator, HQ, volunteer admin, and the public site (including maps) all call **this** service. Rules like “day-of never updates rooms” live in one place. **Proctors do not.** They call Swire.
+**One API** means one HTTP backend that is the only writer to that Postgres. Roomsdb, allocator, HQ, volunteer admin, maps, and the public site all call **this** service. Rules like “day-of never updates rooms” live in one place. **Proctors do not.** They call Swire.
 
 It does **not** mean one URL the humans type, or that staff and guests share a homepage.
 
@@ -83,18 +84,21 @@ This is **not** a bad idea for “live might call roomsdb.” Folders name **who
 
 | Folder | Default caller | Owns |
 | ------ | -------------- | ---- |
-| `/api/v1/roomsdb/` | Staff write: Person + `can_open_ops`. **Some GETs may be public** (labels, capacity, `appears_on_grid` for maps) | buildings, floors, rooms, field defs |
-| `/api/v1/ops/` | Person + `can_open_ops` | drafts/planner, day plan, HQ overlay, roster import, volunteer **admin** (check-in, DNI, assign) |
+| `/api/v1/roomsdb/` | Staff write: Person + `can_open_ops`. **Some GETs may be public** (labels, capacity, `appears_on_grid`) | buildings, floors, rooms, field defs |
+| `/api/v1/maps/` | Staff import: Person + `can_open_ops`. **Public GET** of external geometry (floor plates, polygons, POIs) | `floor_maps`, `map_spaces`, styles, POIs. Optional `room_id`. Bathrooms have none |
+| `/api/v1/ops/` | Person + `can_open_ops` | drafts/planner, day plan, HQ overlay, roster import, volunteer **admin** (check-in, DNI, assign). **HQ map view reads `/maps/`, it does not own polygons** |
 | `/api/v1/volunteers/` | Person (self) or staff | `me` (apply, own assignment). Staff may use staff routes here **or** under `/ops/` — pick one owner in the module spec, not both |
-| `/api/v1/live/` | none (GET); POST subscribe | public snapshot, announcement email subscribe, **maps** |
+| `/api/v1/live/` | none (GET); POST subscribe | public snapshot, announcement email subscribe. **Guest map view reads `/maps/`, it does not own polygons** |
 
 There is **no** `/api/v1/swire/`. Proctor routes are Swire’s API. HQ may call that API; it must not store timers in this Postgres.
 
-**Rule:** a resource has **one** folder. HQ and live both read `/roomsdb/rooms` (live gets the **public projection**). There is no `/ops/rooms` and no copy of rooms under `/live/rooms` unless that path is a thin alias.
+**Rule:** a resource has **one** folder. HQ and live both read `/roomsdb/rooms` (live gets the **public projection**) and both read `/maps/` (same polygons). There is no `/ops/rooms`, no `/ops/maps` copy, and no `/live/maps` copy unless that path is a thin alias.
+
+**Paint is not geometry.** `/maps/` is the floor plate. Ops paints the day plan, roster, and (when Swire answers) timers onto it. Live paints only the public room projection (activity label if we allow it — still no roster, no clock). A `/maps/.../live` payload that includes proctor names is a staff route, not the guest one.
 
 What actually blocks a bad cross-call is **auth**, not the prefix:
 
-- Live **unauthenticated** may read public rooms / public maps. It must not read roster names, DNI, or `/ops/`.
+- Live **unauthenticated** may read public rooms and **public** map geometry (`mode=external`). It must not read roster names, DNI, internal map labels, or `/ops/`.
 - Volunteer **PII** needs a Person cookie. We still do not put that cookie on `live.berkeley.mt`. So live can **link** to `volunteers.berkeley.mt` to apply, or we add an explicit public apply POST later — not “guest GET `/volunteers/people`.”
 - Swire’s process cannot PATCH `/roomsdb/rooms`. It may **GET** the public room projection if it needs labels. Timer writes stay on Swire.
 
@@ -129,14 +133,14 @@ One API means a live developer **can** call `/volunteers/` or `/roomsdb/`. It al
 
 | Caller | May call | Must not call |
 | ------ | -------- | ------------- |
-| Live (no cookie) | `/live/*` as today; **public GET** of roomsdb rooms/maps (labels, capacity, grid bit — no staff-only custom fields unless we mark them public) | `/ops/*`; volunteer people list / DNI; Swire’s operator roster |
+| Live (no cookie) | `/live/*` as today; **public GET** of roomsdb rooms (labels, capacity, grid bit); **public GET** `/maps/` external geometry | `/ops/*`; volunteer people list / DNI; internal map mode; Swire’s operator roster |
 | Volunteers (Person) | `/volunteers/me/...`; public rooms GET if the form picks a room | `/ops/*` except bounce; other people’s rows |
-| Ops / roomsdb staff | `/roomsdb/*` writes; `/ops/*`; staff volunteer routes. **May call Swire’s API** for pause / add time / clarifications | Swire as if it were a folder of this API |
+| Ops / roomsdb staff | `/roomsdb/*` writes; `/maps/` import; `/ops/*` including the HQ map view; staff volunteer routes. **May call Swire’s API** for pause / add time / clarifications | Swire as if it were a folder of this API |
 | Swire (their deploy) | Public GET rooms if they need `DWIN155` / `rooms.id` | `/ops/*`; `/volunteers`; roomsdb writes |
 
 Live depending on “whatever `/volunteers/people` returns this week” is how the memo problem starts. If live needs apply, that is an explicit public POST (or a link to `volunteers.berkeley.mt`), not a private volunteer admin shape.
 
-Swire’s API is **their** public surface. HQ treats a Swire outage as “timers unavailable,” not as this platform down. Live does not call Swire (no public clock; maps are here).
+Swire’s API is **their** public surface. HQ treats a Swire outage as “timers unavailable,” not as this platform down. The HQ map still draws. Live does not call Swire (no public clock). Both sites call `/maps/`.
 
 Module specs name the public fields. That is the contract. Slack is the backup, not the design.
 
@@ -150,9 +154,9 @@ Screens should feel like places you can bookmark. Last semester failed because t
 | ---- | --- | ------- | -------- |
 | Roomsdb | staff | Google + `can_open_ops` | **`roomsdb.berkeley.mt`** — rooms, capacity, custom fields (rare) |
 | Allocator | staff | Same Google | **`ops.berkeley.mt/planner`** — time × room draft (regular) |
-| HQ | staff | Same Google | **`ops.berkeley.mt`** — Saturday list + map, roster, volunteer **admin**. Timers/clarifications via **Swire’s API** (panel degrades if Swire is down) |
+| HQ | staff | Same Google | **`ops.berkeley.mt`** — Saturday list **and map view** (same `/maps/` geometry), roster, volunteer **admin**. Timers/clarifications via **Swire’s API** (panel degrades if Swire is down) |
 | Volunteers | returning volunteers | Google → `people.id` | **`volunteers.berkeley.mt`** — own account, apply again, see assignment. Not ops. |
-| Public | guests | None | **`live.berkeley.mt`** — announcements, **maps** (stays on this platform). No public clock |
+| Public | guests | None | **`live.berkeley.mt`** — announcements and a **map view of `/maps/`**. No public clock |
 | Proctors | laptop | `DWIN155` + event password (**Swire**) | **`swire.berkeley.mt`** — timer, projector, clarifications. **Not this API** |
 
 **Seventh / apply:** first-time apply is on **`volunteers.berkeley.mt`** (logged out). Do not put the volunteer portal on `live.berkeley.mt` (parents) or on ops (roster, timers).
@@ -172,10 +176,10 @@ We are not inventing `hq.berkeley.mt`. HQ lives on **ops**. Volunteer **people**
 | Host | What lives there |
 | ---- | ---------------- |
 | **`roomsdb.berkeley.mt`** | **Rooms kernel.** Year-round, used rarely. This chrome only — not a tab on the planner or on Saturday HQ. Same Google as ops. Not Swire. |
-| **`ops.berkeley.mt`** | **Saturday bookmark for officers** (root = HQ). Planner at **`/planner`** (regular grid work). Volunteer **admin** (assign rooms, DNI, name-search check-in, form builder). Staff login, not volunteer login. **No roomsdb tab** on HQ or planner. |
+| **`ops.berkeley.mt`** | **Saturday bookmark for officers** (root = HQ). Planner at **`/planner`** (regular grid work). HQ list **and map** (reads `/maps/`). Volunteer **admin** (assign rooms, DNI, name-search check-in, form builder). Staff login, not volunteer login. **No roomsdb tab** on HQ or planner. |
 | **`volunteers.berkeley.mt`** | **Volunteer door.** Continue with Google. Apply / update this event, see assignment after check-in. Same `people` row as ops if they are staff. **Not** the room password. |
 | **`swire.berkeley.mt`** | **External.** Proctor suite only: room login, timer, projector, clarifications. Exposes an API. Not a folder of this backend. Officers who type `/admin` there are Swire’s problem (redirect to ops is fine if they still do it). |
-| **`live.berkeley.mt`** | **On this platform.** Guests. Announcements and maps joined to roomsdb. No volunteer login, no officer menus. Typed `/admin` redirects to ops. |
+| **`live.berkeley.mt`** | **On this platform.** Guests. Announcements and a map view of the same geometry HQ uses. No volunteer login, no officer menus. Typed `/admin` redirects to ops. |
 
 Cadence (rare roomsdb vs regular planner vs Saturday HQ): [architecture](2026-08-23-bmt-2026-architecture.md#staff-links-by-cadence).
 
@@ -193,9 +197,10 @@ Five screens on this roomsdb, plus Swire beside it:
 | ------ | ----- | --- |
 | Roomsdb | this platform | Year-round rooms (capacity, custom fields). Typed by hand. Bookmark **`roomsdb.berkeley.mt`**. |
 | Allocator | this platform | Time × room draft for an event. One person builds it. |
-| Day-of HQ | this platform | Frozen plan + Saturday list and map. Roster, volunteer admin. Timer controls **call Swire**. |
+| Day-of HQ | this platform | Frozen plan + Saturday list and **map view**. Roster, volunteer admin. Timer controls **call Swire**. |
 | Volunteers | this platform | People across semesters, form, assign to roomsdb rooms, check-in. |
-| Public | this platform | `live.berkeley.mt` — announcements, **maps**. No public clock. Stays here so maps share `rooms.id`. |
+| Maps | this platform | Floor plates and polygons (`/api/v1/maps/`). Not a bookmark of its own. HQ and live are two views. |
+| Public | this platform | `live.berkeley.mt` — announcements and the guest map view. No public clock. |
 | Proctor / projector | **Swire** | Timer (start only) + clarifications. Laptop in the room. Their API, their outage. |
 
 Guests and volunteer *applicants* do not use the staff login. Volunteers who return use the **volunteer** login on `volunteers.berkeley.mt`. Projectors use Swire’s room login.
@@ -216,7 +221,7 @@ One Postgres
   day plan     frozen copy of one draft + Saturday overrides
   roster       imported seats (names, room, time) — Saturday, not Swire’s DB
   volunteers   people, applications, assignments
-  maps         floor plates + polygons (optional room_id) — live reads these
+  maps         floor plates + polygons (optional room_id) — HQ and live both read these
   public       announcements
   staff auth   Google + can_open_ops on people
   volunteer auth  same Google → people.id (not a second cookie)

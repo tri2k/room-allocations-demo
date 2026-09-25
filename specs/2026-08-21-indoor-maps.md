@@ -51,7 +51,9 @@ Browser
   join:    space.id in both map and live payloads
 ```
 
-Public routes do not dump HQ live fields into the cached map payload. They add auth (or omit fields) on the live overlay. Same Postgres.
+**Owner (workshop):** geometry is `/api/v1/maps/`, not `/api/v1/live/`. HQ (`ops.berkeley.mt`) and guests (`live.berkeley.mt`) are two views of that folder. Public GET is `mode=external` only. Staff paint (roster, internal labels, timers) is an ops read, not a field on the cached guest payload. The `/live` path below is a composed overlay, not a second copy of the polygons.
+
+Public routes do not dump HQ fields into the cached map payload. Same Postgres.
 
 ### How this attaches to roomsdb
 

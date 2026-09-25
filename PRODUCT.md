@@ -6,7 +6,7 @@ A rooms list (**roomsdb**) plus the screens that share it: event room allocator,
 
 Event organizers (BmMT and similar) still run contests from a pile of spreadsheets and forms: a classroom/capacity sheet, a dense time × room grid, a volunteer Google Form whose room list is copied by hand, printed day-of status, and guest maps that do not know about any of the above. Each copy of DWIN155 drifts.
 
-The kernel is **roomsdb** (the rooms list). The allocator, day-of HQ, public maps, and volunteers are screens on that list — not extra room lists. **Swire** (proctor timers and projector) is outside this platform and exposes an API. **Live stays here** so maps join `rooms.id`. Draft plans stay editable; one imported day plan is what Saturday and guests see.
+The kernel is **roomsdb** (the rooms list). The allocator, day-of HQ, public maps, and volunteers are screens on that list — not extra room lists. **Swire** (proctor timers and projector) is outside this platform and exposes an API. **Maps** are `/api/v1/maps/` (one geometry). HQ and live are two views. **Live stays here** so guests use that same geometry. Draft plans stay editable; one imported day plan is what Saturday and guests see.
 
 **Target design (greenfield):** [specs/2026-08-24-integrated-system.md](specs/2026-08-24-integrated-system.md). First production event: **BMT 2026 (2026-11-14)**. The drag-and-drop app in this git repo is a prototype we can discard at implementation. Workshop locks: [architecture after round 2](specs/2026-08-23-bmt-2026-architecture.md).
 
@@ -34,7 +34,7 @@ The v0–2b allocator in this repo is **not** the target model. Historical notes
 
 ## Architecture
 
-**Target:** **one API**, one Postgres. **`roomsdb.berkeley.mt`** = rooms kernel (rare). **`ops.berkeley.mt`** = officer HQ (+ planner at `/planner`). **`volunteers.berkeley.mt`** = volunteer people. **`live.berkeley.mt`** = guests and maps. **`swire.berkeley.mt`** = external proctor suite (their API). Spec: [integrated system](specs/2026-08-24-integrated-system.md).
+**Target:** **one API**, one Postgres. **`roomsdb.berkeley.mt`** = rooms kernel (rare). **`ops.berkeley.mt`** = officer HQ (+ planner at `/planner`). **`volunteers.berkeley.mt`** = volunteer people. **`live.berkeley.mt`** = guests (map view of shared `/maps/`). **`swire.berkeley.mt`** = external proctor suite (their API). Spec: [integrated system](specs/2026-08-24-integrated-system.md).
 
 Language, UI library, and folder layout are chosen at implementation. `docs/c4/` describes whatever code is in the current commit, not this target. Target API C3 (folders + auth): [specs/2026-08-24-api-c3.md](specs/2026-08-24-api-c3.md).
 
