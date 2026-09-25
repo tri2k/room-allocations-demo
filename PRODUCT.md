@@ -46,7 +46,7 @@ Language, UI library, and folder layout are chosen at implementation. `docs/c4/`
 | Persistence | One PostgreSQL database |
 | API | One HTTP API |
 | Identity | **Google** → `people.id`. Ops if `can_open_ops`. Guests: none. Room password is Swire’s. [Auth by screen](specs/2026-08-23-bmt-2026-architecture.md#auth-by-screen) |
-| Realtime | Timers live on Swire. HQ reads Swire’s API. It does not write clocks or clarifications. |
+| Realtime | Timers live on Swire. Only Swire admins change them. Other platforms poll the read-only API. |
 
 ## Phased Delivery
 

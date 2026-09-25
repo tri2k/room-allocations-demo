@@ -192,7 +192,7 @@ A Person cookie **must not** open a Swire room. Swire’s room session **must no
 | 1 | **Roomsdb** | **`roomsdb.berkeley.mt`** | Google + `can_open_ops` | Officers | Create/edit buildings, floors, rooms, custom fields | Day-of “closed” as a roomsdb edit. Room laptops. Guests. Ordinary volunteers. Planner/HQ **tabs** |
 | 2 | **Allocator** | **`ops.berkeley.mt/planner`** | Same Google | Officers | Build one draft at a time; bulk-assign floors | Live co-edit. Import-as-day-plan is an HQ action (same people, **different link**). Roomsdb tabs. Guests / rooms / volunteers |
 | 3 | **Day-of HQ** | **`ops.berkeley.mt`** (root) | Same Google | Officers in the war room | Import/re-import day plan; list + map; roster import + move; volunteer **admin**. **Read** Swire for timer display | `UPDATE rooms`. Any write to Swire (start, pause, add time, clarifications). Volunteer self-service. Roomsdb in war-room chrome. Owning timer tables |
-| 4 | **Proctor / projector** | **`swire.berkeley.mt` (external)** | Room username + **one** event password, **on Swire** | Laptop (and operator phone on Swire’s session) | **Start** that room’s timer. See clarifications. Operator view: roster names **if Swire fetches them under their contract**. Projector: timer + clarifications only | This platform’s Google. Other rooms. Writing roomsdb. HQ chrome |
+| 4 | **Proctor / projector** | **`swire.berkeley.mt` (external)** | Room username + **one** event password, **on Swire** | Laptop in the room | **Watch** that room’s timer and clarifications. Projector: timer + clarifications only | **Any write** (start, pause, add time, clarifications). This platform’s Google. Other rooms. Writing roomsdb. HQ chrome |
 | 5 | **Public** | **`live.berkeley.mt`** | None | Students, parents, coaches | Read announcements and **maps on this API** | Login. Public countdown. Volunteer apply. Officer menus. Calling Swire |
 | 6 | **Volunteers** (self-service) | **`volunteers.berkeley.mt`** | Google → same `people.id` | Returning and first-time volunteers, including officers as themselves | Apply / edit **own** person + this-event application. After check-in, see **own** assignment | Ops HQ, roomsdb, other people’s rows, room password, check-in (staff does that on HQ) |
 
@@ -289,16 +289,16 @@ HQ dashboard: **list ↔ map toggle**. Timer columns are a **read** of Swire’s
 
 ### Proctor suite + projection (Swire, external)
 
-**Not this API.** Swire is a separate deploy and exposes an HTTP API. Same two presentations as before, on their host:
+**Not this API.** Swire is a separate deploy. **Swire admins are the only writers.** Proctors cannot modify anything.
 
 - **Projection** (HDMI): large timer + clarifications (text/images). No roster names, no HQ notes.
-- **Operator** (same Swire login, phone or laptop): start button, desync banner, **names list** if their API is allowed to read roster.
+- **Proctor** (room login): the same view. No start, pause, or add-time control.
 
 5-minute remaining banner on both.
 
-**Swire’s exposed API is read-only.** Start, pause, add time, and clarifications are Swire’s own screens. HQ only GETs status to paint the list and map. If Swire is down, HQ still shows the day plan, map, roster, and volunteers; the timer panel says unavailable. If this platform is down, proctors still run Swire.
+**Exposed API is read-only.** Other platforms poll it for timer progress and other Swire data. HQ paints that onto the list and map. If Swire is down, HQ still shows the day plan, map, roster, and volunteers; the timer panel says unavailable. If this platform is down, Swire admins and proctors still use Swire.
 
-Clarifications are one-way on Swire. No ack. Algebra does not learn that Geometry got a message. This platform does not compose them.
+Clarifications are one-way, sent by Swire admins. No ack. Algebra does not learn that Geometry got a message. This platform does not compose them.
 
 Live does **not** call Swire. Maps stay on this platform.
 
