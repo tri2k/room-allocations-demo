@@ -87,7 +87,7 @@ Figma does **not** own rooms. The volunteer form does **not** own rooms. The pro
 | Contest rounds | **Power**, **Individual**, **Guts**. Individual: 2 of 4 focus **or** 1 general | One room × one slot = one activity |
 | Roster | CSV morning-of after check-in; **names**; **move in-app**; two tests = two rows | Registration platform stays separate |
 | Public site | `live.berkeley.mt`, English, **no public clock** | Per-room guest detail undecided. Outdoor maps stretch |
-| Volunteers | **`volunteers.berkeley.mt`**, **Google**. Staff admin on ops (`can_open_ops`). Form builder; ~300 people; DNI | PII visible to managers |
+| Volunteers | **`volunteers.berkeley.mt`**, **Google**. Staff admin at **`/admin` on that host** (`can_open_ops`). Form builder; ~300 people; DNI | PII visible to managers. HQ reads assignments and does not edit them |
 | Staff auth | **Google** for Person accounts on this platform. Ops and roomsdb require `can_open_ops`. Live: none. Room password is **Swire’s** | [architecture](2026-08-23-bmt-2026-architecture.md#one-person-one-id) |
 | Realtime | Swire admins own clocks. Other platforms **poll** Swire’s read-only API. Live does not show a public clock | 50+ rooms is still a small JSON on Swire |
 | C4 | Update as-built diagrams only when code lands | This file is target, not current commit |

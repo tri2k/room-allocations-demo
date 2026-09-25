@@ -143,9 +143,9 @@ Today’s volunteer app has three officer views. They are **queries on the same 
 
 | Today | Job | Where in the new product |
 | ----- | --- | ------------------------ |
-| Table of all volunteers | Year-round people: applications, dropouts, DNI, form | **Volunteer admin** — `volunteers.berkeley.mt/admin` (typed URL, like Swire `/admin`) **or** a tab on ops. Same API. Officers with `can_open_ops` can use either host. |
+| Table of all volunteers | Year-round people: applications, dropouts, DNI, form | **`volunteers.berkeley.mt/admin`**. Not the HQ page. Same API. Officers with `can_open_ops`. |
 | Check-in | Saturday: mark arrived; then they (and HQ) see assignment | **Ops HQ tab** (war room). Volunteer site can **show** “you’re checked in, you’re in DWIN155” after that — not a second check-in database. |
-| Per-building proctor tables | Saturday: who is in which classroom | **Ops HQ tab** (this is the dashboard). Volunteer admin can show the same assignment list in October. One `assignments` table. |
+| Per-building proctor tables | Saturday: who is in which classroom | **HQ shows the list.** Assigning still happens on `volunteers.berkeley.mt/admin`. One `assignments` table. |
 
 So: **both hosts, one data.** Do not copy the volunteer table into HQ. HQ is another screen on `people` / `applications` / `assignments`. Swire admin (timers) stays a **redirect to ops**, not a third volunteer list.
 
@@ -161,7 +161,7 @@ A/B/C (staff password, email/password, second User table) are **out**. The old c
 
 | Who | How they sign in | What they see |
 | --- | ---------------- | ------------- |
-| **Staff / ops** | **Google**, Person has `can_open_ops` | Roomsdb, allocator, HQ, volunteer **admin**, roster |
+| **Staff / ops** | **Google**, Person has `can_open_ops` | Roomsdb, allocator, HQ, volunteer **admin** (on the volunteers host), live `/admin`, roster |
 | **Volunteer** | **Google**, same Person on **`volunteers.berkeley.mt`** | Apply / edit self / see own assignment after check-in. Officers: same Person |
 | **Guest** | None | `live.berkeley.mt` (announcements, maps) |
 | **Room (Swire, not this API)** | `DWIN155` + event password on **`swire.berkeley.mt`** | Timer, projection |
@@ -191,12 +191,13 @@ A Person cookie **must not** open a Swire room. Swire’s room session **must no
 | - | ------ | --------------- | ------- | -------------- | ---------------------- | -------- |
 | 1 | **Roomsdb** | **`roomsdb.berkeley.mt`** | Google + `can_open_ops` | Officers | Create/edit buildings, floors, rooms, custom fields | Day-of “closed” as a roomsdb edit. Room laptops. Guests. Ordinary volunteers. Planner/HQ **tabs** |
 | 2 | **Allocator** | **`ops.berkeley.mt/planner`** | Same Google | Officers | Build one draft at a time; bulk-assign floors | Live co-edit. Import-as-day-plan is an HQ action (same people, **different link**). Roomsdb tabs. Guests / rooms / volunteers |
-| 3 | **Day-of HQ** | **`ops.berkeley.mt`** (root) | Same Google | Officers in the war room | Import/re-import day plan; list + map; roster import + move; volunteer **admin**. **Read** Swire for timer display | `UPDATE rooms`. Any write to Swire (start, pause, add time, clarifications). Volunteer self-service. Roomsdb in war-room chrome. Owning timer tables |
+| 3 | **Day-of HQ** | **`ops.berkeley.mt`** (root) | Same Google | Officers in the war room | Import/re-import day plan; list + map **view**; roster import + move. **Read** rooms, maps, assignments, and Swire | Writes to roomsdb, maps, volunteers, live, or Swire. Volunteer self-service. Roomsdb in war-room chrome |
 | 4 | **Proctor / projector** | **`swire.berkeley.mt` (external)** | Room username + **one** event password, **on Swire** | Laptop in the room | **Watch** that room’s timer and clarifications. Projector: timer + clarifications only | **Any write** (start, pause, add time, clarifications). This platform’s Google. Other rooms. Writing roomsdb. HQ chrome |
 | 5 | **Public** | **`live.berkeley.mt`** | None on `/`. **`/admin`**: Google + `can_open_ops`, cookie `Path=/admin` | Students, parents, coaches on `/`. Officers who type `/admin` | Guests: read announcements and **maps**. Admins: edit public content (announcements) | Guest login button. Public countdown. Volunteer apply. Officer menus on `/`. HQ, roomsdb, or volunteer admin inside `/admin`. Calling Swire |
-| 6 | **Volunteers** (self-service) | **`volunteers.berkeley.mt`** | Google → same `people.id` | Returning and first-time volunteers, including officers as themselves | Apply / edit **own** person + this-event application. After check-in, see **own** assignment | Ops HQ, roomsdb, other people’s rows, room password, check-in (staff does that on HQ) |
+| 6 | **Volunteers** (self-service) | **`volunteers.berkeley.mt`** | Google → same `people.id` | Returning and first-time volunteers | Apply / edit **own** person + this-event application. After check-in, see **own** assignment | Ops HQ, roomsdb, other people’s rows, room password |
+| 6a | **Volunteer admin** | **`volunteers.berkeley.mt/admin`** | Google + `can_open_ops` | Officers | Assign, DNI, name-search check-in, form builder | Doing those edits on the HQ page |
 
-**Volunteer admin is not a seventh login.** It is screen 3 (and optionally typed `volunteers.berkeley.mt/admin`) for people who already have `can_open_ops`. Same tables as screen 6.
+**Volunteer admin is not a seventh login.** It is `volunteers.berkeley.mt/admin` for people who already have `can_open_ops`. Same tables as screen 6. The HQ page only reads them.
 
 **OAuth:** one **published** Google client (Testing-mode user cap is too small for ~300 volunteers). Authorized origins include ops, roomsdb, volunteers, and **`live.berkeley.mt` for `/admin` only**. First visit: Continue with Google, then the form. Return visit: same Google → same `people.id`.
 
@@ -313,13 +314,13 @@ Live does **not** call Swire. Maps stay on this platform.
 
 ### Volunteers (shape only)
 
-- Host: **`volunteers.berkeley.mt`** for the people; staff **admin** on ops.
+- Host: **`volunteers.berkeley.mt`**. Staff **admin** is **`/admin` on that host**, not the HQ page.
 - Returning volunteers **reuse Google** → same `people.id`. First-time: Continue with Google, then the form.
-- Form **builder** (admin on ops), not a hardcoded Google Form clone.
+- Form **builder** on the volunteer admin, not a hardcoded Google Form clone.
 - Roles **customizable**.
 - **Shifts** exist (schema: assignment has a time window); UI details later.
 - Default proctor count from a **capacity heuristic**, override per room.
-- Check-in: **name search** (staff on ops). Volunteer seeing their own room is on the volunteer host.
+- Check-in: **name search** on `volunteers.berkeley.mt/admin`. Volunteer seeing their own room is on the same host. HQ reads the result.
 - **Do not invite** list.
 - ~300 volunteers. Shirt/dietary/etc stored; visible to managers; field list later.
 
