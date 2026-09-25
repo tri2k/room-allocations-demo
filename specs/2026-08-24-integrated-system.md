@@ -26,21 +26,39 @@ At implementation we may rewrite this repo or start a new tree. Specs describe t
 
 - One Postgres, one database. **This** platform: roomsdb, planner, HQ, volunteers, live, and **maps**. They share `rooms.id`.
 - **One API** for that platform. Bookmarks: **`roomsdb.berkeley.mt`**, **`ops.berkeley.mt/planner`**, **`ops.berkeley.mt`**, **`volunteers.berkeley.mt`**, **`live.berkeley.mt`**.
-- **Maps are their own folder** (`/api/v1/maps/`), not a live feature. HQ’s map view and the guest site both read that geometry. What gets painted on it differs (staff day plan vs public labels).
-- **Swire is not on this platform.** Proctor tools stay a separate deploy. **Only Swire admins write** (start, pause, add time, clarifications). Proctors cannot. The exposed API is **read-only**; other platforms poll it for timer progress and other Swire data. If Swire dies, roomsdb / ops / volunteers / live / maps stay up. If this API dies, Swire still runs.
-- **Live stays here** so guests read the same maps HQ uses, without a second copy of DWIN155.
+- **Maps are not settled.** Geometry must not be copied into a second rooms list, but whether maps are year-round like roomsdb or per event, and how the Figma files get in, is open.
+- **Swire is not this software.** It is built independently, with its own admin login and its own proctor login. **Only Swire admins write.** Proctors cannot. It exposes a **public read-only API** so HQ and any other tool can see test progress in rooms. If Swire dies, this platform stays up. If this platform dies, Swire still runs.
 - Roomsdb is sacred: day-of never updates rooms. Swire does not write rooms either.
 - Draft grid → explicit import as frozen day plan. Clocks live on Swire. This platform never writes them, so re-import cannot reset them.
 - No live co-edit on the grid
 - Room login (`{building code}{room name}` + one event password) is **Swire’s**, not a cookie on this API
-- **Google** for every Person on this platform; staff is `can_open_ops` on that Person. Other issuers (Microsoft, email/password as login) are out of this design pass.
+- **Auth is an open question** for the OAuth doors: volunteers at minimum, likely HQ, possibly roomsdb and the planner. Google-only was a sketch, not a lock, until that question is answered. Live `/admin` is also not settled. Swire does not use this auth.
 - Roster is a CSV snapshot from the registration product; students are not volunteer people
 - Custom room fields; built-in `capacity` only (≥ 0)
 - Building codes DWIN, WHLR, VLSB, MLK; code set at create
 - `appears_on_grid` hedge; skip a Location supertype
 - Print backup as already locked. Timer / clarification / projector **behavior** stays as locked; **where it runs** is Swire, not this API.
 
-**Stack at build time is still open.** Architecture is: **one API**, one Postgres, hosts **`roomsdb.berkeley.mt`**, **`ops.berkeley.mt`**, **`volunteers.berkeley.mt`**, **`live.berkeley.mt`**. **`swire.berkeley.mt` is someone else’s deploy.** Paper if this site dies. Language and UI library are not part of this design.
+**Stack at build time is still open.** Language and UI library are not part of this design. Hosts below are the bookmarks we have been using. **`swire.berkeley.mt` is someone else’s deploy.**
+
+## What each part is
+
+These are the jobs. Admin pages are where that part is changed. The HQ page does not change the others.
+
+| Part | What it is | Writes happen |
+| ---- | ---------- | ------------- |
+| **Swire** | Standalone. Not this software. Own admin login and own proctor login. Proctors do not modify it. | Swire admins. **Public read-only API** for timer progress and other Swire data, for HQ situational awareness and for any other tool that needs test progress in rooms |
+| **Live** | Public site for guests: parents, coaches, students. | **`live.berkeley.mt/admin`** |
+| **Volunteers** | Two jobs. (1) People sign up and update their own info in one portal, tracked across semesters. (2) Day-of reference (a table of volunteers) and the check-in flow: note arrival and assign a task. | Volunteers edit themselves. Staff edits happen on the volunteers admin, not on HQ |
+| **Roomsdb** | Rarely edited. An in-house copy of the Berkeley rooms database, plus any other rooms we want to use. Day-of does not edit it. | `roomsdb.berkeley.mt` |
+| **Rooms allocation planner** | In the weeks before the tournament: which events are assigned to which rooms. One writer at a time. | `ops.berkeley.mt/planner` |
+| **HQ** | A visual dashboard of event progress. Plans imported from the planner, with Swire’s current state shown on top. | The import of the plan onto the dashboard. Not rooms, not volunteers, not live, not Swire |
+
+**Open, do not pretend these are decided:**
+
+- **Auth** for the OAuth doors. Volunteers at minimum, likely HQ, possibly roomsdb and the planner. This is the next workshop. Swire’s logins are Swire’s.
+- **Volunteer view on HQ.** A copy of the volunteers table on the dashboard is useful and also cuts against “go to the volunteers component for volunteer stuff.” Undecided.
+- **Maps.** Year-round like roomsdb, or event configuration? The only source today is Figma files. How those files become something the software can draw is undecided. Do not copy DWIN155 into a second list either way.
 
 ## One API (the twin of one Postgres)
 
@@ -269,9 +287,13 @@ If Postgres or the site dies: printed day plan, printed room password, assignmen
 
 ## Open (product, not leftover prototype)
 
+- **Auth** for volunteers, likely HQ, possibly roomsdb and the planner. Next workshop.
+- **Whether HQ shows a volunteers table.**
+- **Where maps live** (year-round vs per event) and how Figma files get in.
 - Roomsdb room form: **checkbox** vs **kind dropdown** for “show on allocator grid.”
-- HQ columns, activity names for focus tests, volunteer form fields, public per-room detail, clarification image storage, UI library / language.
+- HQ columns, activity names for focus tests, volunteer form fields, public per-room detail, UI library / language.
+- Student roster (registration CSV, move a student Saturday) was specified earlier and is not in the component summary above. Confirm whether HQ or another admin owns it.
 
 ## Next
 
-Keep workshopping **roomsdb**, then the other screens, against this file. Do not ask whether the prototype already has a column. Slightly off details get fixed in module write-ups; do not reopen “day-of never writes roomsdb” or “one Postgres.”
+Next workshop is **auth** for the OAuth doors. Component jobs above are the description to test that against. Do not reopen “Swire is separate,” “Swire’s API is public and read-only,” or “day-of never writes roomsdb.”
