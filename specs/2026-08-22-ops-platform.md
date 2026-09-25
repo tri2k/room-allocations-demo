@@ -207,7 +207,7 @@ Protect the kernel, then cut **vertical slices** that reuse it:
 2. **Allocator + publish** — finish the grid; add “this sheet is the plan.” Without publish, every later tool will scrape a spreadsheet again.
 3. **People + assignments** — kills the volunteer room-list copy; gives proctor suite a join key.
 4. **Ops list view** — published allocations + empty live fields. Map view when indoor maps land.
-5. **Proctor timer / clarifications** — writes the same `LiveRoomState`.
+5. **Proctor timer / clarifications** — Swire’s product. This platform only reads their API.
 6. **Public site** — maps + public live subset.
 7. **Wayfinding graph** — only if guests still get lost after floor search.
 
