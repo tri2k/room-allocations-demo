@@ -109,8 +109,8 @@ Volunteers (people, applications, assignments, DNI)
   writers: volunteer account (own person + this-event application); staff-with-write (assignments, DNI, check-in, form)
 
 Public content (announcements)
-  writers: staff-with-write on ops (live `/admin` redirects here)
-  never: guests, room sessions, volunteer self-service
+  writers: staff-with-write on **`live.berkeley.mt/admin`**
+  never: guests, room sessions, volunteer self-service, HQ roster tools
 ```
 
 Day-of tools **must not** `UPDATE rooms`. “Closed,” “campus pulled,” “moved to 182” are event rows.
@@ -183,9 +183,9 @@ Screens on **this** platform are not separate logins. There are **two ways to pr
 
 Staff vs volunteer is **not** a second Google button. It is `can_open_ops` on that Person. For this design pass, `can_open_ops` is also write (roomsdb, drafts, HQ, volunteer admin, roster, announcements). Organizer view-only is later.
 
-A Person cookie **must not** open a Swire room. Swire’s room session **must not** be accepted as staff on this API. Live guest pages **must not** grow officer menus just because a Person cookie exists (typed `/admin` redirects to ops).
+A Person cookie **must not** open a Swire room. Swire’s room session **must not** be accepted as staff on this API. Live guest pages **must not** grow officer menus. **`live.berkeley.mt/admin`** is a typed URL, not a button on the public site.
 
-**Locked (live publish):** compose announcements on **ops**. `live.berkeley.mt/admin` is a typed URL that **redirects to ops**. Guests never see a sign-in button on live.
+**Locked (live publish):** staff compose announcements on **`live.berkeley.mt/admin`** (Google + `can_open_ops`). That panel writes `/api/v1/live/` public content only. It does not open HQ, roomsdb, or volunteer admin. The session cookie is **`Path=/admin`** so a script on the guest pages does not receive it. Guests never see a sign-in button.
 
 | # | Screen | Host (bookmark) | Sign-in | Who may use it | What this login may do | Must not |
 | - | ------ | --------------- | ------- | -------------- | ---------------------- | -------- |
@@ -193,18 +193,18 @@ A Person cookie **must not** open a Swire room. Swire’s room session **must no
 | 2 | **Allocator** | **`ops.berkeley.mt/planner`** | Same Google | Officers | Build one draft at a time; bulk-assign floors | Live co-edit. Import-as-day-plan is an HQ action (same people, **different link**). Roomsdb tabs. Guests / rooms / volunteers |
 | 3 | **Day-of HQ** | **`ops.berkeley.mt`** (root) | Same Google | Officers in the war room | Import/re-import day plan; list + map; roster import + move; volunteer **admin**. **Read** Swire for timer display | `UPDATE rooms`. Any write to Swire (start, pause, add time, clarifications). Volunteer self-service. Roomsdb in war-room chrome. Owning timer tables |
 | 4 | **Proctor / projector** | **`swire.berkeley.mt` (external)** | Room username + **one** event password, **on Swire** | Laptop in the room | **Watch** that room’s timer and clarifications. Projector: timer + clarifications only | **Any write** (start, pause, add time, clarifications). This platform’s Google. Other rooms. Writing roomsdb. HQ chrome |
-| 5 | **Public** | **`live.berkeley.mt`** | None | Students, parents, coaches | Read announcements and **maps on this API** | Login. Public countdown. Volunteer apply. Officer menus. Calling Swire |
+| 5 | **Public** | **`live.berkeley.mt`** | None on `/`. **`/admin`**: Google + `can_open_ops`, cookie `Path=/admin` | Students, parents, coaches on `/`. Officers who type `/admin` | Guests: read announcements and **maps**. Admins: edit public content (announcements) | Guest login button. Public countdown. Volunteer apply. Officer menus on `/`. HQ, roomsdb, or volunteer admin inside `/admin`. Calling Swire |
 | 6 | **Volunteers** (self-service) | **`volunteers.berkeley.mt`** | Google → same `people.id` | Returning and first-time volunteers, including officers as themselves | Apply / edit **own** person + this-event application. After check-in, see **own** assignment | Ops HQ, roomsdb, other people’s rows, room password, check-in (staff does that on HQ) |
 
 **Volunteer admin is not a seventh login.** It is screen 3 (and optionally typed `volunteers.berkeley.mt/admin`) for people who already have `can_open_ops`. Same tables as screen 6.
 
-**OAuth:** one **published** Google client (Testing-mode user cap is too small for ~300 volunteers). Authorized origins include ops, roomsdb, and volunteers — not Swire or live. First visit: Continue with Google, then the form. Return visit: same Google → same `people.id`.
+**OAuth:** one **published** Google client (Testing-mode user cap is too small for ~300 volunteers). Authorized origins include ops, roomsdb, volunteers, and **`live.berkeley.mt` for `/admin` only**. First visit: Continue with Google, then the form. Return visit: same Google → same `people.id`.
 
 **Bounce:** a Person **without** `can_open_ops` who opens `ops.berkeley.mt` or `roomsdb.berkeley.mt` does not see those tools. Send them to `volunteers.berkeley.mt`. Stolen staff Google still opens HQ and roomsdb — accepted.
 
 **Saturday mix-up (locked):** the human assigned to proctor 155 may be signed into Google on their phone (screen 6). The HDMI laptop still uses the **room** login (screen 4). Those are not interchangeable.
 
-**Cookie hygiene:** Person cookies must not use `Domain=.berkeley.mt`. That would send a staff/volunteer session to `live` and `swire`. Live still shows no officer chrome and must not receive a Person cookie. Swire does not receive one either; proctors sign in on Swire.
+**Cookie hygiene:** Person cookies must not use `Domain=.berkeley.mt`. That would send a staff or volunteer session to every host. The live admin cookie is **`Path=/admin`** on `live.berkeley.mt` only, so `/` does not receive it. Swire does not receive a Person cookie. Proctors sign in on Swire.
 
 ### Hosts are public; isolation is the API
 
@@ -325,7 +325,7 @@ Live does **not** call Swire. Maps stay on this platform.
 
 ### Public (`live.berkeley.mt`)
 
-- Announcements: staff compose on **ops** (live `/admin` redirects there). English.
+- Announcements: staff compose on **`live.berkeley.mt/admin`**. English. Not on ops.
 - **No** public countdown (room clocks differ).
 - Indoor maps when Figma is imported; outdoor later.
 - What a guest sees **per room**: still **undecided** — spec the payload with a flag `publicRoomDetail: none | activityLabel`.

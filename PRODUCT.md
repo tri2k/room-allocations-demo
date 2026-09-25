@@ -45,7 +45,7 @@ Language, UI library, and folder layout are chosen at implementation. `docs/c4/`
 | UI | Browser app (staff, projector, public). Library TBD |
 | Persistence | One PostgreSQL database |
 | API | One HTTP API |
-| Identity | **Google** → `people.id`. Ops if `can_open_ops`. Guests: none. Room password is Swire’s. [Auth by screen](specs/2026-08-23-bmt-2026-architecture.md#auth-by-screen) |
+| Identity | **Google** → `people.id`. Ops if `can_open_ops`. Live guests: none. Live admin: same staff flag at `/admin`. Room password is Swire’s. [Auth by screen](specs/2026-08-23-bmt-2026-architecture.md#auth-by-screen) |
 | Realtime | Timers live on Swire. Only Swire admins change them. Other platforms poll the read-only API. |
 
 ## Phased Delivery
@@ -65,7 +65,7 @@ Design first (this PR), then implement the six screens against the greenfield sp
 
 | Question | Status |
 | -------- | ------ |
-| Staff / volunteer login | **Decided:** Google only for Person accounts on this platform. Ops = `can_open_ops`. Live = none. Room password is Swire’s, not this API |
+| Staff / volunteer login | **Decided:** Google only for Person accounts on this platform. Ops = `can_open_ops`. Live guests = none. Live `/admin` = same staff flag. Room password is Swire’s, not this API |
 | Auth | **Decided:** Google for people. Publish the OAuth client (Testing cap is too small for ~300 volunteers) |
 | Slot granularity | **Decided:** 15 min default; per draft |
 | Registration / scoring | **Decided:** other product; roster CSV into this database |

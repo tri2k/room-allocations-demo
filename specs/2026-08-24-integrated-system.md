@@ -156,7 +156,7 @@ Screens should feel like places you can bookmark. Last semester failed because t
 | Allocator | staff | Same Google | **`ops.berkeley.mt/planner`** — time × room draft (regular) |
 | HQ | staff | Same Google | **`ops.berkeley.mt`** — Saturday list **and map view** (same `/maps/` geometry), roster, volunteer **admin**. Timer **display** is a read of Swire (panel degrades if Swire is down). No timer writes |
 | Volunteers | returning volunteers | Google → `people.id` | **`volunteers.berkeley.mt`** — own account, apply again, see assignment. Not ops. |
-| Public | guests | None | **`live.berkeley.mt`** — announcements and a **map view of `/maps/`**. No public clock |
+| Public | guests | None on the public pages | **`live.berkeley.mt`** — announcements and a **map view of `/maps/`**. No public clock. Staff public-content admin is the typed URL **`/admin`** |
 | Proctors | laptop | `DWIN155` + event password (**Swire**) | **`swire.berkeley.mt`** — watch timer and clarifications, projector. **Cannot modify Swire.** |
 
 **Seventh / apply:** first-time apply is on **`volunteers.berkeley.mt`** (logged out). Do not put the volunteer portal on `live.berkeley.mt` (parents) or on ops (roster, timers).
@@ -179,11 +179,11 @@ We are not inventing `hq.berkeley.mt`. HQ lives on **ops**. Volunteer **people**
 | **`ops.berkeley.mt`** | **Saturday bookmark for officers** (root = HQ). Planner at **`/planner`** (regular grid work). HQ list **and map** (reads `/maps/`). Volunteer **admin** (assign rooms, DNI, name-search check-in, form builder). Staff login, not volunteer login. **No roomsdb tab** on HQ or planner. |
 | **`volunteers.berkeley.mt`** | **Volunteer door.** Continue with Google. Apply / update this event, see assignment after check-in. Same `people` row as ops if they are staff. **Not** the room password. |
 | **`swire.berkeley.mt`** | **External.** Proctor suite. **Swire admins** are the only writers. Proctors watch (room login, projector). Exposed API is read-only; other platforms poll it. |
-| **`live.berkeley.mt`** | **On this platform.** Guests. Announcements and a map view of the same geometry HQ uses. No volunteer login, no officer menus. Typed `/admin` redirects to ops. |
+| **`live.berkeley.mt`** | **On this platform.** Guests. Announcements and a map view of the same geometry HQ uses. No volunteer login, no officer menus on the public pages. **`/admin`** is the live admin panel (typed URL, not a link in the guest chrome): Google + `can_open_ops`, writes public content only. |
 
 Cadence (rare roomsdb vs regular planner vs Saturday HQ): [architecture](2026-08-23-bmt-2026-architecture.md#staff-links-by-cadence).
 
-Same API, same Postgres for everything **except Swire**. **One cookie on this API:** **Person** (Google; host-scoped to ops / roomsdb / volunteers; staff if `can_open_ops`). Live guests: none. The **room** cookie lives on Swire only. Do not set Person cookies on `.berkeley.mt` (that would include live and Swire). Hosts are public; isolation is API authorization plus **Swire as a separate process**. Details: [hosts are public](2026-08-23-bmt-2026-architecture.md#hosts-are-public-isolation-is-the-api).
+Same API, same Postgres for everything **except Swire**. **Person** cookie (Google; host-scoped to ops / roomsdb / volunteers; staff if `can_open_ops`). Live guests: none. Live **admin** uses a Person cookie with **`Path=/admin`** so `/` does not receive it. The **room** cookie lives on Swire only. Do not set Person cookies on `.berkeley.mt`. Hosts are public; isolation is API authorization plus **Swire as a separate process**. Details: [hosts are public](2026-08-23-bmt-2026-architecture.md#hosts-are-public-isolation-is-the-api).
 
 Last semester’s “HQ on the same link as volunteers” was officers wanting one bookmark. That still works if **admin** stays on ops and **volunteer accounts** move. ~300 people should not sign into `ops.berkeley.mt`.
 
@@ -200,7 +200,7 @@ Five screens on this roomsdb, plus Swire beside it:
 | Day-of HQ | this platform | Frozen plan + Saturday list and **map view**. Roster, volunteer admin. Timer column is a **read** of Swire. |
 | Volunteers | this platform | People across semesters, form, assign to roomsdb rooms, check-in. |
 | Maps | this platform | Floor plates and polygons (`/api/v1/maps/`). Not a bookmark of its own. HQ and live are two views. |
-| Public | this platform | `live.berkeley.mt` — announcements and the guest map view. No public clock. |
+| Public | this platform | `live.berkeley.mt` — announcements and the guest map view. No public clock. Admin at **`/admin`**. |
 | Proctor / projector | **Swire** | Watch timer, clarifications, projector. **No writes.** Swire admins modify Swire. Exposed API is read-only. |
 
 Guests and volunteer *applicants* do not use the staff login. Volunteers who return use the **volunteer** login on `volunteers.berkeley.mt`. Projectors use Swire’s room login.
