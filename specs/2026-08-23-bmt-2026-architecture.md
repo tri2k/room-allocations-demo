@@ -10,7 +10,7 @@ Parent notes: [ops platform](2026-08-22-ops-platform.md). Indoor maps: [2026-08-
 
 **Not yet ready to freeze visual details** (HQ columns, map colors, volunteer form fields, shift UI). Those can be marked “TBD in module spec” and designed against the same data model.
 
-**Must-ship everything on Nov 14** plus printed backup is tight. Architecture should optimize for **one deploy and paper fallback**, not six vibecoded sites (last semester 4/5 broke).
+**Must-ship roomsdb, planner, HQ, volunteers, and live on Nov 14** plus printed backup is tight. Those stay **one deploy**. **Swire is the deliberate second deploy** (proctor suite only) so a timer outage does not take maps down.
 
 ## Four questions that were easy to misread
 
@@ -92,7 +92,7 @@ Reliability if Postgres dies: printed plan + offline timers, not “maps still h
 ```text
 Roomsdb (buildings, floors, rooms, custom field defs)
   writers: staff-with-write (same login as HQ — see staff auth)
-  never: HQ day-of, proctors, public, volunteer check-in
+  never: HQ day-of, Swire, public, volunteer check-in
 
 Allocator drafts (grid)
   writers: staff (one person at a time; no live co-edit)
@@ -102,9 +102,8 @@ Day plan (frozen copy of one sheet)
   writers: ops admin import / re-import; ops admin day-plan overrides (room closed, move round)
   never: roomsdb tables
 
-Live (timers, clarifications, desync, roster seats)
-  writers: room session (start timer only); staff-with-write (everything else); roster import + in-app student move
-  never: roomsdb
+This database does not store timers or clarifications.
+  Swire owns those. HQ calls Swire’s API. Roster seats stay here (CSV import + in-app move).
 
 Volunteers (people, applications, assignments, DNI)
   writers: volunteer account (own person + this-event application); staff-with-write (assignments, DNI, check-in, form)
@@ -164,36 +163,37 @@ A/B/C (staff password, email/password, second User table) are **out**. The old c
 | --- | ---------------- | ------------- |
 | **Staff / ops** | **Google**, Person has `can_open_ops` | Roomsdb, allocator, HQ, volunteer **admin**, roster |
 | **Volunteer** | **Google**, same Person on **`volunteers.berkeley.mt`** | Apply / edit self / see own assignment after check-in. Officers: same Person |
-| **Room** | `DWIN155` + event password | Timer, projection — not a Person, not Google |
-| **Guest** | None | `live.berkeley.mt` |
+| **Guest** | None | `live.berkeley.mt` (announcements, maps) |
+| **Room (Swire, not this API)** | `DWIN155` + event password on **`swire.berkeley.mt`** | Timer, projection |
 
 Proctor-as-person (the volunteer assigned to 155) is **not** the same as the room login. They may have a volunteer account; the laptop still uses `DWIN155`. Assignments point at `rooms.id`.
 
-Today the suite uses a **shared password in an environment variable** (all rooms, one secret, change = redeploy). Target: same UX (**one password for every room that event**), stored on the Event/day plan (hashed), **printable** on the backup packet, rotatable by admin **without** a redeploy. Unique per-room PINs are not v1.
+Today Swire uses a **shared password in an environment variable** (all rooms, one secret, change = redeploy). Target, **on Swire**: same UX (**one password for every room that event**), printable on the backup packet, rotatable **without** a redeploy of this platform. Unique per-room PINs are not v1. This API does not store that secret.
 
-### Auth by screen (the six)
+### Auth by screen
 
-The six “platforms” are **screens**, not six logins and not six account databases. There are **three ways to prove who you are**:
+Screens on **this** platform are not separate logins. There are **two ways to prove who you are here**:
 
 | Proof | Cookie | Who |
 | ----- | ------ | --- |
-| **Google** → `people.id` | **Person** cookie (HTTP-only, `Secure`, `SameSite`). Set on **`ops`**, **`roomsdb`**, and **`volunteers` only** (host-scoped, issued together at OAuth). **Not** sent to Swire or live. | Every human in this product |
-| **`DWIN155` + event password** | **Room** cookie, scoped to **`swire.berkeley.mt` only** | The laptop in that room, not a human |
+| **Google** → `people.id` | **Person** cookie (HTTP-only, `Secure`, `SameSite`). Set on **`ops`**, **`roomsdb`**, and **`volunteers` only** (host-scoped, issued together at OAuth). **Not** sent to Swire or live. | Every human on **this** platform |
 | **Nothing** | None | Guests on `live.berkeley.mt` |
+
+**Room login is not a cookie here.** `DWIN155` + one event password is Swire’s session, on Swire’s host. This API does not accept it.
 
 Staff vs volunteer is **not** a second Google button. It is `can_open_ops` on that Person. For this design pass, `can_open_ops` is also write (roomsdb, drafts, HQ, volunteer admin, roster, announcements). Organizer view-only is later.
 
-A Person cookie **must not** open a room. A room cookie **must not** open ops, roomsdb, or volunteer admin. Live guest pages **must not** grow officer menus just because a Person cookie exists (typed `/admin` is the exception, same pattern as Swire).
+A Person cookie **must not** open a Swire room. Swire’s room session **must not** be accepted as staff on this API. Live guest pages **must not** grow officer menus just because a Person cookie exists (typed `/admin` redirects to ops).
 
-**Locked (live publish):** compose announcements on **ops**. `live.berkeley.mt/admin` is a typed URL that **redirects to ops**, like Swire `/admin`. Guests never see a sign-in button on live.
+**Locked (live publish):** compose announcements on **ops**. `live.berkeley.mt/admin` is a typed URL that **redirects to ops**. Guests never see a sign-in button on live.
 
 | # | Screen | Host (bookmark) | Sign-in | Who may use it | What this login may do | Must not |
 | - | ------ | --------------- | ------- | -------------- | ---------------------- | -------- |
 | 1 | **Roomsdb** | **`roomsdb.berkeley.mt`** | Google + `can_open_ops` | Officers | Create/edit buildings, floors, rooms, custom fields | Day-of “closed” as a roomsdb edit. Room laptops. Guests. Ordinary volunteers. Planner/HQ **tabs** |
 | 2 | **Allocator** | **`ops.berkeley.mt/planner`** | Same Google | Officers | Build one draft at a time; bulk-assign floors | Live co-edit. Import-as-day-plan is an HQ action (same people, **different link**). Roomsdb tabs. Guests / rooms / volunteers |
-| 3 | **Day-of HQ** | **`ops.berkeley.mt`** (root) | Same Google | Officers in the war room | Import/re-import day plan; list + map; pause/add time; clarifications; roster import + move; volunteer **admin** (assign, DNI, name-search check-in) | `UPDATE rooms`. Start every room’s clock in bulk. Volunteer self-service. Roomsdb in war-room chrome |
-| 4 | **Proctor / projector** | **`swire.berkeley.mt`** | Room username + **one** event password | Laptop (and operator phone on the same room session) | **Start** that room’s timer. See clarifications. Operator view: roster **names**. Projector: timer + clarifications only | Google. Pause / add time (HQ). Other rooms. Roomsdb. HQ chrome. `/admin` is typed → **redirect to ops**, not a button |
-| 5 | **Public** | **`live.berkeley.mt`** | None | Students, parents, coaches | Read announcements and maps | Login. Public countdown. Volunteer apply. Officer menus |
+| 3 | **Day-of HQ** | **`ops.berkeley.mt`** (root) | Same Google | Officers in the war room | Import/re-import day plan; list + map; roster import + move; volunteer **admin**. Pause/add time and clarifications **by calling Swire** | `UPDATE rooms`. Start every room’s clock in bulk. Volunteer self-service. Roomsdb in war-room chrome. Owning timer tables |
+| 4 | **Proctor / projector** | **`swire.berkeley.mt` (external)** | Room username + **one** event password, **on Swire** | Laptop (and operator phone on Swire’s session) | **Start** that room’s timer. See clarifications. Operator view: roster names **if Swire fetches them under their contract**. Projector: timer + clarifications only | This platform’s Google. Other rooms. Writing roomsdb. HQ chrome |
+| 5 | **Public** | **`live.berkeley.mt`** | None | Students, parents, coaches | Read announcements and **maps on this API** | Login. Public countdown. Volunteer apply. Officer menus. Calling Swire |
 | 6 | **Volunteers** (self-service) | **`volunteers.berkeley.mt`** | Google → same `people.id` | Returning and first-time volunteers, including officers as themselves | Apply / edit **own** person + this-event application. After check-in, see **own** assignment | Ops HQ, roomsdb, other people’s rows, room password, check-in (staff does that on HQ) |
 
 **Volunteer admin is not a seventh login.** It is screen 3 (and optionally typed `volunteers.berkeley.mt/admin`) for people who already have `can_open_ops`. Same tables as screen 6.
@@ -204,28 +204,28 @@ A Person cookie **must not** open a room. A room cookie **must not** open ops, r
 
 **Saturday mix-up (locked):** the human assigned to proctor 155 may be signed into Google on their phone (screen 6). The HDMI laptop still uses the **room** login (screen 4). Those are not interchangeable.
 
-**Cookie hygiene:** Person cookies must not use `Domain=.berkeley.mt`. That would send a staff/volunteer session to `live` and `swire` as well. Swire still requires the room password and shows no HQ chrome. Live still shows no officer chrome and must not receive a Person cookie at all.
+**Cookie hygiene:** Person cookies must not use `Domain=.berkeley.mt`. That would send a staff/volunteer session to `live` and `swire`. Live still shows no officer chrome and must not receive a Person cookie. Swire does not receive one either; proctors sign in on Swire.
 
 ### Hosts are public; isolation is the API
 
 Assume every hostname is known. Certificate logs, DNS, and guessing `ops.` / `swire.` / `roomsdb.` will find them. **`live.berkeley.mt` is supposed to be public.** Hiding the others is not a control.
 
-Google OAuth for Person login is the strong door. The weak door is **Swire**: room usernames are public (`DWIN155` is on the door), and v1 uses **one shared event password**. Finding `swire.berkeley.mt` does not by itself open HQ — a room cookie must not call staff routes — but it can open **that Saturday’s projector/operator view** (timer start, clarifications, roster **names** on the operator view). Treat the event password like the print packet: rotate it, do not reuse a club default, do not put it on live.
+Google OAuth for Person login is the strong door on **this** platform. The weak door is **Swire’s**, on their deploy: room usernames are public (`DWIN155` is on the door), and v1 uses **one shared event password**. Finding `swire.berkeley.mt` must not open HQ — this API does not accept a room session. A stolen room password opens that Saturday’s projector/operator view on Swire only. Treat the event password like the print packet: rotate it, do not reuse a club default, do not put it on live.
 
-One API and one Postgres mean **one outage takes every screen down**. That is the reliability trade we already took (paper backup). It does **not** have to mean one stolen Swire password is HQ, or one volunteer Google is roomsdb. That coupling is a bug in **authorization**, not a property of subdomains.
+One API and one Postgres mean **one outage takes roomsdb, ops, volunteers, and live down together** (paper backup). **Swire is the exception:** its process and database are separate so a proctor-suite failure leaves maps and HQ up, and an HQ/API failure leaves timers up. It does **not** mean one stolen Swire password is HQ, or one volunteer Google is roomsdb.
 
 | If this is wrong | Blast |
 | ---------------- | ----- |
 | Person cookie on `.berkeley.mt` | XSS or a bad script on **live** can ride a staff session. Do not do this. |
-| Room cookie accepted as staff | Shared room password becomes HQ. Do not do this. |
+| Room session accepted as staff on this API | Shared room password becomes HQ. Do not do this. Swire calls only the public room GET. |
 | Live public JSON includes roster names / HQ fields | Guests see Saturday internals. Public routes stay public-shaped even if someone is signed in elsewhere. |
 | Any route skips the cookie check (“same API, trust the SPA”) | One missed check is the whole database. Last semester’s six sites failed this in six places; we have **one** place that must not. |
 
-**Locked:** hostnames are not secrets. Person cookies are host-scoped to ops / roomsdb / volunteers. Room cookies stay on Swire. Live sends no session. The API enforces write-boundaries (`rooms` never from day-of, room session may only start **that** room’s timer). Stolen staff Google still opens HQ — accepted. Stolen room password opens that room’s Swire session, not ops.
+**Locked:** hostnames are not secrets. Person cookies are host-scoped to ops / roomsdb / volunteers. Live sends no session. Swire is a **different system** with its own room session. This API enforces write-boundaries (`rooms` never from day-of or from Swire). Stolen staff Google still opens HQ — accepted. Stolen room password opens Swire, not ops.
 
 ### Staff links by cadence
 
-**Name:** the kernel is **roomsdb** — host **`roomsdb.berkeley.mt`**, same word in specs. Swire is the room *laptop*; roomsdb is the room *list*.
+**Name:** the kernel is **roomsdb** — host **`roomsdb.berkeley.mt`**, same word in specs. Swire is the external proctor laptop. Roomsdb is the room *list* on this platform.
 
 Rare vs regular vs Saturday are **different bookmarks**, not tabs on one officer page. Same Google, same API, still one deploy. The rooms list is sacred and infrequent, so it is farther from Saturday than the planner is.
 
@@ -278,27 +278,29 @@ Printed backup: PDF/CSV of the imported plan + room PINs + volunteer assignments
 
 ### Live overlay
 
-Per testing room (and only testing rooms for timers):
+Per testing room, **on Swire** (not in this database):
 
 - Clock: `starts_at`, `ends_at`, `paused`, `source` (server | local-desync)
 - Clarification feed for that room
-- Roster lines currently seated (names)
-- Closed / unused-today flag
 
-HQ dashboard: **list ↔ map toggle**. Column set, red rules, filters: later, same data.
+**On this platform:** roster lines currently seated (names), closed / unused-today flag, day plan, maps.
 
-### Proctor suite + projection
+HQ dashboard: **list ↔ map toggle**. Timer columns come from Swire’s API when it answers. Column set, red rules, filters: later.
 
-Same live data, **two presentations**:
+### Proctor suite + projection (Swire, external)
+
+**Not this API.** Swire is a separate deploy and exposes an HTTP API. Same two presentations as before, on their host:
 
 - **Projection** (HDMI): large timer + clarifications (text/images). No roster names, no HQ notes.
-- **Operator** (same login, phone or laptop): start button, desync banner, **names list**.
+- **Operator** (same Swire login, phone or laptop): start button, desync banner, **names list** if their API is allowed to read roster.
 
 5-minute remaining banner on both.
 
-HQ admin can pause/add time on any room from the ops dashboard. Add-time increments: include 1 and 5 minutes and “set end to clock time”; exact controls can wait for a prototype (question 47).
+HQ admin pause/add time goes **through Swire’s API**, not a table in this Postgres. If Swire is down, HQ still shows the day plan, map, roster, and volunteers; the timer panel says unavailable. If this platform is down, proctors still run Swire.
 
-Clarification composer (admin): pick target set (activity, building, floor, multi-select, “all with running timer”) → send. One-way. No ack. Algebra does not learn that Geometry got a message.
+Clarification composer may live on HQ and **POST to Swire**, or live on Swire. Either way the messages are Swire’s data. One-way. No ack. Algebra does not learn that Geometry got a message.
+
+Live does **not** call Swire. Maps stay on this platform.
 
 ### Roster
 
@@ -332,10 +334,11 @@ Clarification composer (admin): pick target set (activity, building, floor, mult
 
 Because last semester’s tools died:
 
-- One API, one database, hosts `roomsdb.berkeley.mt` + `ops.berkeley.mt` + `volunteers.berkeley.mt` + `swire.berkeley.mt` + `live.berkeley.mt`.
+- One API, one database, hosts `roomsdb.berkeley.mt` + `ops.berkeley.mt` + `volunteers.berkeley.mt` + `live.berkeley.mt`.
+- **Swire is a second deploy** (`swire.berkeley.mt`) with its own API. Proctor outage ≠ this platform down. This platform down ≠ timers down.
+- **Live stays on this API** so maps share roomsdb.
 - Printed plan / shared room-password / assignment packet after import.
-- Offline timer with explicit desync, not silent drift.
-- Do not make the projector depend on a second “vibecoded” host.
+- Offline timer (on Swire) with explicit desync, not silent drift.
 
 ## Spaces (food / merch) — difficulty of adding later
 

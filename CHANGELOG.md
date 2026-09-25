@@ -5,7 +5,7 @@
 ### Ops platform architecture (2026-08-22)
 
 - **Greenfield:** target parent [specs/2026-08-24-integrated-system.md](specs/2026-08-24-integrated-system.md). Allocator prototype is not a design constraint.
-- **Hosts:** **`roomsdb.berkeley.mt`** (rooms kernel, rare). **`ops.berkeley.mt`** (officer HQ; planner at `/planner`). **`volunteers.berkeley.mt`** (volunteer people, returning accounts — not ops). **`swire.berkeley.mt`** (rooms; `/admin` typed URL redirects to ops). **`live.berkeley.mt`** (guests).
+- **Hosts:** **`roomsdb.berkeley.mt`** (rooms kernel, rare). **`ops.berkeley.mt`** (officer HQ; planner at `/planner`). **`volunteers.berkeley.mt`** (volunteer people). **`live.berkeley.mt`** (guests and maps, on this platform). **`swire.berkeley.mt`** is external (proctor suite only).
 - **Chrome** (in these docs): buttons/tabs/menus around the page content — not the Google Chrome browser. Projector pages must not show officer menus. Roomsdb, planner, and HQ do not share primary chrome.
 - Roomsdb is the kernel; allocator, day-of ops, proctors, public maps, and volunteers are modules that join `rooms.id`
 - New seam: publish one sheet as the day-of plan; live state does not rewrite the grid
@@ -17,10 +17,11 @@
 - Documented building-code aliases: they keep CSV/login matching after a rename; uniqueness and dual labels are the cost. Skip for v1.
 - **Google** is the only Person login (`people.id` per Google). Ops = `can_open_ops`. Swire stays room password. Live stays none. OAuth client must be published (~300 volunteers). Other issuers (Microsoft, email/password as login) are out of this design pass.
 - **Auth by screen:** six screens, three proofs (Google Person, room password, none). Two cookies (Person + room). Volunteer admin and live `/admin` are staff on ops, not extra logins. Ordinary volunteers bounce off ops and roomsdb to the volunteer host.
-- **Doors are public:** hostnames are not secrets. Person cookies are host-scoped (ops / roomsdb / volunteers), not `Domain=.berkeley.mt`. A room cookie must not open HQ. One API outage takes every screen down (paper backup); one stolen Swire password must not.
-- **API paths:** `/api/v1/{module}/...` (roomsdb, ops, volunteers, swire, live). One owner per resource. Prefixes do not block live from calling `/roomsdb/` — auth does. Public GETs of rooms for maps are allowed; volunteer PII and `/ops/` are not. Folders in one process, not six APIs.
+- **Doors are public:** hostnames are not secrets. Person cookies are host-scoped (ops / roomsdb / volunteers), not `Domain=.berkeley.mt`. This API does not accept a Swire room session. One API outage takes roomsdb, ops, volunteers, and live down (paper backup); it does not take Swire’s timers down.
+- **API paths:** `/api/v1/{module}/...` (roomsdb, ops, volunteers, live). One owner per resource. No Swire folder. Prefixes do not block live from calling `/roomsdb/` — auth does. Public GETs of rooms for maps (and for Swire, if they need labels) are allowed; volunteer PII and `/ops/` are not.
 - **API contracts:** each folder has a public surface (additive JSON) vs internals. Other platforms may only call the public surface so volunteer internals can change without breaking live.
-- **Target C3 (API):** [specs/2026-08-24-api-c3.md](specs/2026-08-24-api-c3.md) — one API process, five `/api/v1/{folder}` components, public vs staff surfaces. Not the as-built prototype in `docs/c4/`.
+- **Swire is external:** proctor suite (timer, clarifications, projector, room password) is not a folder of this API. Swire exposes an API. HQ calls it and degrades if it is down. **Live stays** on this platform so maps share roomsdb. No `/api/v1/swire/`. No room cookie on this API.
+- **Target C3 (API):** [specs/2026-08-24-api-c3.md](specs/2026-08-24-api-c3.md) — one API process, four `/api/v1/{folder}` components, Swire drawn as an external system. Not the as-built prototype in `docs/c4/`.
 - **Staff cadence:** roomsdb is rare (`roomsdb.berkeley.mt`); planner is regular (`ops.berkeley.mt/planner`); HQ is Saturday (`ops.berkeley.mt` root). They do not share primary chrome. Same Google, same API.
 - **Name:** the rooms kernel is **roomsdb** in specs and at **`roomsdb.berkeley.mt`**. Target docs no longer say catalog for that module. Prototype UI `#/catalog` is unchanged.
 - Persistence: **one** Postgres, **one** database. A **seam** is any copy (roomsdb CSV into other tools included). Keep seams when a snapshot is enough (roster, day plan, print). Collapse roomsdb→ops/volunteers/maps by sharing `rooms`.

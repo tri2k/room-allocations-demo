@@ -1,12 +1,12 @@
 # BMT ops platform
 
-A rooms list (**roomsdb**) plus the screens that share it: event room allocator, day-of HQ, proctor tools, a public map site, and volunteer tracking.
+A rooms list (**roomsdb**) plus the screens that share it: event room allocator, day-of HQ, a public map site, and volunteer tracking. Proctor tools are **Swire**, a separate deploy.
 
 ## Vision
 
 Event organizers (BmMT and similar) still run contests from a pile of spreadsheets and forms: a classroom/capacity sheet, a dense time × room grid, a volunteer Google Form whose room list is copied by hand, printed day-of status, and guest maps that do not know about any of the above. Each copy of DWIN155 drifts.
 
-The kernel is **roomsdb** (the rooms list). The allocator, day-of HQ, proctors, public maps, and volunteers are screens on that list — not extra room lists. Draft plans stay editable; one imported day plan plus a live overlay is what Saturday and guests see.
+The kernel is **roomsdb** (the rooms list). The allocator, day-of HQ, public maps, and volunteers are screens on that list — not extra room lists. **Swire** (proctor timers and projector) is outside this platform and exposes an API. **Live stays here** so maps join `rooms.id`. Draft plans stay editable; one imported day plan is what Saturday and guests see.
 
 **Target design (greenfield):** [specs/2026-08-24-integrated-system.md](specs/2026-08-24-integrated-system.md). First production event: **BMT 2026 (2026-11-14)**. The drag-and-drop app in this git repo is a prototype we can discard at implementation. Workshop locks: [architecture after round 2](specs/2026-08-23-bmt-2026-architecture.md).
 
@@ -20,7 +20,7 @@ Hierarchy: **Building → Floor → Room**, and **Event → Draft plan → Alloc
 | Building | Physical hall, e.g. Dwinelle (`DWIN`) | Contains floors and rooms |
 | Floor | Grouping unit for bulk assign, e.g. `D`, `Basement` | Belongs to one building; contains rooms |
 | Room | Space with capacity and custom fields | Belongs to one building; optional floor |
-| Event | One contest (“BMT 2026”) plus default clock settings for new drafts | Owns applications, day plan, live state, room password |
+| Event | One contest (“BMT 2026”) plus default clock settings for new drafts | Owns applications and the day plan. Timers and the room password are Swire’s |
 | Draft plan | Allocator grid for an Event | Staff-visible. One writer at a time (no live co-edit). Not a personal Google document |
 | Activity | Named colored block (Power, Algebra, …) with default duration | Belongs to a draft (then copied onto the day plan) |
 | TimeBlock | Phase on that draft’s timeline (Check-in, Lunch, …) | Belongs to a draft; may hint-snap to an activity |
@@ -34,7 +34,7 @@ The v0–2b allocator in this repo is **not** the target model. Historical notes
 
 ## Architecture
 
-**Target:** **one API**, one Postgres. **`roomsdb.berkeley.mt`** = rooms kernel (rare). **`ops.berkeley.mt`** = officer HQ (+ planner at `/planner`). **`volunteers.berkeley.mt`** = volunteer people (returning accounts). **`swire.berkeley.mt`** = room timers (`/admin` redirects to ops). **`live.berkeley.mt`** = guests. Spec: [integrated system](specs/2026-08-24-integrated-system.md).
+**Target:** **one API**, one Postgres. **`roomsdb.berkeley.mt`** = rooms kernel (rare). **`ops.berkeley.mt`** = officer HQ (+ planner at `/planner`). **`volunteers.berkeley.mt`** = volunteer people. **`live.berkeley.mt`** = guests and maps. **`swire.berkeley.mt`** = external proctor suite (their API). Spec: [integrated system](specs/2026-08-24-integrated-system.md).
 
 Language, UI library, and folder layout are chosen at implementation. `docs/c4/` describes whatever code is in the current commit, not this target. Target API C3 (folders + auth): [specs/2026-08-24-api-c3.md](specs/2026-08-24-api-c3.md).
 
@@ -45,8 +45,8 @@ Language, UI library, and folder layout are chosen at implementation. `docs/c4/`
 | UI | Browser app (staff, projector, public). Library TBD |
 | Persistence | One PostgreSQL database |
 | API | One HTTP API |
-| Identity | **Google** → `people.id`. Ops if `can_open_ops`. Rooms: username + event password. Guests: none. [Auth by screen](specs/2026-08-23-bmt-2026-architecture.md#auth-by-screen-the-six) |
-| Realtime | Server-authoritative timers; poll or push for clarifications |
+| Identity | **Google** → `people.id`. Ops if `can_open_ops`. Guests: none. Room password is Swire’s. [Auth by screen](specs/2026-08-23-bmt-2026-architecture.md#auth-by-screen-the-six) |
+| Realtime | Timers live on Swire. HQ calls Swire’s API. |
 
 ## Phased Delivery
 

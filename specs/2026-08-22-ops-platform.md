@@ -21,7 +21,7 @@ The costly redesign is not “we picked FastAPI.” It is **DWIN155 existing in 
 
 ## Recommendation
 
-**One org, one Postgres, one API.** Roomsdb on **`roomsdb.berkeley.mt`**. HQ on **`ops.berkeley.mt`** (planner at `/planner`). Volunteer **people** on **`volunteers.berkeley.mt`**. Rooms on **`swire.berkeley.mt`**. Guests on **`live.berkeley.mt`**. Persistence: [one Postgres](2026-08-23-bmt-2026-architecture.md#persistence-one-postgres-not-six-databases). Links: [integrated system](2026-08-24-integrated-system.md#six-links-how-people-enter).
+**One org, one Postgres, one API** for roomsdb, planner, HQ, volunteers, and live (maps). Roomsdb on **`roomsdb.berkeley.mt`**. HQ on **`ops.berkeley.mt`** (planner at `/planner`). Volunteer **people** on **`volunteers.berkeley.mt`**. Guests on **`live.berkeley.mt`**. **Swire is off this platform** (`swire.berkeley.mt`): proctor tools only, they expose an API. Persistence: [one Postgres](2026-08-23-bmt-2026-architecture.md#persistence-one-postgres-not-six-databases). Links: [integrated system](2026-08-24-integrated-system.md#links-how-people-enter).
 
 Rooms are the **kernel**. Everything else is either a rare roomsdb edit, a **draft plan**, a **published plan**, or a **live overlay** on that plan.
 
@@ -44,10 +44,12 @@ Event (BMT 2026, then BmMT and later semesterly contests)
         │
         ├── DayPlan (frozen import of one draft)
         │
-        ├── LiveRoomState (timer, headcount, status — day-of only)
-        │       └── Clarifications (HQ → proctors)
+        ├── Roster seats (imported; not Swire)
         │
-        └── PublicContent (announcements guests may see)
+        └── PublicContent + maps (live.berkeley.mt)
+
+Swire (separate deploy, own API): timers, clarifications, room password, projector
+        points at rooms.id — does not own rooms
 ```
 
 Figma does **not** own rooms. The volunteer form does **not** own rooms. The proctor timer does **not** own rooms. They all point at `rooms.id` (and display `DWIN155`).
@@ -74,10 +76,10 @@ Figma does **not** own rooms. The volunteer form does **not** own rooms. The pro
 | Custom room fields | **One built-in `capacity`.** All other room facts are **admin-defined fields** | Spreadsheet columns keep growing; do not ship a migration per field |
 | Building codes | **Set at building create, then read-only** in the roomsdb UI | Join key for Figma/CSV/room login; pretty name stays editable |
 | Roomsdb vs day-of | **Day-of never writes the roomsdb** | Closed rooms and campus pulls live on the event overlay |
-| Nov 14 scope | **All six modules** plus **printed backup** | Last semester 4/5 vibecoded tools broke |
-| Staff roles | **Admin** (everything). **Organizer** (view only) only if staff login is named (Google) | Building leads use admin. Live announcements use the same staff login |
-| Proctor login | **Room as username** + **one shared event password** | Not staff login; not a unique PIN per room in v1 |
-| Timer start | **Proctor may only start.** HQ does pause / add time / rest | No bulk-start |
+| Nov 14 scope | Roomsdb, allocator, HQ, volunteers, live/maps, printed backup. **Swire stays their deploy** | Last semester 4/5 vibecoded tools broke; proctor suite is isolated on purpose |
+| Staff roles | **Admin** (everything on this platform). **Organizer** (view only) only if staff login is named (Google) | Building leads use admin. Live announcements use the same staff login |
+| Proctor login | **On Swire:** room as username + **one shared event password** | Not this API; not a unique PIN per room in v1 |
+| Timer start | **Proctor may only start (on Swire).** HQ pause / add time goes through **Swire’s API** | No bulk-start. Swire down ≠ HQ down |
 | Offline timer | Local countdown; **desync banner on proctor and HQ** | Server is source of truth when connected |
 | Clarifications | One-way; **no ack**; text + images; **projected** | Subset targeting; other activities do not see it |
 | Plan load | Ops **admin imports** an allocator sheet (frozen). Re-import **keeps clocks** | Grid rebuilt in-app; bulk floor-assign yes |
@@ -85,8 +87,8 @@ Figma does **not** own rooms. The volunteer form does **not** own rooms. The pro
 | Roster | CSV morning-of after check-in; **names**; **move in-app**; two tests = two rows | Registration platform stays separate |
 | Public site | `live.berkeley.mt`, English, **no public clock** | Per-room guest detail undecided. Outdoor maps stretch |
 | Volunteers | **`volunteers.berkeley.mt`**, **Google**. Staff admin on ops (`can_open_ops`). Form builder; ~300 people; DNI | PII visible to managers |
-| Staff auth | **Google** for all Person accounts. Ops and roomsdb require `can_open_ops`. Room password for Swire. Live: none | [architecture](2026-08-23-bmt-2026-architecture.md#one-person-one-id) |
-| Realtime | Server-authoritative clocks; poll or push for clarifications | 50+ rooms is still a small JSON |
+| Staff auth | **Google** for Person accounts on this platform. Ops and roomsdb require `can_open_ops`. Live: none. Room password is **Swire’s** | [architecture](2026-08-23-bmt-2026-architecture.md#one-person-one-id) |
+| Realtime | Swire owns clocks. This platform polls or is pushed **Swire’s API** for HQ. Live does not show a clock | 50+ rooms is still a small JSON on Swire |
 | C4 | Update as-built diagrams only when code lands | This file is target, not current commit |
 
 ### Component map
