@@ -111,7 +111,11 @@ A planner who sees a wrong room cannot fix it on the grid. They open roomsdb. Si
 
 **Open:** is the person who may build a plan also allowed to edit rooms? One flag would say yes. That may be wrong. Roomsdb is sacred and rarely edited. Noticing a bad capacity on the grid is common. The small version, if we split, is a second switch on the same person (`may edit rooms`), not an organization product. HQ and the volunteers admin can stay on the first switch until a case splits them too.
 
-The management screen is still a list of people and those switches. The first officers are an allowlist of emails. A person who already has a switch can grant it. Organizer view-only is later.
+The management screen is a list of people and those switches. That screen is how admins are created. Nobody edits the database or invents a login by hand.
+
+The first person is one allowlisted email (the person bootstrapping the club’s tools). They can turn the switch on for someone else. That is the whole “superuser.” It is not a separate account type, not a second login, and not an organization product.
+
+**Open:** after that, can any staff member grant staff, or only the bootstrap person? Only one person is fragile on Saturday if they are unavailable. Any staff member granting staff is still just the same switch.
 
 What is still awkward: these are different hosts, so a cookie on `roomsdb.berkeley.mt` is not sent to `ops.berkeley.mt`. One account can still mean a sign-in click per host. That is not four passwords. Do not solve it by setting the cookie on `.berkeley.mt`. That would also send the staff session to live and Swire.
 
