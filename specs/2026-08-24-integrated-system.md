@@ -99,9 +99,11 @@ Other pitfalls:
 
 **Locked:** `live.berkeley.mt/admin` is a **single admin account**. One shared login, not a person and not Google. It writes public content only. The cookie is `Path=/admin`, so guest pages do not receive it. A volunteer session does not open it.
 
-**Leaning:** HQ, the planner, and roomsdb are internal. They share **one staff account**, not three. An officer does not get a roomsdb login that is separate from the planner login, or an HQ login that is a different person from their volunteer account. Planner and roomsdb are not event-oriented; the account is still the person, and the event selector is a separate control.
+**Locked:** one person, one account. An officer who also fills out the volunteer form does not get a second account. HQ, the planner, roomsdb, and the volunteer record are the same person. There is no “staff login” plus “volunteer login.”
 
-Volunteers stays the mixed door. External people sign up there with OAuth. A staff person who also runs check-in is the **same account** as HQ, not a second one. Live’s shared admin account and Swire’s logins stay outside this.
+HQ, the planner, and roomsdb are internal doors onto that account. They are not three accounts. Planner and roomsdb are not event-oriented; the account is still the person, and the event selector is a separate control.
+
+Volunteers is the mixed door on that same account. External people sign up there with OAuth and have no internal access. An officer uses the same OAuth identity to fill out the form. Live’s shared admin account and Swire’s logins stay outside this. They are not people.
 
 What is still awkward: these are different hosts, so a cookie on `roomsdb.berkeley.mt` is not sent to `ops.berkeley.mt`. One account can still mean a sign-in click per host. That is not four passwords. A single prompt that covers HQ, the planner, and roomsdb (sign in once, each host accepts it) is the part not chosen yet. Do not solve it by setting the cookie on `.berkeley.mt`. That would also send the staff session to live and Swire.
 
@@ -115,7 +117,7 @@ Swire stays on its own admin login and proctor login. Live guests stay logged ou
 
 **Open, do not pretend these are decided:**
 
-- **Whether one staff sign-in covers HQ, the planner, and roomsdb**, or the same account still clicks once per host. One staff identity across those three, and the same person as their volunteer account, is the lean. Live and Swire stay outside it.
+- **Whether one sign-in click covers HQ, the planner, and roomsdb**, or the same person still clicks once per host. Separate accounts are decided against: an officer who fills out the volunteer form is one person. Live and Swire stay outside that person.
 - **Who may edit rounds and roster checkboxes after create.** Live cannot. Create is volunteers admin, the planner, and HQ. Swire and roomsdb do not create rows here.
 - **Volunteer view on HQ.** A copy of the volunteers table on the dashboard is useful and also cuts against “go to the volunteers component for volunteer stuff.” Undecided.
 - **Maps.** Year-round like roomsdb, or event configuration? The only source today is Figma files. How those files become something the software can draw is undecided. Do not copy DWIN155 into a second list either way.
