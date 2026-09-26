@@ -152,6 +152,10 @@ The management screen is a list of people and those switches. That screen is how
 
 The first superuser is one allowlisted email. They are not a separate account type and not a second login. They are the person who can set every platform on that page. A platform admin opens the same page and only sees their own platform.
 
+**Where that page lives (lean).** It is not its own site. `ops.berkeley.mt` already has two tools as paths: Saturday HQ at `/`, the planner at `/planner`. The wide page, every platform, is a third path: **`ops.berkeley.mt/people`**. A superuser bookmarks that. It stays off HQ’s Saturday menu, off the planner grid, off roomsdb, and off volunteer check-in, so those jobs do not grow a users tab.
+
+A platform admin does not need that wide bookmark. On the platform they already run, one People control lists people and the single switch for that platform. An HQ admin promotes and demotes HQ there. That list is the wide page with one column, same grant rows. Volunteer check-in, assign, and the form stay on `volunteers.berkeley.mt/admin`. The volunteer People control only toggles regular versus volunteer admin.
+
 What is still awkward: these are different hosts, so a cookie on `roomsdb.berkeley.mt` is not sent to `ops.berkeley.mt`. One account can still mean a sign-in click per host. That is not four passwords. Do not solve it by setting the cookie on `.berkeley.mt`. That would also send the staff session to live and Swire.
 
 **One prompt or one click per host.** “One prompt” means you sign in on the planner and roomsdb opens already signed in. “One click per host” means each address shows Continue again. It is still the same person. Not chosen.
