@@ -76,19 +76,21 @@ Event-wide facts (name, day, round list, each round’s roster checkbox) are edi
 | **A different id on every platform** | Each site can archive without waiting for the others. Swire already works this way. | Two “BMT 2026”s inside this database. Live and HQ can disagree about the day. Matching last year’s volunteer list to last year’s announcements is a string compare. |
 | **One toggle that writes every platform** | Feels like one product. | There is no shared session to hang it on. Live’s admin account is not a volunteer. Swire cannot see the toggle. Skip this. |
 
-**Still open:** which admin page creates the event and edits the shared facts. Not five of them.
+**Create from any staff admin on this platform.** Each of volunteers admin, live admin, the planner, and HQ has an event selector and a create button. The selector reads the shared event table. Once any of them inserts a row, the others see it. There is still no cross-site toggle: picking BMT 2026 on live does not change the selection on HQ.
 
-That door is the awkward part. The facts are shared, and none of the platforms is a natural owner:
+Roomsdb has no selector. Rooms are not per event. Swire does not read this table; it is another database. A create button on Swire does not insert a row here unless Swire calls this API, which it does not.
 
-| Candidate | Why it is tempting | Why it is a bad home |
-| --------- | ------------------ | -------------------- |
-| **Volunteers admin** | Signup is the first thing that needs an event, and it is the only OAuth door today. | Round list and roster checkboxes are contest structure, not volunteer data. |
-| **Planner** | The grid is built in the weeks before, and it needs the rounds. | Signup may open before anyone draws a grid. Planner sign-in is not decided. |
-| **HQ** | Saturday is when the event is “real.” | Too late. Volunteers and the planner need the row weeks earlier. |
-| **Live admin** | One shared account is easy to gate. | A guest-site password should not be the source of truth for rounds. |
-| **A new setup page** | The facts have one home that is none of the above. | It is another door, and its sign-in is the same undecided staff auth as HQ and the planner. |
+The create button is only on the **admin** of that platform. A volunteer signing up, a guest, and a proctor do not get one.
 
-Until that door exists, do not let each platform insert its own “BMT 2026.”
+**Create is not edit.** The button inserts a shell (name, day). Shared facts after that (round list, roster checkbox per round) are still one row, so an edit on one admin changes what the others read. Two people editing rounds at once is last write wins. Delete is not on every platform: removing the row would take signups, the plan, and announcements with it. Prefer marking an event past.
+
+Other pitfalls:
+
+- Two admins can both type “BMT 2026” and insert two rows. Create must match an existing name and day and offer that row instead of a second one.
+- Live’s single shared password is a weaker door than volunteer OAuth. Anyone with it can add a contest the other platforms will show.
+- HQ, the planner, and roomsdb still have no sign-in, so their create buttons wait on that. Volunteers admin and live admin are the doors that exist.
+- An event can exist with no rounds yet. Signup and the grid have to tolerate that.
+- Renaming the event renames it everywhere. That is one row, not a local label.
 
 ## Auth, so far
 
@@ -109,7 +111,7 @@ Swire stays on its own admin login and proctor login. Live guests stay logged ou
 **Open, do not pretend these are decided:**
 
 - **Auth** for HQ, the planner, and roomsdb. Volunteers OAuth is decided. Live admin is one shared account. Swire’s logins are Swire’s.
-- **Which admin edits the shared event** (day, rounds, roster checkbox). One event row is decided. Five setup screens are not.
+- **Who may edit rounds and roster checkboxes after create**, and whether live’s shared password should be allowed to create at all. Create-from-any-staff-admin is the working idea. Swire and roomsdb do not create rows here.
 - **Volunteer view on HQ.** A copy of the volunteers table on the dashboard is useful and also cuts against “go to the volunteers component for volunteer stuff.” Undecided.
 - **Maps.** Year-round like roomsdb, or event configuration? The only source today is Figma files. How those files become something the software can draw is undecided. Do not copy DWIN155 into a second list either way.
 
