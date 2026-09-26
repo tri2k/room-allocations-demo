@@ -54,19 +54,29 @@ These are the jobs. Admin pages are where that part is changed. The HQ page does
 | **Rooms allocation planner** | In the weeks before the tournament: which events are assigned to which rooms. One writer at a time. | `ops.berkeley.mt/planner` |
 | **HQ** | A visual dashboard of event progress. Plans imported from the planner, with Swire’s current state shown on top. | The import of the plan onto the dashboard. Not rooms, not volunteers, not live, not Swire |
 
-## One event, or one per platform
+## One event id, not one toggle
 
-**This platform has one event instance** (one “BMT 2026”). The planner, HQ, volunteers, and live all hang off that row. Roomsdb does not: rooms outlive the contest. Swire does not: it is another product, so its own setup must be pointed at the same contest by hand (same rooms, same day). It does not share the row.
+Two different ideas got mixed together.
 
-Event setup (name, day, the round list, each round’s roster checkbox) is edited in **one** place. The other admins read it. They still edit their own data: the form on volunteers, announcements on live, the grid on the planner, the imported plan on HQ.
+**A cross-site toggle does not make sense.** Live admin, Swire, and volunteers do not share a login. They are different subdomains. Picking “BMT 2026” on live does not, and should not, change what HQ or Swire is showing. There is no button that saves one form onto every platform.
+
+**One event id in this database does make sense.** Planner, HQ, volunteers, and live all store their own rows (the grid, the imported plan, signups, announcements, past configs) with the same `event_id`. After its own login, each admin has its own event list. That list is the same contests, because it is the same table. Choosing BMT 2026 on the volunteers host only changes what the volunteers host shows.
+
+Past data stays on the platform that owns it, keyed by that id. Next year is a new row, BMT 2027. “What did volunteers look like for BMT 2026?” and “what did live announce?” are two queries on one id, not two names a human has to match.
+
+Roomsdb has no event id. Rooms outlive the contest.
+
+Swire does not share the row. It is another database and another login. If Swire keeps past contests, it can store this id as a label so the histories line up. If it does not, HQ still polls “whatever Swire says is running.” A shared id is a convenience for Swire, not a foreign key.
+
+Event-wide facts (name, day, round list, each round’s roster checkbox) are edited in **one** place. The other admins on this platform read them. They still edit their own data.
 
 | Approach | What you get | What it costs |
 | -------- | ------------ | ------------- |
-| **One event** (this spec) | One day, one round list, one roster checkbox. Check-in, the dashboard, and the guest site cannot disagree about which contest Saturday is. | Some admin has to own setup. A volunteer form cannot invent a round HQ does not have. |
-| **Each platform sets up its own event** | Volunteers can open signup before HQ exists. Each team ships alone. | Two “BMT 2026”s. Live says 8:00, HQ starts at 9:00, Individual has a roster on one side and not the other. That is the spreadsheet pile again. |
-| **One event, copied out** | A snapshot if a platform must run while this database is down. | Fine for paper and for Swire, because Swire cannot read our row. A bad idea between HQ and volunteers, which share this database. |
+| **One id here, own data per platform** (this spec) | One contest. Each site keeps its own history under that id. Logins stay separate. No cross-site toggle. | Some admin creates the event once. A volunteer form cannot invent a round the event does not have. |
+| **A different id on every platform** | Each site can archive without waiting for the others. Swire already works this way. | Two “BMT 2026”s inside this database. Live and HQ can disagree about the day. Matching last year’s volunteer list to last year’s announcements is a string compare. |
+| **One toggle that writes every platform** | Feels like one product. | There is no shared session to hang it on. Live’s admin account is not a volunteer. Swire cannot see the toggle. Skip this. |
 
-**Still open:** which admin page edits the shared event. Not five of them.
+**Still open:** which admin page creates the event and edits the shared facts. Not five of them.
 
 ## Auth, so far
 
