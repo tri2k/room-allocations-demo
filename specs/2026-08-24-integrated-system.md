@@ -105,11 +105,22 @@ HQ, the planner, and roomsdb are internal doors onto that account. They are not 
 
 Volunteers is the mixed door on that same account. External people sign up there with OAuth and have no internal access. An officer uses the same OAuth identity to fill out the form. Live’s shared admin account and Swire’s logins stay outside this. They are not people.
 
-What is still awkward: these are different hosts, so a cookie on `roomsdb.berkeley.mt` is not sent to `ops.berkeley.mt`. One account can still mean a sign-in click per host. That is not four passwords. A single prompt that covers HQ, the planner, and roomsdb (sign in once, each host accepts it) is the part not chosen yet. Do not solve it by setting the cookie on `.berkeley.mt`. That would also send the staff session to live and Swire.
+What is still awkward: these are different hosts, so a cookie on `roomsdb.berkeley.mt` is not sent to `ops.berkeley.mt`. One account can still mean a sign-in click per host. That is not four passwords. Do not solve it by setting the cookie on `.berkeley.mt`. That would also send the staff session to live and Swire.
+
+**One prompt or one click per host.** “One prompt” means you sign in on the planner and roomsdb opens already signed in. “One click per host” means each address shows Continue again. It is still the same person. Not chosen.
+
+| | One prompt for HQ, planner, and roomsdb | One click on each of those hosts |
+| - | --- | --- |
+| What staff feel | The internal tools are one product. | Each address asks again. Often one click, not a password, if the provider session is still there. |
+| What we build | A sign-in step in the middle. Each host keeps its own cookie. The middle step recognizes the person and sends them back. | Each host starts its own OAuth. Nothing else. |
+| Sign-out | Can sign out of all three at once. | Signing out of roomsdb leaves the planner signed in. |
+| If that middle step breaks | All three internal tools fail sign-in together. They already share one API, so this is not a new outage by itself. | One host’s login can break alone. |
+| Extra cookie | The middle step holds a session that can mint a cookie for any of the three. That cookie must not be set on `.berkeley.mt`, and the volunteer site must not be able to mint an HQ session. | No cookie can mint a session for a host you did not just sign in on. |
+| Volunteers | An officer filling out the form can be included, so check-in does not ask again. External volunteers still sign in on that host only. Their session must not open HQ. | The officer clicks Continue once on the volunteer host too. Same account. |
 
 Why this is awkward with one event and several hosts:
 
-- A cookie set on `volunteers.berkeley.mt` is not sent to `ops.berkeley.mt`. Signing up to volunteer does not open the dashboard. That is what we want for ~300 volunteers. It also means a staff person who uses both sites signs in twice until we deliberately link the accounts.
+- A cookie set on `volunteers.berkeley.mt` is not sent to `ops.berkeley.mt`. Signing up to volunteer does not open the dashboard. That is what we want for ~300 volunteers. An officer is the same person on both hosts anyway.
 - Live admin is the shared-account shape: one login, not a person. HQ, the planner, and roomsdb still need a proof of their own. None of those may be interchangeable with a volunteer session.
 - One event does not mean one login. The event row is shared. The session is per host.
 
