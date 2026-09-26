@@ -111,6 +111,16 @@ A planner who sees a wrong room cannot fix it on the grid. They open roomsdb. Si
 
 **Open:** is the person who may build a plan also allowed to edit rooms? One flag would say yes. That may be wrong. Roomsdb is sacred and rarely edited. Noticing a bad capacity on the grid is common. The small version, if we split, is a second switch on the same person (`may edit rooms`), not an organization product. HQ and the volunteers admin can stay on the first switch until a case splits them too.
 
+When a permission question comes up, do not walk all six products. Sort the door into one of three:
+
+| Kind | Doors | What an auth question is about |
+| ---- | ----- | ------------------------------ |
+| **One person** | Roomsdb, planner, HQ, volunteers | The same OAuth account. The only switches are “staff?” and, if we split it, “may edit rooms?” |
+| **Not a person** | Live `/admin` (one shared password). Swire admin and Swire proctor. | Their own login. They never become the OAuth person. |
+| **No login** | Live guests. Swire’s public read API. | Nothing to grant. |
+
+Roomsdb is the rare edit. The planner is the weeks-before grid. HQ is Saturday’s picture. Volunteers is signup plus check-in. Those four are one person wearing four hats. Live and Swire are the other two, and they are outside that person.
+
 The management screen is a list of people and those switches. That screen is how admins are created. Nobody edits the database or invents a login by hand.
 
 The first person is one allowlisted email (the person bootstrapping the club’s tools). They can turn the switch on for someone else. That is the whole “superuser.” It is not a separate account type, not a second login, and not an organization product.
