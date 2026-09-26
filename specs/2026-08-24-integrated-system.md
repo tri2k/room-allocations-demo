@@ -121,9 +121,11 @@ When a permission question comes up, do not walk all six products. Sort the door
 
 Roomsdb is the rare edit. The planner is the weeks-before grid. HQ is Saturday’s picture. Volunteers is signup plus check-in. Those four are one person wearing four hats. Live and Swire are the other two, and they are outside that person.
 
-**Maps are not a seventh product.** The floor plan is a view of the building, so it lives with the rooms, year-round, not as a setting on BMT 2026. Roomsdb can show the rooms on that drawing. HQ and live only look at it and paint their own data on top. Replacing a drawing you do not like is the same kind of rare edit as fixing a room: upload a new map in roomsdb, not on Saturday and not on the guest site.
+**Maps are not a seventh product.** The floor plan is a view of the building, so it lives with the rooms, year-round, not as a setting on BMT 2026. Roomsdb can show the rooms on that drawing. HQ and live only look at it and paint their own data on top.
 
-Who may upload is the same open switch as who may edit rooms. A planner who can see the building is not automatically someone who can replace the file. The API can still store polygons under `/api/v1/maps/`. The person doing the upload is standing in roomsdb.
+A room’s name and capacity are fundamental and rare. A drawing is not. People will replace a map because the new one is prettier or more accurate, more often than anyone renames a room. Upload stays off Saturday HQ and off the guest site. It is still a roomsdb-shaped place to do it. It is not the same act as editing the room.
+
+Who may upload is therefore not the same switch as who may edit rooms. A person improving the drawing should not need the key to capacity, and a person trusted with capacity is not the only one who will want a better file. The small version, if we split, is one more switch on the same person (`may replace maps`). Not a maps product. The API can still store polygons under `/api/v1/maps/`.
 
 The management screen is a list of people and those switches. That screen is how admins are created. Nobody edits the database or invents a login by hand.
 
