@@ -32,7 +32,7 @@ At implementation we may rewrite this repo or start a new tree. Specs describe t
 - Draft grid → explicit import as frozen day plan. Clocks live on Swire. This platform never writes them, so re-import cannot reset them.
 - No live co-edit on the grid
 - Room login (`{building code}{room name}` + one event password) is **Swire’s**, not a cookie on this API
-- **Volunteers use OAuth.** That platform only, for now: signup, own profile, and the volunteers admin (check-in, assign). HQ, the planner, roomsdb, and live `/admin` are **not** decided. Swire does not use this auth. Older “Google + `can_open_ops`” lines below are a sketch, not a lock.
+- **Volunteers use OAuth.** That platform only, for now: signup, own profile, and the volunteers admin (check-in, assign). **Live `/admin` is one shared admin account**, not OAuth and not a volunteer login. HQ, the planner, and roomsdb are **not** decided. Swire does not use this auth. Older “Google + `can_open_ops`” lines below are a sketch, not a lock.
 - Roster is a snapshot from the registration product. **Event setup** lists rounds; each round has a checkbox for whether it has student rosters. Students are not volunteer people.
 - Custom room fields; built-in `capacity` only (≥ 0)
 - Building codes DWIN, WHLR, VLSB, MLK; code set at create
@@ -48,7 +48,7 @@ These are the jobs. Admin pages are where that part is changed. The HQ page does
 | Part | What it is | Writes happen |
 | ---- | ---------- | ------------- |
 | **Swire** | Standalone. Not this software. Own admin login and own proctor login. Proctors do not modify it. | Swire admins. **Public read-only API** for timer progress and other Swire data, for HQ situational awareness and for any other tool that needs test progress in rooms |
-| **Live** | Public site for guests: parents, coaches, students. | **`live.berkeley.mt/admin`** |
+| **Live** | Public site for guests: parents, coaches, students. | **`live.berkeley.mt/admin`**, one shared admin account |
 | **Volunteers** | Two jobs. (1) People sign up and update their own info in one portal, tracked across semesters. (2) Day-of reference (a table of volunteers) and the check-in flow: note arrival and assign a task. | Volunteers edit themselves. Staff edits happen on the volunteers admin, not on HQ |
 | **Roomsdb** | Rarely edited. An in-house copy of the Berkeley rooms database, plus any other rooms we want to use. Day-of does not edit it. | `roomsdb.berkeley.mt` |
 | **Rooms allocation planner** | In the weeks before the tournament: which events are assigned to which rooms. One writer at a time. | `ops.berkeley.mt/planner` |
@@ -72,7 +72,9 @@ Event setup (name, day, the round list, each round’s roster checkbox) is edite
 
 **Locked:** the volunteers platform uses OAuth. A returning person is the same person next semester. Staff check-in on that host is the same door.
 
-**Not locked:** how HQ, the planner, roomsdb, or live `/admin` sign in. They might later share that OAuth, or they might not.
+**Locked:** `live.berkeley.mt/admin` is a **single admin account**. One shared login, not a person and not Google. It writes public content only. The cookie is `Path=/admin`, so guest pages do not receive it. A volunteer session does not open it.
+
+**Not locked:** how HQ, the planner, or roomsdb sign in. They might later share volunteer OAuth, or they might not.
 
 Why this is awkward with one event and several hosts:
 
@@ -84,7 +86,7 @@ Swire stays on its own admin login and proctor login. Live guests stay logged ou
 
 **Open, do not pretend these are decided:**
 
-- **Auth** for HQ, the planner, roomsdb, and live `/admin`. Volunteers OAuth is decided. Swire’s logins are Swire’s.
+- **Auth** for HQ, the planner, and roomsdb. Volunteers OAuth is decided. Live admin is one shared account. Swire’s logins are Swire’s.
 - **Which admin edits the shared event** (day, rounds, roster checkbox). One event row is decided. Five setup screens are not.
 - **Volunteer view on HQ.** A copy of the volunteers table on the dashboard is useful and also cuts against “go to the volunteers component for volunteer stuff.” Undecided.
 - **Maps.** Year-round like roomsdb, or event configuration? The only source today is Figma files. How those files become something the software can draw is undecided. Do not copy DWIN155 into a second list either way.
@@ -236,11 +238,11 @@ We are not inventing `hq.berkeley.mt`. HQ lives on **ops**. Volunteer **people**
 | **`ops.berkeley.mt`** | **Saturday bookmark for officers** (root = HQ): list and map view, day plan, roster. Planner at **`/planner`**. HQ does not edit rooms, maps, volunteers, live, or Swire. **No roomsdb tab.** |
 | **`volunteers.berkeley.mt`** | **Volunteer door.** Apply / update this event, see assignment after check-in. **`/admin`** is where staff assign, check in, and edit the form. |
 | **`swire.berkeley.mt`** | **External.** Proctor suite. **Swire admins** are the only writers. Proctors watch (room login, projector). Exposed API is read-only; other platforms poll it. |
-| **`live.berkeley.mt`** | **On this platform.** Guests. Announcements and a map view of the same geometry HQ uses. No volunteer login, no officer menus on the public pages. **`/admin`** is the live admin panel (typed URL, not a link in the guest chrome): Google + `can_open_ops`, writes public content only. |
+| **`live.berkeley.mt`** | **On this platform.** Guests. Announcements and a map view of the same geometry HQ uses. No volunteer login, no officer menus on the public pages. **`/admin`** is one shared admin account (typed URL): public content only. Not OAuth. |
 
 Cadence (rare roomsdb vs regular planner vs Saturday HQ): [architecture](2026-08-23-bmt-2026-architecture.md#staff-links-by-cadence).
 
-Same API, same Postgres for everything **except Swire**. **Person** cookie (Google; host-scoped to ops / roomsdb / volunteers; staff if `can_open_ops`). Live guests: none. Live **admin** uses a Person cookie with **`Path=/admin`** so `/` does not receive it. The **room** cookie lives on Swire only. Do not set Person cookies on `.berkeley.mt`. Hosts are public; isolation is API authorization plus **Swire as a separate process**. Details: [hosts are public](2026-08-23-bmt-2026-architecture.md#hosts-are-public-isolation-is-the-api).
+Same API, same Postgres for everything **except Swire**. Volunteer OAuth is a Person cookie on `volunteers.berkeley.mt` only. Live guests: none. Live **admin** is one shared account, cookie **`Path=/admin`**, so `/` does not receive it. The **room** cookie lives on Swire only. Do not set cookies on `.berkeley.mt`. Hosts are public; isolation is API authorization plus **Swire as a separate process**. Details: [hosts are public](2026-08-23-bmt-2026-architecture.md#hosts-are-public-isolation-is-the-api). Staff sign-in for HQ, the planner, and roomsdb is still open.
 
 Last semester’s “HQ on the same link as volunteers” was officers wanting one bookmark. Volunteer **accounts** and volunteer **admin** both stay on `volunteers.berkeley.mt`. ~300 people should not sign into `ops.berkeley.mt`. HQ reads the assignment list. It does not edit it.
 
@@ -325,4 +327,4 @@ If Postgres or the site dies: printed day plan, printed room password, assignmen
 
 ## Next
 
-Next workshop is **auth for the non-volunteer doors** (HQ, planner, roomsdb, live `/admin`). Volunteers OAuth is decided. Do not reopen “Swire is separate,” “Swire’s API is public and read-only,” or “day-of never writes roomsdb.”
+Next workshop is **auth for HQ, the planner, and roomsdb**. Volunteers OAuth is decided. Live admin is one shared account. Do not reopen “Swire is separate,” “Swire’s API is public and read-only,” or “day-of never writes roomsdb.”
