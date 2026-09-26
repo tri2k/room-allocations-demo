@@ -32,7 +32,7 @@ At implementation we may rewrite this repo or start a new tree. Specs describe t
 - Draft grid → explicit import as frozen day plan. Clocks live on Swire. This platform never writes them, so re-import cannot reset them.
 - No live co-edit on the grid
 - Room login (`{building code}{room name}` + one event password) is **Swire’s**, not a cookie on this API
-- **Auth is an open question** for the OAuth doors: volunteers at minimum, likely HQ, possibly roomsdb and the planner. Google-only was a sketch, not a lock, until that question is answered. Live `/admin` is also not settled. Swire does not use this auth.
+- **Volunteers use OAuth.** That platform only, for now: signup, own profile, and the volunteers admin (check-in, assign). HQ, the planner, roomsdb, and live `/admin` are **not** decided. Swire does not use this auth. Older “Google + `can_open_ops`” lines below are a sketch, not a lock.
 - Roster is a snapshot from the registration product. **Event setup** lists rounds; each round has a checkbox for whether it has student rosters. Students are not volunteer people.
 - Custom room fields; built-in `capacity` only (≥ 0)
 - Building codes DWIN, WHLR, VLSB, MLK; code set at create
@@ -68,9 +68,23 @@ Event setup (name, day, the round list, each round’s roster checkbox) is edite
 
 **Still open:** which admin page edits the shared event. Not five of them.
 
+## Auth, so far
+
+**Locked:** the volunteers platform uses OAuth. A returning person is the same person next semester. Staff check-in on that host is the same door.
+
+**Not locked:** how HQ, the planner, roomsdb, or live `/admin` sign in. They might later share that OAuth, or they might not.
+
+Why this is awkward with one event and several hosts:
+
+- A cookie set on `volunteers.berkeley.mt` is not sent to `ops.berkeley.mt`. Signing up to volunteer does not open the dashboard. That is what we want for ~300 volunteers. It also means a staff person who uses both sites signs in twice until we deliberately link the accounts.
+- If only volunteers are OAuth, the other admins need some other proof (a shared password, a separate allowlist, or OAuth added later). Those proofs must not be interchangeable with a volunteer session.
+- One event does not mean one login. The event row is shared. The session is per host.
+
+Swire stays on its own admin login and proctor login. Live guests stay logged out.
+
 **Open, do not pretend these are decided:**
 
-- **Auth** for the OAuth doors. Volunteers at minimum, likely HQ, possibly roomsdb and the planner. This is the next workshop. Swire’s logins are Swire’s.
+- **Auth** for HQ, the planner, roomsdb, and live `/admin`. Volunteers OAuth is decided. Swire’s logins are Swire’s.
 - **Which admin edits the shared event** (day, rounds, roster checkbox). One event row is decided. Five setup screens are not.
 - **Volunteer view on HQ.** A copy of the volunteers table on the dashboard is useful and also cuts against “go to the volunteers component for volunteer stuff.” Undecided.
 - **Maps.** Year-round like roomsdb, or event configuration? The only source today is Figma files. How those files become something the software can draw is undecided. Do not copy DWIN155 into a second list either way.
@@ -311,4 +325,4 @@ If Postgres or the site dies: printed day plan, printed room password, assignmen
 
 ## Next
 
-Next workshop is **auth** for the OAuth doors. Component jobs above are the description to test that against. Do not reopen “Swire is separate,” “Swire’s API is public and read-only,” or “day-of never writes roomsdb.”
+Next workshop is **auth for the non-volunteer doors** (HQ, planner, roomsdb, live `/admin`). Volunteers OAuth is decided. Do not reopen “Swire is separate,” “Swire’s API is public and read-only,” or “day-of never writes roomsdb.”
