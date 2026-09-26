@@ -265,7 +265,7 @@ Individual: **two focus tests out of four**, or **one general**.
 
 - Activities on the sheet are the units HQ and clarifications target: e.g. `Power`, `Guts`, `General`, `Algebra`, `Geometry`, … (exact labels TBD).
 - An **activity group** `Individual` wraps General + the four focus activities so HQ can still say “all Individual rooms.”
-- **Student choice** (2 focus vs general) is a fact about the student, not about the room. When an Individual roster exists, two focus tests are two rows. A room still runs one activity. An Individual room is allowed to have **no roster**.
+- **Student choice** (2 focus vs general) is a fact about the student, not about the room. If that round’s roster checkbox is on and both tests are known, they are two rows. A room still runs one activity. If the checkbox is off, the room has no names.
 - Timers do **not** special-case Individual. A room is testing or it is not.
 
 ### Day plan import
@@ -305,16 +305,18 @@ Live does **not** call Swire. Maps stay on this platform.
 
 ### Roster
 
-A per-room student roster is **optional**. HQ and any room view must work when that room has no names.
+**Event setup lists the rounds.** Each round has a checkbox: **this round has student rosters.** The software does not hardcode that answer for Power, Guts, or Individual. HQ and any room view must work when the box is unchecked.
 
-| Round | Roster? |
-| ----- | ------- |
-| **Power** | Yes. Teams are assigned to a power room. |
-| **Guts** | Yes. Teams are assigned to a guts room. |
-| **Middle school** (every other semester) | Yes. A team is assigned to one room and stays there all day. |
-| **Individual** (BMT) | **Not decided.** Students pick the general test or 2 of 4 subject tests. Coaches do the final check-in, and not every student finalizes that choice. Last event: 30 mismatches out of 1300 students (2.3%). The org has not decided whether to assign those students to rooms at check-in. The software must allow an Individual room with no roster. |
+How BMT would fill the boxes today (the org can change them per event):
 
-When a roster does exist, it is a snapshot from the registration product (CSV, column mapper, match room by code + name). Students are not volunteer people. Moving a student updates this snapshot only. Two focus tests, if both are known, are two rows.
+| Round | Box, as of now | Why |
+| ----- | -------------- | --- |
+| **Power** | Checked | Teams are assigned to a power room. |
+| **Guts** | Checked | Teams are assigned to a guts room. |
+| **Middle school** (every other semester; one round, one room all day) | Checked | A team stays in that room. |
+| **Individual** | **Unchecked until the org says otherwise** | Students pick the general test or 2 of 4 subject tests. Coaches do the final check-in, and not every student finalizes that choice. Last event: 30 mismatches out of 1300 students (2.3%). |
+
+When the box is checked, the roster is a snapshot from the registration product (CSV, column mapper, match room by code + name). Students are not volunteer people. Moving a student updates this snapshot only. Two focus tests, if both are known, are two rows.
 
 ### Volunteers (shape only)
 
