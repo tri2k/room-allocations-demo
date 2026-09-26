@@ -76,7 +76,9 @@ Event-wide facts (name, day, round list, each round’s roster checkbox) are edi
 | **A different id on every platform** | Each site can archive without waiting for the others. Swire already works this way. | Two “BMT 2026”s inside this database. Live and HQ can disagree about the day. Matching last year’s volunteer list to last year’s announcements is a string compare. |
 | **One toggle that writes every platform** | Feels like one product. | There is no shared session to hang it on. Live’s admin account is not a volunteer. Swire cannot see the toggle. Skip this. |
 
-**Create from any staff admin on this platform.** Each of volunteers admin, live admin, the planner, and HQ has an event selector and a create button. The selector reads the shared event table. Once any of them inserts a row, the others see it. There is still no cross-site toggle: picking BMT 2026 on live does not change the selection on HQ.
+**Create from a staff admin on this platform, except live.** Volunteers admin, the planner, and HQ each have an event selector and a create button. The selector reads the shared event table. Once any of them inserts a row, the others see it, including live. There is still no cross-site toggle: picking BMT 2026 on live does not change the selection on HQ.
+
+**Live does not modify events.** `live.berkeley.mt/admin` may select an event and attach that site’s own data (announcements). It cannot create an event, rename it, edit rounds, or change roster checkboxes. The shared live password is not a door onto the contest record.
 
 Roomsdb has no selector. Rooms are not per event. Swire does not read this table; it is another database. A create button on Swire does not insert a row here unless Swire calls this API, which it does not.
 
@@ -87,8 +89,7 @@ The create button is only on the **admin** of that platform. A volunteer signing
 Other pitfalls:
 
 - Two admins can both type “BMT 2026” and insert two rows. Create must match an existing name and day and offer that row instead of a second one.
-- Live’s single shared password is a weaker door than volunteer OAuth. Anyone with it can add a contest the other platforms will show.
-- HQ, the planner, and roomsdb still have no sign-in, so their create buttons wait on that. Volunteers admin and live admin are the doors that exist.
+- HQ and the planner still have no sign-in, so their create buttons wait on that. Volunteers admin is the door that exists today. Live can already select an event; it cannot create one.
 - An event can exist with no rounds yet. Signup and the grid have to tolerate that.
 - Renaming the event renames it everywhere. That is one row, not a local label.
 
@@ -111,7 +112,7 @@ Swire stays on its own admin login and proctor login. Live guests stay logged ou
 **Open, do not pretend these are decided:**
 
 - **Auth** for HQ, the planner, and roomsdb. Volunteers OAuth is decided. Live admin is one shared account. Swire’s logins are Swire’s.
-- **Who may edit rounds and roster checkboxes after create**, and whether live’s shared password should be allowed to create at all. Create-from-any-staff-admin is the working idea. Swire and roomsdb do not create rows here.
+- **Who may edit rounds and roster checkboxes after create.** Live cannot. Create is volunteers admin, the planner, and HQ. Swire and roomsdb do not create rows here.
 - **Volunteer view on HQ.** A copy of the volunteers table on the dashboard is useful and also cuts against “go to the volunteers component for volunteer stuff.” Undecided.
 - **Maps.** Year-round like roomsdb, or event configuration? The only source today is Figma files. How those files become something the software can draw is undecided. Do not copy DWIN155 into a second list either way.
 
