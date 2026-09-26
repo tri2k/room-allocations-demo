@@ -126,7 +126,7 @@ Levels on that page:
 
 **None** means that account cannot open that platform. The person still has the one row. Someone who only signed up to volunteer is regular on volunteers and none on roomsdb, the planner, and HQ. Opening those hosts sends them to the volunteer site.
 
-None is the absence of a grant, not a value signup writes. The volunteer form creates the person and one volunteer grant (regular). It does not mention roomsdb, the planner, or HQ. Signing in on one of those hosts for the first time can create the same person, and still writes no grant. Access there appears only when the permissions page adds a row for that platform. A later platform starts with no rows, so existing signup code does not learn about it.
+A **grant** is one stored row: this person, this platform, this level. “Regular on volunteers” is a grant. “Admin on the planner” is a grant. None is the absence of a grant, not a value signup writes. The volunteer form creates the person and one volunteer grant (regular). It does not mention roomsdb, the planner, or HQ. Signing in on one of those hosts for the first time can create the same person, and still writes no grant. Access there appears only when the permissions page adds a row for that platform. A later platform starts with no rows, so existing signup code does not learn about it.
 
 View can look and cannot edit. Admin can edit, and can change who else is view or admin on that same platform. Being an HQ admin does not open roomsdb. Map upload stays its own switch (`may replace maps`), not the rooms-edit key.
 
