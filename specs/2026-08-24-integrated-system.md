@@ -154,7 +154,16 @@ The first superuser is one allowlisted email. They are not a separate account ty
 
 **Where that page lives (lean).** It is not its own site. `ops.berkeley.mt` already has two tools as paths: Saturday HQ at `/`, the planner at `/planner`. The permissions page that lists every platform for each person is a third path: **`ops.berkeley.mt/people`**. A superuser bookmarks that. It stays off HQ’s Saturday menu, off the planner grid, off roomsdb, and off volunteer check-in, so those jobs do not grow a users tab.
 
-A platform admin does not need that bookmark. On the platform they already run, one People control lists people and the single switch for that platform. An HQ admin promotes and demotes HQ there. That list is the same grant rows, showing one platform. Volunteer check-in, assign, and the form stay on `volunteers.berkeley.mt/admin`. The volunteer People control only toggles regular versus volunteer admin.
+A platform admin does not need that bookmark. Each platform they admin has a **People** link, shown only to admins of that platform. The screen is a list: search for a person, then one switch for this platform. Setting it writes or removes that one grant. Check-in, the grid, the Saturday list, and the room form stay their own screens.
+
+| Admin of | People link on | The switch on that screen |
+| -------- | -------------- | ------------------------- |
+| Volunteers | `volunteers.berkeley.mt/admin/people`, linked from volunteer admin | Regular, or volunteer admin |
+| HQ | `ops.berkeley.mt/people`, linked from the HQ page | None, view, or admin for HQ |
+| Planner | the same `ops.berkeley.mt/people`, linked from the planner | None, view, or admin for the planner |
+| Roomsdb | `roomsdb.berkeley.mt/people`, linked from roomsdb | None, view, or admin for roomsdb |
+
+On `ops.berkeley.mt/people`, the page shows the columns that person may change. An HQ admin sees HQ. A planner admin sees the planner. Someone who is both sees both. A superuser sees every platform, including volunteers and roomsdb. Volunteer check-in, assign, and the form stay on `volunteers.berkeley.mt/admin`. Live’s shared account and Swire’s logins have no People screen here.
 
 What is still awkward: these are different hosts, so a cookie on `roomsdb.berkeley.mt` is not sent to `ops.berkeley.mt`. One account can still mean a sign-in click per host. That is not four passwords. Do not solve it by setting the cookie on `.berkeley.mt`. That would also send the staff session to live and Swire.
 
