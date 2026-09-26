@@ -2,6 +2,48 @@
 
 ## Unreleased
 
+### Ops platform architecture (2026-08-22)
+
+- **Greenfield:** target parent [specs/2026-08-24-integrated-system.md](specs/2026-08-24-integrated-system.md). Allocator prototype is not a design constraint.
+- **Hosts:** **`roomsdb.berkeley.mt`** (rooms kernel, rare). **`ops.berkeley.mt`** (officer HQ; planner at `/planner`). **`volunteers.berkeley.mt`** (volunteer people). **`live.berkeley.mt`** (guests and maps, on this platform). **`swire.berkeley.mt`** is external (proctor suite only).
+- **Chrome** (in these docs): buttons/tabs/menus around the page content — not the Google Chrome browser. Projector pages must not show officer menus. Roomsdb, planner, and HQ do not share primary chrome.
+- Roomsdb is the kernel; allocator, day-of ops, proctors, public maps, and volunteers are modules that join `rooms.id`
+- New seam: publish one sheet as the day-of plan; live state does not rewrite the grid
+- Figma maps and the old Dwinelle Navigator are not a second rooms list; Navigator-class routing is later than floor search
+- Locked: BMT 2026 (2026-11-14), one org, freeze-on-publish, independent per-room timers, replace volunteer app, roster CSV only, no year-one turn-by-turn
+- Locked: no live co-edit on the allocator grid; projector has no roster names; Individual = activity group; spaces later with `appears_on_grid` hedge
+- Room suite secret: today’s shared env password → per-event shared password (not per-room PIN, no redeploy to rotate)
+- Building codes: DWIN, WHLR, VLSB, MLK; GPBB out of scope; code is set at create, not edited like capacity
+- Documented building-code aliases: they keep CSV/login matching after a rename; uniqueness and dual labels are the cost. Skip for v1.
+- **Google** is the only Person login (`people.id` per Google). Ops = `can_open_ops`. Swire room password is not this API. Live guests stay logged out. OAuth client must be published (~300 volunteers). Other issuers (Microsoft, email/password as login) are out of this design pass.
+- **Auth by screen:** Google Person cookie for staff and volunteers. Swire room password is not this API. Live guests have no session. **`live.berkeley.mt/admin`** is staff (`can_open_ops`) with cookie `Path=/admin`, public content only. Ordinary volunteers bounce off ops and roomsdb to the volunteer host.
+- **Doors are public:** hostnames are not secrets. Person cookies are host-scoped (ops / roomsdb / volunteers), not `Domain=.berkeley.mt`. The live admin cookie is `Path=/admin` on that host only. This API does not accept a Swire room session. One API outage takes roomsdb, ops, volunteers, and live down (paper backup); it does not take Swire’s timers down.
+- **Component jobs:** Swire is standalone (own admin and proctor logins, public read-only API). Live is the guest site with `/admin`. Volunteers is signup across semesters plus a day-of table and check-in. Roomsdb is a rarely edited in-house copy of Berkeley rooms plus extras. The planner assigns events to rooms in the weeks before. HQ is a visual dashboard: imported plan with Swire state on top.
+- **Open:** OAuth auth (volunteers, likely HQ, possibly roomsdb and planner). Whether HQ also shows the volunteers table. Whether maps are year-round like roomsdb or per event, and how Figma files get in.
+- **Roster:** event setup lists rounds. Each round has a checkbox, “this round has student rosters.” Not hardcoded per round type. Power and Guts would be checked; Individual starts unchecked (30 / 1300 mismatches last time, 2.3%).
+- **One event id** inside this platform. Volunteers admin, the planner, and HQ can create a row; the others see it. **Live can select an event and cannot modify it.** No cross-site toggle. Roomsdb and Swire do not insert rows.
+- **Auth:** one person, one account. An officer who fills out the volunteer form does not get a second account. HQ, the planner, and roomsdb are doors onto that person, not separate logins. **Live `/admin` is one shared account**, not a person. A cookie still does not cross hosts. Whether one prompt covers the internal hosts is open. Do not set the cookie on `.berkeley.mt`.
+- **One person, one permissions page.** A superuser sets anyone’s switches on every platform. A platform admin edits that platform and can promote or demote on that platform only, on the same page. Volunteers are regular or admin. Roomsdb, the planner, and HQ are each none, view, or admin. A grant is one row (person, platform, level). None is a missing grant: volunteer signup writes only the volunteer grant, and a first sign-in on another host creates the person without granting that host. The wide permissions page leans to `ops.berkeley.mt/people` (a path, not a new site). A platform admin uses a one-switch People control on the platform they already run. There is no second user-management screen inside a platform. The first superuser is an allowlisted email. Whether admin should split into “may edit” and “may grant” is still open.
+- **Maps lean:** the floor plan lives with the rooms, year-round. Roomsdb is where you upload a replacement. HQ and live only view it. A prettier or more accurate drawing is a more common edit than a room’s name or capacity, so upload permission is not the same switch as editing rooms. How a Figma file becomes that drawing is still open.
+- **API paths:** `/api/v1/{module}/...` (roomsdb, ops, volunteers, live). One owner per resource. No Swire folder. Prefixes do not block live from calling `/roomsdb/` — auth does. Public GETs of rooms for maps (and for Swire, if they need labels) are allowed; volunteer PII and `/ops/` are not.
+- **API contracts:** each folder has a public surface (additive JSON) vs internals. Other platforms may only call the public surface so volunteer internals can change without breaking live.
+- **Swire is external:** proctor suite is not a folder of this API. **Swire admins** are the only writers. Proctors cannot modify Swire. The exposed API is **read-only**; other platforms poll it for timer progress and other Swire data. **Live stays** on this platform and does not show a public clock. No `/api/v1/swire/`. No room cookie on this API.
+- **Maps:** `/api/v1/maps/` owns floor plates and polygons. HQ and live are two views (staff paint vs public geometry). Not a `/live/` resource.
+- **Target C3 (API):** [specs/2026-08-24-api-c3.md](specs/2026-08-24-api-c3.md) — one API process, roomsdb / maps / ops / volunteers / live, Swire external. Not the as-built prototype in `docs/c4/`.
+- **Staff cadence:** roomsdb is rare (`roomsdb.berkeley.mt`); planner is regular (`ops.berkeley.mt/planner`); HQ is Saturday (`ops.berkeley.mt` root). They do not share primary chrome. Same Google, same API.
+- **Name:** the rooms kernel is **roomsdb** in specs and at **`roomsdb.berkeley.mt`**. Target docs no longer say catalog for that module. Prototype UI `#/catalog` is unchanged.
+- Persistence: **one** Postgres, **one** database. A **seam** is any copy (roomsdb CSV into other tools included). Keep seams when a snapshot is enough (roster, day plan, print). Collapse roomsdb→ops/volunteers/maps by sharing `rooms`.
+- Spec: [specs/2026-08-22-ops-platform.md](specs/2026-08-22-ops-platform.md)
+- Docs only; no application code in this change
+
+### Indoor maps architecture (2026-08-21)
+
+- Device-first indoor map from BMT toggle-map Figma files (Dwinelle, Wheeler, VLSB): Leaflet `CRS.Simple`, not a print poster
+- Geometry is Figma-import only; roomsdb `rooms` keep capacity; live exam overlay (role, proctors, timers) is a separate join
+- Importer is a fail-loud contract (role aliases, goldens), not a scrape of one `.fig` tree
+- Spec: [specs/2026-08-21-indoor-maps.md](specs/2026-08-21-indoor-maps.md)
+- Docs only; no application code in this change
+
 ### Phase 2b private sheets (2026-08-14)
 
 - Event is a label plus clock **defaults**; planning lives on an owner-only `sheets` row
