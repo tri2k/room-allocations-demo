@@ -124,6 +124,8 @@ Levels on that page:
 | Planner | None, view, or admin |
 | HQ | None, view, or admin |
 
+**None** means that account cannot open that platform. The person still has the one row. Someone who only signed up to volunteer is regular on volunteers and none on roomsdb, the planner, and HQ. Opening those hosts sends them to the volunteer site.
+
 View can look and cannot edit. Admin can edit, and can change who else is view or admin on that same platform. Being an HQ admin does not open roomsdb. Map upload stays its own switch (`may replace maps`), not the rooms-edit key.
 
 **Open:** whether “admin” on roomsdb, the planner, and HQ should split further into “may edit” and “may grant.” The page above treats admin as both. Ordinary volunteer versus volunteer admin does not split further.
