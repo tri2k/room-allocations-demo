@@ -54,6 +54,24 @@ These are the jobs. Admin pages are where that part is changed. The HQ page does
 | **Rooms allocation planner** | In the weeks before the tournament: which events are assigned to which rooms. One writer at a time. | `ops.berkeley.mt/planner` |
 | **HQ** | A visual dashboard of event progress. Plans imported from the planner, with Swire’s current state shown on top. | The import of the plan onto the dashboard. Not rooms, not volunteers, not live, not Swire |
 
+## Where today’s operations dashboard goes
+
+The current operations dashboard is one navbar: Live, Events, Schedule, Rooms, Volunteers, Buildings, History, Settings. Logged-out people see Live. Organizers view. Admins edit. Those jobs stay. They stop sharing one navbar.
+
+| Today | Moves to | What stays |
+| ----- | -------- | ---------- |
+| Volunteer list, import, the person card, check-in, roles, CANRA, shirt, shifts, day-of flag | `volunteers.berkeley.mt` | Signup and own info at the root. Staff list and check-in under `/admin`. |
+| Rooms and buildings as places: name, type, capacity, open and close | `roomsdb.berkeley.mt` | Year-round. Day-of does not edit them. Replacing the floor drawing is a separate action on this host. |
+| Events, schedule, which rooms an event uses, per-room times | `ops.berkeley.mt/planner` | Weeks before. One writer. |
+| Live timeline, NOW, “what is happening in 30 minutes” | `ops.berkeley.mt` | Saturday HQ. It reads the plan, volunteer assignments, and Swire. It does not check volunteers in or edit rooms. |
+| Building page’s volunteer list, filtered by role | HQ, read-only | Assigning the person stays on volunteer check-in. |
+| Proctors needed, schedule blocks | Planner | They belong to this contest’s plan, not to the year-round room. |
+| Roles, fill order, afternoon activities | Volunteer admin | They drive check-in. |
+| History | The platform whose row changed | Volunteer rollback stays with volunteers. |
+| Logged-out Live | Not the guest site | Guests use `live.berkeley.mt`: map and announcements, no staff timeline and no public clock. |
+
+Cmd-K stays inside the platform you are on. It does not jump from check-in to the room editor.
+
 ## One event id, not one toggle
 
 Two different ideas got mixed together.
