@@ -152,7 +152,7 @@ The management screen is a list of people and those switches. That screen is how
 
 The first superuser is one allowlisted email. They are not a separate account type and not a second login. They are the person who can set every platform on that page. A platform admin opens the same page and only sees their own platform.
 
-**Where that page lives (lean).** It is not its own site. `ops.berkeley.mt` already has two tools as paths: Saturday HQ at `/`, the planner at `/planner`. The permissions page that lists every platform for each person is a third path: **`ops.berkeley.mt/people`**. A superuser bookmarks that. It stays off HQ’s Saturday menu, off the planner grid, off roomsdb, and off volunteer check-in, so those jobs do not grow a users tab.
+**Where that page lives (lean).** It is not its own site. `ops.berkeley.mt` already has two tools as paths: Saturday HQ at `/`, the planner at `/planner`. The permissions page that lists every platform for each person is a third path: **`ops.berkeley.mt/people`**. A superuser bookmarks that. People who cannot grant access see no People link on the Saturday list, the planner grid, roomsdb, or volunteer check-in.
 
 A platform admin does not need that bookmark. Each platform they admin has a **People** link, shown only to admins of that platform. The screen is a list: search for a person, then one switch for this platform. Setting it writes or removes that one grant. Check-in, the grid, the Saturday list, and the room form stay their own screens.
 
