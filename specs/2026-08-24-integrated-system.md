@@ -124,7 +124,7 @@ Levels on that page:
 | Planner | None, view, or admin |
 | HQ | None, view, or admin |
 
-**None** means that account cannot open that platform. The person still has the one row. Someone who only signed up to volunteer is regular on volunteers and none on roomsdb, the planner, and HQ. Opening those hosts sends them to the volunteer site.
+**None** means that account cannot open that platform. It is the default for every account that was never given that platform, and it is what you return someone to by removing them. The person still has the one row. Someone who only signed up to volunteer is regular on volunteers and none on roomsdb, the planner, and HQ. Opening those hosts sends them to the volunteer site. They do not appear on the roomsdb People list with a None label. That list shows only people who have view or admin there.
 
 A **grant** is one stored row: this person, this platform, this level. “Regular on volunteers” is a grant. “Admin on the planner” is a grant. None is the absence of a grant, not a value signup writes. The volunteer form creates the person and one volunteer grant (regular). It does not mention roomsdb, the planner, or HQ. Signing in on one of those hosts for the first time can create the same person, and still writes no grant. Access there appears only when the permissions page adds a row for that platform. A later platform starts with no rows, so existing signup code does not learn about it.
 
@@ -154,14 +154,14 @@ The first superuser is one allowlisted email. They are not a separate account ty
 
 **Where that page lives (lean).** It is not its own site. `ops.berkeley.mt` already has two tools as paths: Saturday HQ at `/`, the planner at `/planner`. The permissions page that lists every platform for each person is a third path: **`ops.berkeley.mt/people`**. A superuser bookmarks that. People who cannot grant access see no People link on the Saturday list, the planner grid, roomsdb, or volunteer check-in.
 
-A platform admin does not need that bookmark. Each platform they admin has a **People** link, shown only to admins of that platform. The screen is a list: search for a person, then one switch for this platform. Setting it writes or removes that one grant. Check-in, the grid, the Saturday list, and the room form stay their own screens.
+A platform admin does not need that bookmark. Each platform they admin has a **People** link, shown only to admins of that platform. The screen lists people who already have access on that platform. Search finds any account, including a volunteer, and adding them writes the grant. Removing them deletes the grant, which is none, and they leave the list. Check-in, the grid, the Saturday list, and the room form stay their own screens.
 
-| Admin of | People link on | The switch on that screen |
-| -------- | -------------- | ------------------------- |
-| Volunteers | `volunteers.berkeley.mt/admin/people`, linked from volunteer admin | Regular, or volunteer admin |
-| HQ | `ops.berkeley.mt/people`, linked from the HQ page | None, view, or admin for HQ |
-| Planner | the same `ops.berkeley.mt/people`, linked from the planner | None, view, or admin for the planner |
-| Roomsdb | `roomsdb.berkeley.mt/people`, linked from roomsdb | None, view, or admin for roomsdb |
+| Admin of | People link on | Who is listed | The switch |
+| -------- | -------------- | ------------- | ---------- |
+| Volunteers | `volunteers.berkeley.mt/admin/people`, linked from volunteer admin | People with a volunteer grant | Regular, or volunteer admin |
+| HQ | `ops.berkeley.mt/people`, linked from the HQ page | People with an HQ grant | View, or admin. Remove means none |
+| Planner | the same `ops.berkeley.mt/people`, linked from the planner | People with a planner grant | View, or admin. Remove means none |
+| Roomsdb | `roomsdb.berkeley.mt/people`, linked from roomsdb | People with a roomsdb grant | View, or admin. Remove means none |
 
 On `ops.berkeley.mt/people`, the page shows the columns that person may change. An HQ admin sees HQ. A planner admin sees the planner. Someone who is both sees both. A superuser sees every platform, including volunteers and roomsdb. Volunteer check-in, assign, and the form stay on `volunteers.berkeley.mt/admin`. Live’s shared account and Swire’s logins have no People screen here.
 
