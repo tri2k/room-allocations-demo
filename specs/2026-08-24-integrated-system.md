@@ -78,6 +78,18 @@ Event-wide facts (name, day, round list, each round’s roster checkbox) are edi
 
 **Still open:** which admin page creates the event and edits the shared facts. Not five of them.
 
+That door is the awkward part. The facts are shared, and none of the platforms is a natural owner:
+
+| Candidate | Why it is tempting | Why it is a bad home |
+| --------- | ------------------ | -------------------- |
+| **Volunteers admin** | Signup is the first thing that needs an event, and it is the only OAuth door today. | Round list and roster checkboxes are contest structure, not volunteer data. |
+| **Planner** | The grid is built in the weeks before, and it needs the rounds. | Signup may open before anyone draws a grid. Planner sign-in is not decided. |
+| **HQ** | Saturday is when the event is “real.” | Too late. Volunteers and the planner need the row weeks earlier. |
+| **Live admin** | One shared account is easy to gate. | A guest-site password should not be the source of truth for rounds. |
+| **A new setup page** | The facts have one home that is none of the above. | It is another door, and its sign-in is the same undecided staff auth as HQ and the planner. |
+
+Until that door exists, do not let each platform insert its own “BMT 2026.”
+
 ## Auth, so far
 
 **Locked:** the volunteers platform uses OAuth. A returning person is the same person next semester. Staff check-in on that host is the same door.
