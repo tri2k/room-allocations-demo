@@ -158,12 +158,14 @@ A platform admin does not need that bookmark. Each platform they admin has a **P
 
 | Admin of | People link on | Who is listed | The switch |
 | -------- | -------------- | ------------- | ---------- |
-| Volunteers | `volunteers.berkeley.mt/admin/people`, linked from volunteer admin | People with a volunteer grant | Regular, or volunteer admin |
+| Volunteers | `volunteers.berkeley.mt/admin/people` | People with a volunteer grant | Regular, or volunteer admin |
+| HQ | `ops.berkeley.mt/people` | People with an HQ grant | View, or admin. Remove means none |
+| Planner | the same `ops.berkeley.mt/people` | People with a planner grant | View, or admin. Remove means none |
+| Roomsdb | `roomsdb.berkeley.mt/people` | People with a roomsdb grant | View, or admin. Remove means none |
 
-`/admin` is on volunteers because that host has a public half. The root is where hundreds of people sign up and edit their own info. `/admin` is the staff half that already exists for the volunteer table, check-in, assign, do-not-invite, and the form. People sits with those jobs so a regular volunteer does not open a list of other people. Roomsdb, the planner, and HQ have no public half, so People is just `/people` on a host that is already staff-only.
-| HQ | `ops.berkeley.mt/people`, linked from the HQ page | People with an HQ grant | View, or admin. Remove means none |
-| Planner | the same `ops.berkeley.mt/people`, linked from the planner | People with a planner grant | View, or admin. Remove means none |
-| Roomsdb | `roomsdb.berkeley.mt/people`, linked from roomsdb | People with a roomsdb grant | View, or admin. Remove means none |
+**Navbar follows the role.** The same host shows different links. A regular volunteer sees their own info. A volunteer admin also sees the volunteer table, check-in, assign, do-not-invite, the form, and People. On ops, HQ, the planner, and People each appear only when that person has the matching grant. A superuser’s People link opens every column. Hiding the link is not the permission: opening the URL without the grant still bounces.
+
+`/admin` on the volunteer host is the folder for those staff pages, because that host also has a public half at the root (signup and your own info). Roomsdb, the planner, and HQ have no public half, so People is `/people`. The navbar is what makes the screens feel different. The folder is only so a volunteer’s bookmark and a staff bookmark are not the same URL.
 
 On `ops.berkeley.mt/people`, the page shows the columns that person may change. An HQ admin sees HQ. A planner admin sees the planner. Someone who is both sees both. A superuser sees every internal column, but the rows are the handful with a roomsdb, planner, or HQ grant. The hundreds of volunteer signups stay on `volunteers.berkeley.mt/admin/people`. A blank column is none. Search still finds one volunteer by name when a superuser wants to give them the planner. It does not open as a scrollable list of every signup. Volunteer check-in, assign, and the form stay on `volunteers.berkeley.mt/admin`. Live’s shared account and Swire’s logins have no People screen here.
 
