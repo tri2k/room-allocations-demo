@@ -154,7 +154,7 @@ The first superuser is one allowlisted email. They are not a separate account ty
 
 **Where that page lives (lean).** It is not its own site. `ops.berkeley.mt` already has two tools as paths: Saturday HQ at `/`, the planner at `/planner`. The permissions page that lists every platform for each person is a third path: **`ops.berkeley.mt/people`**. A superuser bookmarks that. People who cannot grant access see no People link on the Saturday list, the planner grid, roomsdb, or volunteer check-in.
 
-A platform admin does not need that bookmark. Each platform they admin has a **People** link, shown only to admins of that platform. The screen lists people who already have access on that platform. Search finds any account, including a volunteer, and adding them writes the grant. Removing them deletes the grant, which is none, and they leave the list. Check-in, the grid, the Saturday list, and the room form stay their own screens.
+A platform admin does not need that bookmark. Each platform they admin has a **People** link, shown only to admins of that platform. The screen lists people who already have access on that platform. The search box queries the one person table, every account, not that platform’s list. A roomsdb admin typing a name finds a volunteer who has never had roomsdb. Adding them writes the grant. Someone who has never signed in is not in that table, so they cannot be added until they have an account. Removing them deletes the grant, which is none, and they leave the list. Check-in, the grid, the Saturday list, and the room form stay their own screens.
 
 | Admin of | People link on | Who is listed | The switch |
 | -------- | -------------- | ------------- | ---------- |
