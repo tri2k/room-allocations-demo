@@ -105,17 +105,21 @@ HQ, the planner, and roomsdb are internal doors onto that account. They are not 
 
 Volunteers is the mixed door on that same account. External people sign up there with OAuth and have no internal access. An officer uses the same OAuth identity to fill out the form. Live’s shared admin account and Swire’s logins stay outside this. They are not people.
 
-**Who is an admin is a flag on that person, not an organization product.** Signing up does not make someone staff. A second account for “the admin” does not either. Everyone else is a volunteer only.
+**One person in one table.** Roomsdb, the planner, HQ, and volunteers do not each keep their own user. Signing up does not make someone staff. A second account for “the admin” does not either.
 
 A planner who sees a wrong room cannot fix it on the grid. They open roomsdb. Signing in again there is acceptable, because that hop is rare. It is not a reason to merge the two sites.
 
-**Open:** is the person who may build a plan also allowed to edit rooms? One flag would say yes. That may be wrong. Roomsdb is sacred and rarely edited. Noticing a bad capacity on the grid is common. The small version, if we split, is a second switch on the same person (`may edit rooms`), not an organization product. HQ and the volunteers admin can stay on the first switch until a case splits them too.
+**Central permissions, one page.** An organization superuser (the bootstrap person, and anyone they mark the same) can set anyone’s switches per platform: volunteer admin versus ordinary volunteer, and access to roomsdb, the planner, and HQ. That page is how admins are created. Nobody edits the database by hand.
+
+An admin of one platform can edit that platform. They do not also get a user-management screen inside it. “On HQ, make someone an HQ admin” and a central page that flips the same switch are the same control built twice. The complexity to skip is that second screen. The page itself is the hope: one place to assign terms.
+
+**Open:** view versus edit on roomsdb, the planner, and HQ, or simply edit versus none, until someone needs to look without changing. Ordinary volunteer versus volunteer admin is real and not open.
 
 When a permission question comes up, do not walk all six products. Sort the door into one of three:
 
 | Kind | Doors | What an auth question is about |
 | ---- | ----- | ------------------------------ |
-| **One person** | Roomsdb, planner, HQ, volunteers | The same OAuth account. The only switches are “staff?” and, if we split it, “may edit rooms?” |
+| **One person** | Roomsdb, planner, HQ, volunteers | The same OAuth account. Switches live on one permissions page. |
 | **Not a person** | Live `/admin` (one shared password). Swire admin and Swire proctor. | Their own login. They never become the OAuth person. |
 | **No login** | Live guests. Swire’s public read API. | Nothing to grant. |
 
@@ -129,9 +133,7 @@ Who may upload is therefore not the same switch as who may edit rooms. A person 
 
 The management screen is a list of people and those switches. That screen is how admins are created. Nobody edits the database or invents a login by hand.
 
-The first person is one allowlisted email (the person bootstrapping the club’s tools). They can turn the switch on for someone else. That is the whole “superuser.” It is not a separate account type, not a second login, and not an organization product.
-
-**Open:** after that, can any staff member grant staff, or only the bootstrap person? Only one person is fragile on Saturday if they are unavailable. Any staff member granting staff is still just the same switch.
+The first superuser is one allowlisted email. They are not a separate account type and not a second login. They are the person who can open that permissions page.
 
 What is still awkward: these are different hosts, so a cookie on `roomsdb.berkeley.mt` is not sent to `ops.berkeley.mt`. One account can still mean a sign-in click per host. That is not four passwords. Do not solve it by setting the cookie on `.berkeley.mt`. That would also send the staff session to live and Swire.
 
@@ -157,7 +159,7 @@ Swire stays on its own admin login and proctor login. Live guests stay logged ou
 **Open, do not pretend these are decided:**
 
 - **Whether one sign-in click covers HQ, the planner, and roomsdb**, or the same person still clicks once per host. Separate accounts are decided against: an officer who fills out the volunteer form is one person. Live and Swire stay outside that person.
-- **Whether “may plan” includes “may edit rooms.”** Re-login from the planner to roomsdb is fine. One staff flag is the simple version. A second switch is the most this should grow. The first officers are still an email allowlist.
+- **View versus edit** on roomsdb, the planner, and HQ. Re-login from the planner to roomsdb is fine. Switches are per platform on one page. The first superuser is an allowlisted email.
 - **Who may edit rounds and roster checkboxes after create.** Live cannot. Create is volunteers admin, the planner, and HQ. Swire and roomsdb do not create rows here.
 - **Volunteer view on HQ.** A copy of the volunteers table on the dashboard is useful and also cuts against “go to the volunteers component for volunteer stuff.” Undecided.
 - **How a Figma file becomes the drawing.** The rest of maps is leaning below.
