@@ -159,6 +159,8 @@ A platform admin does not need that bookmark. Each platform they admin has a **P
 | Admin of | People link on | Who is listed | The switch |
 | -------- | -------------- | ------------- | ---------- |
 | Volunteers | `volunteers.berkeley.mt/admin/people`, linked from volunteer admin | People with a volunteer grant | Regular, or volunteer admin |
+
+`/admin` is on volunteers because that host has a public half. The root is where hundreds of people sign up and edit their own info. `/admin` is the staff half that already exists for the volunteer table, check-in, assign, do-not-invite, and the form. People sits with those jobs so a regular volunteer does not open a list of other people. Roomsdb, the planner, and HQ have no public half, so People is just `/people` on a host that is already staff-only.
 | HQ | `ops.berkeley.mt/people`, linked from the HQ page | People with an HQ grant | View, or admin. Remove means none |
 | Planner | the same `ops.berkeley.mt/people`, linked from the planner | People with a planner grant | View, or admin. Remove means none |
 | Roomsdb | `roomsdb.berkeley.mt/people`, linked from roomsdb | People with a roomsdb grant | View, or admin. Remove means none |
