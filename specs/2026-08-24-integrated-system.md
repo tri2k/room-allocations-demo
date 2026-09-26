@@ -79,7 +79,7 @@ Event setup (name, day, the round list, each round’s roster checkbox) is edite
 Why this is awkward with one event and several hosts:
 
 - A cookie set on `volunteers.berkeley.mt` is not sent to `ops.berkeley.mt`. Signing up to volunteer does not open the dashboard. That is what we want for ~300 volunteers. It also means a staff person who uses both sites signs in twice until we deliberately link the accounts.
-- If only volunteers are OAuth, the other admins need some other proof (a shared password, a separate allowlist, or OAuth added later). Those proofs must not be interchangeable with a volunteer session.
+- Live admin is the shared-account shape: one login, not a person. HQ, the planner, and roomsdb still need a proof of their own. None of those may be interchangeable with a volunteer session.
 - One event does not mean one login. The event row is shared. The session is per host.
 
 Swire stays on its own admin login and proctor login. Live guests stay logged out.
