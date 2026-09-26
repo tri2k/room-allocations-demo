@@ -54,9 +54,24 @@ These are the jobs. Admin pages are where that part is changed. The HQ page does
 | **Rooms allocation planner** | In the weeks before the tournament: which events are assigned to which rooms. One writer at a time. | `ops.berkeley.mt/planner` |
 | **HQ** | A visual dashboard of event progress. Plans imported from the planner, with Swire’s current state shown on top. | The import of the plan onto the dashboard. Not rooms, not volunteers, not live, not Swire |
 
+## One event, or one per platform
+
+**This platform has one event instance** (one “BMT 2026”). The planner, HQ, volunteers, and live all hang off that row. Roomsdb does not: rooms outlive the contest. Swire does not: it is another product, so its own setup must be pointed at the same contest by hand (same rooms, same day). It does not share the row.
+
+Event setup (name, day, the round list, each round’s roster checkbox) is edited in **one** place. The other admins read it. They still edit their own data: the form on volunteers, announcements on live, the grid on the planner, the imported plan on HQ.
+
+| Approach | What you get | What it costs |
+| -------- | ------------ | ------------- |
+| **One event** (this spec) | One day, one round list, one roster checkbox. Check-in, the dashboard, and the guest site cannot disagree about which contest Saturday is. | Some admin has to own setup. A volunteer form cannot invent a round HQ does not have. |
+| **Each platform sets up its own event** | Volunteers can open signup before HQ exists. Each team ships alone. | Two “BMT 2026”s. Live says 8:00, HQ starts at 9:00, Individual has a roster on one side and not the other. That is the spreadsheet pile again. |
+| **One event, copied out** | A snapshot if a platform must run while this database is down. | Fine for paper and for Swire, because Swire cannot read our row. A bad idea between HQ and volunteers, which share this database. |
+
+**Still open:** which admin page edits the shared event. Not five of them.
+
 **Open, do not pretend these are decided:**
 
 - **Auth** for the OAuth doors. Volunteers at minimum, likely HQ, possibly roomsdb and the planner. This is the next workshop. Swire’s logins are Swire’s.
+- **Which admin edits the shared event** (day, rounds, roster checkbox). One event row is decided. Five setup screens are not.
 - **Volunteer view on HQ.** A copy of the volunteers table on the dashboard is useful and also cuts against “go to the volunteers component for volunteer stuff.” Undecided.
 - **Maps.** Year-round like roomsdb, or event configuration? The only source today is Figma files. How those files become something the software can draw is undecided. Do not copy DWIN155 into a second list either way.
 
