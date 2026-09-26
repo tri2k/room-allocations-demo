@@ -121,6 +121,10 @@ When a permission question comes up, do not walk all six products. Sort the door
 
 Roomsdb is the rare edit. The planner is the weeks-before grid. HQ is Saturday’s picture. Volunteers is signup plus check-in. Those four are one person wearing four hats. Live and Swire are the other two, and they are outside that person.
 
+**Maps are not a seventh product.** The floor plan is a view of the building, so it lives with the rooms, year-round, not as a setting on BMT 2026. Roomsdb can show the rooms on that drawing. HQ and live only look at it and paint their own data on top. Replacing a drawing you do not like is the same kind of rare edit as fixing a room: upload a new map in roomsdb, not on Saturday and not on the guest site.
+
+Who may upload is the same open switch as who may edit rooms. A planner who can see the building is not automatically someone who can replace the file. The API can still store polygons under `/api/v1/maps/`. The person doing the upload is standing in roomsdb.
+
 The management screen is a list of people and those switches. That screen is how admins are created. Nobody edits the database or invents a login by hand.
 
 The first person is one allowlisted email (the person bootstrapping the club’s tools). They can turn the switch on for someone else. That is the whole “superuser.” It is not a separate account type, not a second login, and not an organization product.
@@ -154,7 +158,7 @@ Swire stays on its own admin login and proctor login. Live guests stay logged ou
 - **Whether “may plan” includes “may edit rooms.”** Re-login from the planner to roomsdb is fine. One staff flag is the simple version. A second switch is the most this should grow. The first officers are still an email allowlist.
 - **Who may edit rounds and roster checkboxes after create.** Live cannot. Create is volunteers admin, the planner, and HQ. Swire and roomsdb do not create rows here.
 - **Volunteer view on HQ.** A copy of the volunteers table on the dashboard is useful and also cuts against “go to the volunteers component for volunteer stuff.” Undecided.
-- **Maps.** Year-round like roomsdb, or event configuration? The only source today is Figma files. How those files become something the software can draw is undecided. Do not copy DWIN155 into a second list either way.
+- **How a Figma file becomes the drawing.** The rest of maps is leaning below.
 
 ## One API (the twin of one Postgres)
 
