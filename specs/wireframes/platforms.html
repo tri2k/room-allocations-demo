@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Platform wireframe</title>
+  <style>
+    :root {
+      --ink: #1c1917;
+      --muted: #57534e;
+      --line: #d6d3d1;
+      --bg: #fafaf9;
+      --panel: #fff;
+      --bar: #292524;
+      --soft: #f5f5f4;
+      --mark: #44403c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 15px/1.4 ui-sans-serif, system-ui, sans-serif;
+      color: var(--ink);
+      background: #e7e5e4;
+    }
+    button, input, select { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    .workshop {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      align-items: center;
+      padding: 10px 16px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+    }
+    .workshop strong { font-size: 13px; }
+    .workshop span.hint { color: var(--muted); font-size: 13px; }
+    .roles { display: flex; flex-wrap: wrap; gap: 6px; }
+    .roles button, .nav button, .chip, .choice, .primary, .ghost {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 6px;
+      padding: 6px 10px;
+    }
+    .roles button[aria-pressed="true"] { background: var(--bar); color: #fff; border-color: var(--bar); }
+    .stage { max-width: 1100px; margin: 16px auto 32px; padding: 0 12px; }
+    .browser { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-height: 640px; }
+    .chrome { display: flex; gap: 8px; align-items: center; padding: 8px 10px; background: var(--soft); border-bottom: 1px solid var(--line); }
+    .dots { display: flex; gap: 4px; }
+    .dots i { width: 8px; height: 8px; border-radius: 50%; background: #d6d3d1; display: block; }
+    .url {
+      flex: 1;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-family: ui-monospace, monospace;
+      font-size: 13px;
+    }
+    .nav { display: flex; gap: 4px; align-items: center; padding: 8px 12px; background: var(--bar); }
+    .nav button { background: transparent; color: #fff; border-color: transparent; }
+    .nav button[aria-current="page"] { background: #44403c; }
+    .nav .who { margin-left: auto; color: #e7e5e4; font-size: 12px; }
+    .page { padding: 16px; }
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    .sub { color: var(--muted); margin: 0 0 14px; font-size: 14px; }
+    .bounce, .toast {
+      border: 1px solid var(--line);
+      background: var(--soft);
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    .grid { display: grid; gap: 12px; }
+    .split { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 12px; }
+    .card, .panel { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: #fff; }
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+    .field { margin-bottom: 8px; }
+    input[type="text"], input[type="search"], select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 6px 8px;
+      background: #fff;
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; border-bottom: 1px solid var(--line); padding: 8px 6px; vertical-align: middle; }
+    th { font-size: 12px; color: var(--muted); font-weight: 600; }
+    tr.clickable { cursor: pointer; }
+    tr.selected { background: var(--soft); }
+    .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .choice[aria-pressed="true"], .chip[aria-pressed="true"] { background: var(--mark); color: #fff; border-color: var(--mark); }
+    .primary { background: var(--bar); color: #fff; border-color: var(--bar); }
+    .muted { color: var(--muted); }
+    .buildings { display: flex; flex-direction: column; gap: 4px; }
+    .buildings button { text-align: left; }
+    .rooms-layout { display: grid; grid-template-columns: 180px 1fr; gap: 12px; }
+    .bars { display: flex; align-items: flex-end; gap: 16px; height: 140px; padding-top: 8px; }
+    .bar { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; font-size: 12px; }
+    .bar i { display: block; width: 100%; background: #a8a29e; border-radius: 4px 4px 0 0; min-height: 4px; }
+    .timeline { position: relative; height: 88px; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0 16px; background: linear-gradient(to right, transparent 0, transparent calc(100% - 1px), var(--line) 0) 0 28px / 12.5% 100%; }
+    .block {
+      position: absolute; top: 36px; height: 36px; border-radius: 4px;
+      background: #e7e5e4; border: 1px solid #a8a29e; font-size: 12px;
+      display: flex; align-items: center; padding: 0 6px;
+    }
+    .now {
+      position: absolute; top: 0; bottom: 0; width: 0;
+      border-left: 2px solid var(--ink);
+    }
+    .now span { position: absolute; top: 2px; left: 4px; font-size: 11px; }
+    .hours { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+    .floor { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .room-box {
+      border: 1px solid var(--line); border-radius: 8px; min-height: 90px;
+      padding: 10px; background: #fff; text-align: left;
+    }
+    .room-box[aria-pressed="true"] { outline: 2px solid var(--ink); }
+    .tag { display: inline-block; margin-top: 6px; font-size: 12px; border: 1px solid var(--line); border-radius: 99px; padding: 1px 8px; }
+    .plan {
+      display: grid;
+      grid-template-columns: 64px repeat(4, 1fr);
+      gap: 4px;
+      font-size: 13px;
+    }
+    .plan .h, .plan .t { color: var(--muted); font-size: 12px; padding: 4px; }
+    .cell { min-height: 36px; border: 1px dashed var(--line); border-radius: 4px; }
+    .cell button { width: 100%; height: 100%; min-height: 36px; border: 0; background: #e7e5e4; border-radius: 4px; }
+    .cell button[aria-pressed="true"] { outline: 2px solid var(--ink); }
+    .suggest { border: 1px solid var(--line); border-radius: 6px; margin-top: 4px; }
+    .suggest button { display: block; width: 100%; text-align: left; border: 0; background: #fff; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+    .suggest button:last-child { border-bottom: 0; }
+    .dash { color: #a8a29e; }
+    @media (max-width: 800px) {
+      .split, .rooms-layout, .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    const KEY = "bmt-platform-wireframe-v1";
+
+    const ROLES = [
+      ["guest", "Guest"],
+      ["volunteer", "Regular volunteer"],
+      ["volunteerAdmin", "Volunteer admin"],
+      ["roomsdb", "Roomsdb admin"],
+      ["planner", "Planner admin"],
+      ["hq", "HQ admin"],
+      ["superuser", "Superuser"],
+    ];
+
+    const ACCESS = {
+      guest: ["live", "live-news"],
+      volunteer: ["my-info"],
+      volunteerAdmin: ["my-info", "vol-list", "check-in", "vol-form", "vol-people"],
+      roomsdb: ["rooms", "rooms-people"],
+      planner: ["planner", "people"],
+      hq: ["hq", "hq-map", "people"],
+      superuser: ["my-info", "vol-list", "check-in", "vol-form", "vol-people", "rooms", "rooms-people", "planner", "hq", "hq-map", "people"],
+    };
+
+    const HOME = {
+      guest: "live",
+      volunteer: "my-info",
+      volunteerAdmin: "check-in",
+      roomsdb: "rooms",
+      planner: "planner",
+      hq: "hq",
+      superuser: "people",
+    };
+
+    const ADDRESS = {
+      "my-info": "volunteers.berkeley.mt",
+      "vol-list": "volunteers.berkeley.mt/admin",
+      "check-in": "volunteers.berkeley.mt/admin/check-in",
+      "vol-form": "volunteers.berkeley.mt/admin/form",
+      "vol-people": "volunteers.berkeley.mt/admin/people",
+      rooms: "roomsdb.berkeley.mt",
+      "rooms-people": "roomsdb.berkeley.mt/people",
+      planner: "ops.berkeley.mt/planner",
+      hq: "ops.berkeley.mt",
+      "hq-map": "ops.berkeley.mt/map",
+      people: "ops.berkeley.mt/people",
+      live: "live.berkeley.mt",
+      "live-news": "live.berkeley.mt/announcements",
+    };
+
+    function seed() {
+      return {
+        role: "volunteerAdmin",
+        screen: "check-in",
+        bounce: "",
+        toast: "",
+        query: "",
+        selectedId: "alex",
+        checkRole: "Proctor",
+        checkBuilding: "Dwinelle",
+        building: "Dwinelle",
+        editingRoom: "",
+        mapOpen: false,
+        planBlock: "power",
+        hqMinutes: 10 * 60 + 30,
+        liveRoom: "155",
+        peopleQuery: "",
+        profileSaved: false,
+        profile: {
+          first: "Alex",
+          last: "Chen",
+          preferred: "Alex Chen",
+          email: "alex@berkeley.edu",
+          phone: "510-555-0148",
+          discord: "achen",
+          school: "UC Berkeley",
+          shirt: "M",
+          diet: "vegetarian",
+          shift: "Whole day",
+        },
+        volunteers: [
+          { id: "alex", name: "Alex Chen", email: "alex@berkeley.edu", shirt: "M", shift: "Whole day", canra: true, dayOf: true, level: "regular", checkedIn: false, role: "", building: "" },
+          { id: "sam", name: "Sam Patel", email: "sam@berkeley.edu", shirt: "L", shift: "Shift 1", canra: true, dayOf: false, level: "admin", checkedIn: true, role: "Proctor", building: "Dwinelle" },
+          { id: "riley", name: "Riley Kim", email: "riley@berkeley.edu", shirt: "S", shift: "Whole day", canra: false, dayOf: false, level: "regular", checkedIn: true, role: "Runner", building: "Wheeler" },
+          { id: "jordan", name: "Jordan Lee", email: "jordan@berkeley.edu", shirt: "M", shift: "Shift 2", canra: true, dayOf: false, level: "regular", checkedIn: false, role: "", building: "" },
+          { id: "morgan", name: "Morgan Diaz", email: "morgan@berkeley.edu", shirt: "XL", shift: "Whole day", canra: true, dayOf: true, level: "regular", checkedIn: false, role: "", building: "" },
+          { id: "quinn", name: "Quinn Brooks", email: "quinn@berkeley.edu", shirt: "M", shift: "Shift 1", canra: true, dayOf: false, level: "regular", checkedIn: true, role: "Proctor", building: "VLSB" },
+        ],
+        staff: [
+          { id: "alex", volunteers: "regular", roomsdb: "admin", planner: "admin", hq: "admin" },
+          { id: "sam", volunteers: "admin", roomsdb: "", planner: "admin", hq: "view" },
+          { id: "riley", volunteers: "regular", roomsdb: "view", planner: "", hq: "" },
+          { id: "morgan", volunteers: "", roomsdb: "", planner: "view", hq: "admin" },
+        ],
+        rooms: {
+          Dwinelle: [
+            { id: "155", type: "classroom", capacity: 30 },
+            { id: "160", type: "classroom", capacity: 28 },
+            { id: "145", type: "auditorium", capacity: 120 },
+          ],
+          Wheeler: [{ id: "150", type: "classroom", capacity: 40 }],
+          VLSB: [{ id: "2050", type: "lecture", capacity: 200 }],
+          MLK: [{ id: "1", type: "classroom", capacity: 24 }],
+        },
+        roles: ["Proctor", "Runner", "Grader"],
+        fill: ["Dwinelle", "Wheeler", "VLSB"],
+        roster: { power: true, guts: true, individual: false },
+      };
+    }
+
+    let state = load();
+
+    function load() {
+      try {
+        const raw = sessionStorage.getItem(KEY);
+        if (!raw) return seed();
+        return Object.assign(seed(), JSON.parse(raw));
+      } catch (e) {
+        return seed();
+      }
+    }
+
+    function save() {
+      const copy = Object.assign({}, state, { toast: "", bounce: "" });
+      sessionStorage.setItem(KEY, JSON.stringify(copy));
+    }
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    function volunteer(id) {
+      return state.volunteers.find((v) => v.id === id);
+    }
+
+    function staffRow(id) {
+      return state.staff.find((s) => s.id === id);
+    }
+
+    function can(screen) {
+      return ACCESS[state.role].includes(screen);
+    }
+
+    function go(screen) {
+      if (!can(screen)) {
+        state.bounce = "This account cannot open that page.";
+        state.screen = HOME[state.role];
+      } else {
+        state.bounce = "";
+        state.screen = screen;
+      }
+      state.toast = "";
+      state.mapOpen = false;
+      render();
+    }
+
+    function setRole(role) {
+      state.role = role;
+      if (!can(state.screen)) {
+        state.screen = HOME[role];
+        state.bounce = "That role cannot open the previous page, so this is their home screen.";
+      } else {
+        state.bounce = "";
+      }
+      render();
+    }
+
+    function toast(msg) {
+      state.toast = msg;
+      render();
+    }
+
+    function counts() {
+      const names = ["Dwinelle", "Wheeler", "VLSB"];
+      return names.map((name) => ({
+        name,
+        n: state.volunteers.filter((v) => v.checkedIn && v.role === "Proctor" && v.building === name).length,
+      }));
+    }
+
+    function fmt(mins) {
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      const suffix = h >= 12 ? "PM" : "AM";
+      const h12 = h % 12 === 0 ? 12 : h % 12;
+      return h12 + ":" + String(m).padStart(2, "0") + " " + suffix;
+    }
+
+    function nav() {
+      const s = state.screen;
+      const items = [];
+      const add = (id, label) => {
+        if (can(id)) items.push({ id, label });
+      };
+      if (["my-info", "vol-list", "check-in", "vol-form", "vol-people"].includes(s)) {
+        add("my-info", "My info");
+        add("vol-list", "List");
+        add("check-in", "Check-in");
+        add("vol-form", "Form");
+        add("vol-people", "People");
+      } else if (s === "rooms" || s === "rooms-people") {
+        add("rooms", "Rooms");
+        add("rooms-people", "People");
+      } else if (s === "planner") {
+        add("planner", "Planner");
+        add("people", "People");
+      } else if (s === "hq" || s === "hq-map") {
+        add("hq", "Saturday");
+        add("hq-map", "Map");
+        add("people", "People");
+      } else if (s === "people") {
+        if (state.role === "hq" || state.role === "superuser") {
+          add("hq", "Saturday");
+          add("hq-map", "Map");
+        }
+        if (state.role === "planner" || state.role === "superuser") add("planner", "Planner");
+        add("people", "People");
+      } else {
+        add("live", "Map");
+        add("live-news", "Announcements");
+      }
+      const roleLabel = ROLES.find((r) => r[0] === state.role)[1];
+      return (
+        '<nav class="nav">' +
+        items.map((item) => '<button type="button" data-go="' + item.id + '" aria-current="' + (item.id === s ? "page" : "false") + '">' + item.label + "</button>").join("") +
+        '<span class="who">' + esc(roleLabel) + "</span></nav>"
+      );
+    }
+
+    function banner() {
+      return (state.bounce ? '<div class="bounce">' + esc(state.bounce) + "</div>" : "") +
+        (state.toast ? '<div class="toast">' + esc(state.toast) + "</div>" : "");
+    }
+
+    function myInfo() {
+      const p = state.profile;
+      const field = (key, label) =>
+        '<div class="field"><label>' + label + '</label><input data-profile="' + key + '" value="' + esc(p[key]) + '"></div>';
+      return (
+        "<h1>My info</h1><p class=\"sub\">BMT 2026. This account can edit its own signup. It cannot see other volunteers.</p>" +
+        banner() +
+        '<div class="card form-grid">' +
+        field("first", "Legal first name") +
+        field("last", "Legal last name") +
+        field("preferred", "Preferred name") +
+        field("email", "Email") +
+        field("phone", "Phone") +
+        field("discord", "Discord") +
+        field("school", "School") +
+        field("shirt", "T-shirt") +
+        field("diet", "Diet") +
+        field("shift", "Shift") +
+        '<div class="field"><label>CANRA</label><div>Complete. Volunteers do not edit this.</div></div>' +
+        "</div>" +
+        '<p><button class="primary" data-action="save-profile" type="button">' + (state.profileSaved ? "Saved" : "Save") + "</button></p>"
+      );
+    }
+
+    function volList() {
+      const q = state.query.trim().toLowerCase();
+      const rows = state.volunteers.filter((v) => !q || v.name.toLowerCase().includes(q) || v.email.includes(q));
+      const selected = volunteer(state.selectedId) || rows[0];
+      return (
+        "<h1>Volunteers</h1><p class=\"sub\">The hundreds live here. This sample is six people, not the signup scroll on roomsdb.</p>" +
+        banner() +
+        '<div class="split"><div class="card">' +
+        '<input type="search" placeholder="Search name or email" data-query="list" value="' + esc(state.query) + '">' +
+        "<table><thead><tr><th>Name</th><th>Shift</th><th>Checked in</th></tr></thead><tbody>" +
+        rows.map((v) => '<tr class="clickable' + (selected && selected.id === v.id ? " selected" : "") + '" data-action="select-volunteer" data-id="' + v.id + '"><td>' + esc(v.name) + "</td><td>" + esc(v.shift) + "</td><td>" + (v.checkedIn ? esc(v.role + " · " + v.building) : "No") + "</td></tr>").join("") +
+        "</tbody></table></div>" +
+        (selected ? personCard(selected) : "") +
+        "</div>"
+      );
+    }
+
+    function personCard(v) {
+      return (
+        '<div class="card"><h2 style="margin:0 0 8px;font-size:16px">' + esc(v.name) + "</h2>" +
+        "<div>" + esc(v.email) + "</div>" +
+        "<div>Shirt " + esc(v.shirt) + " · " + esc(v.shift) + "</div>" +
+        "<div>CANRA " + (v.canra ? "complete" : "missing") + "</div>" +
+        "<div>" + (v.dayOf ? "Day-of role" : "No day-of flag") + "</div>" +
+        "<div>" + (v.checkedIn ? "In: " + esc(v.role) + " · " + esc(v.building) : "Not checked in") + "</div>" +
+        '<p><button type="button" data-go="check-in" data-action="select-volunteer" data-id="' + v.id + '">Open in check-in</button></p></div>'
+      );
+    }
+
+    function checkIn() {
+      const q = state.query.trim().toLowerCase();
+      const matches = q ? state.volunteers.filter((v) => v.name.toLowerCase().includes(q) || v.email.includes(q)) : [];
+      const selected = volunteer(state.selectedId);
+      const bars = counts();
+      const max = Math.max(1, ...bars.map((b) => b.n));
+      return (
+        "<h1>Check-in</h1><p class=\"sub\">Search a person, pick a role, accept or change the proposed building.</p>" +
+        banner() +
+        '<div class="split"><div class="card">' +
+        '<label>Find a volunteer</label><input type="search" data-query="check" value="' + esc(state.query) + '" placeholder="Name or email">' +
+        (matches.length ? '<div class="suggest">' + matches.map((v) => '<button type="button" data-action="select-volunteer" data-id="' + v.id + '">' + esc(v.name) + " · " + esc(v.email) + "</button>").join("") + "</div>" : "") +
+        (selected ? checkCard(selected) : '<p class="muted">Select someone to check them in.</p>') +
+        "</div><div class=\"card\"><h2 style=\"margin:0 0 8px;font-size:16px\">By building</h2><div class=\"bars\">" +
+        bars.map((b) => '<div class="bar"><i style="height:' + Math.max(8, (b.n / max) * 110) + 'px"></i><span>' + b.n + "</span><span>" + esc(b.name) + "</span></div>").join("") +
+        '</div><p class="muted">Proctors checked in.</p></div></div>'
+      );
+    }
+
+    function checkCard(v) {
+      return (
+        '<div style="margin-top:12px"><strong>' + esc(v.name) + "</strong>" +
+        "<div>" + esc(v.email) + " · shirt " + esc(v.shirt) + " · " + esc(v.shift) + "</div>" +
+        "<div>CANRA " + (v.canra ? "complete" : "missing") + (v.dayOf ? " · Day-of role" : "") + "</div>" +
+        (v.checkedIn ? '<p>Already in as ' + esc(v.role) + " · " + esc(v.building) + ". You can change it.</p>" : "<p>Not checked in.</p>") +
+        '<div class="row-actions">' +
+        state.roles.map((r) => '<button type="button" class="choice" aria-pressed="' + (state.checkRole === r) + '" data-action="check-role" data-role="' + esc(r) + '">' + esc(r) + "</button>").join("") +
+        "</div>" +
+        '<div class="field" style="margin-top:8px"><label>Building</label><select data-action="check-building">' +
+        state.fill.map((b) => '<option' + (state.checkBuilding === b ? " selected" : "") + ">" + esc(b) + "</option>").join("") +
+        "</select></div>" +
+        '<button class="primary" type="button" data-action="do-checkin">Check in</button></div>'
+      );
+    }
+
+    function volForm() {
+      return (
+        "<h1>Form</h1><p class=\"sub\">Roles and fill order drive check-in. They used to live in tournament settings.</p>" +
+        banner() +
+        '<div class="card"><h2 style="margin:0 0 8px;font-size:16px">Roles offered at check-in</h2><div class="row-actions">' +
+        state.roles.map((r, i) => '<button type="button" class="chip" data-action="remove-role" data-index="' + i + '">' + esc(r) + " ×</button>").join("") +
+        '</div><p><input id="new-role" placeholder="Add a role" style="max-width:220px"> <button type="button" data-action="add-role">Add</button></p>' +
+        "<h2 style=\"font-size:16px\">Building fill order</h2><p class=\"muted\">Proctors fill the first building that is not full.</p><div class=\"row-actions\">" +
+        state.fill.map((b, i) => '<span class="chip">' + (i + 1) + ". " + esc(b) +
+          ' <button type="button" data-action="move-fill" data-index="' + i + '" data-dir="-1">↑</button>' +
+          ' <button type="button" data-action="move-fill" data-index="' + i + '" data-dir="1">↓</button></span>').join("") +
+        "</div></div>"
+      );
+    }
+
+    function levelSelect(current, options, action, id) {
+      return '<select data-action="' + action + '" data-id="' + id + '">' +
+        options.map((o) => '<option value="' + o.value + '"' + (current === o.value ? " selected" : "") + ">" + esc(o.label) + "</option>").join("") +
+        "</select>";
+    }
+
+    function volPeople() {
+      return (
+        "<h1>People</h1><p class=\"sub\">Volunteer admins see regular or admin. They do not see roomsdb, the planner, or HQ.</p>" +
+        banner() +
+        "<table><thead><tr><th>Person</th><th>Volunteers</th></tr></thead><tbody>" +
+        state.volunteers.map((v) => "<tr><td>" + esc(v.name) + "</td><td>" +
+          levelSelect(v.level, [{ value: "regular", label: "Regular" }, { value: "admin", label: "Volunteer admin" }], "vol-level", v.id) +
+          "</td></tr>").join("") +
+        "</tbody></table>"
+      );
+    }
+
+    function roomsPage() {
+      const list = state.rooms[state.building];
+      return (
+        "<h1>Rooms</h1><p class=\"sub\">Year-round facts. Replace map does not edit capacity. Saturday HQ cannot edit this page.</p>" +
+        banner() +
+        '<div class="rooms-layout"><div class="buildings">' +
+        Object.keys(state.rooms).map((b) => '<button type="button" class="choice" aria-pressed="' + (state.building === b) + '" data-action="pick-building" data-building="' + esc(b) + '">' + esc(b) + "</button>").join("") +
+        '</div><div class="card"><div class="row-actions" style="margin-bottom:8px"><button type="button" data-action="toggle-map">' + (state.mapOpen ? "Close map upload" : "Replace map") + "</button></div>" +
+        (state.mapOpen ? '<p class="bounce">Upload a drawing for ' + esc(state.building) + ". This does not change a room's name or capacity.</p>" : "") +
+        "<table><thead><tr><th>Room</th><th>Type</th><th>Capacity</th><th></th></tr></thead><tbody>" +
+        list.map((r) => "<tr><td>" + esc(state.building.slice(0, 4).toUpperCase()) + " " + esc(r.id) + "</td><td>" + esc(r.type) + "</td><td>" +
+          (state.editingRoom === state.building + r.id
+            ? '<input data-capacity="' + esc(r.id) + '" value="' + esc(r.capacity) + '" style="width:80px">'
+            : esc(r.capacity)) +
+          '</td><td><button type="button" data-action="edit-room" data-id="' + esc(r.id) + '">' + (state.editingRoom === state.building + r.id ? "Done" : "Edit room") + "</button></td></tr>").join("") +
+        "</tbody></table></div></div>"
+      );
+    }
+
+    function plannerPage() {
+      const blocks = {
+        power: { name: "Power", rooms: "DWIN 155, DWIN 160", when: "9:00–11:00" },
+        guts: { name: "Guts", rooms: "DWIN 145", when: "1:00–3:00" },
+        individual: { name: "Individual", rooms: "WHLR 150", when: "9:00–12:00" },
+      };
+      const b = blocks[state.planBlock];
+      const cell = (id) => '<div class="cell"><button type="button" aria-pressed="' + (state.planBlock === id) + '" data-action="plan" data-id="' + id + '">' + esc(blocks[id].name) + "</button></div>";
+      const empty = '<div class="cell"></div>';
+      return (
+        "<h1>Planner</h1><p class=\"sub\">BMT 2026 · Sat Nov 14. Weeks before. One writer at a time.</p>" +
+        banner() +
+        '<div class="split"><div class="card"><div class="plan">' +
+        '<div></div><div class="h">DWIN 155</div><div class="h">DWIN 160</div><div class="h">DWIN 145</div><div class="h">WHLR 150</div>' +
+        '<div class="t">9:00</div>' + cell("power") + cell("power") + empty + cell("individual") +
+        '<div class="t">11:00</div>' + cell("power") + cell("power") + empty + empty +
+        '<div class="t">1:00</div>' + empty + empty + cell("guts") + empty +
+        "</div></div><div class=\"card\"><h2 style=\"margin:0 0 8px;font-size:16px\">" + esc(b.name) + "</h2>" +
+        "<div>" + esc(b.when) + "</div><div>" + esc(b.rooms) + "</div>" +
+        '<p><button type="button" class="choice" aria-pressed="' + state.roster[state.planBlock] + '" data-action="roster">This round has student rosters</button></p>' +
+        '<p class="muted">' + (state.roster[state.planBlock] ? "Roster import belongs with this round." : "A room with no roster still runs. Individual starts unchecked.") + "</p></div></div>"
+      );
+    }
+
+    function hqPage() {
+      const left = ((state.hqMinutes - 8 * 60) / (10 * 60)) * 100;
+      const swire = [
+        ["DWIN 155", "Power", "Swire running"],
+        ["DWIN 160", "Power", "Swire running"],
+        ["DWIN 145", "Empty", "No round"],
+        ["WHLR 150", "Individual", "Swire unavailable"],
+      ];
+      return (
+        "<h1>Saturday</h1><p class=\"sub\">Today's Live timeline, moved here. Reads the plan, assignments, and Swire.</p>" +
+        banner() +
+        '<div class="row-actions"><button type="button" class="primary" data-action="now">NOW</button><span>' + fmt(state.hqMinutes) + '</span></div>' +
+        '<input type="range" min="480" max="1080" step="15" value="' + state.hqMinutes + '" data-action="hq-time" style="width:100%;margin:8px 0">' +
+        '<div class="hours"><span>8 AM</span><span>10</span><span>12</span><span>2</span><span>4</span><span>6 PM</span></div>' +
+        '<div class="timeline"><div class="block" style="left:10%;width:20%">Power</div><div class="block" style="left:10%;width:30%;top:8px;height:22px">Individual</div><div class="block" style="left:50%;width:20%">Guts</div><div class="now" style="left:' + left + '%"><span>Now</span></div></div>' +
+        "<table><thead><tr><th>Room</th><th>Plan</th><th>Swire</th></tr></thead><tbody>" +
+        swire.map((row) => "<tr><td>" + row[0] + "</td><td>" + row[1] + "</td><td>" + row[2] + "</td></tr>").join("") +
+        '</tbody></table><p class="muted">No check-in button. No capacity field. Volunteer assignments are read here.</p>'
+      );
+    }
+
+    function hqMap() {
+      return (
+        "<h1>Map</h1><p class=\"sub\">Same drawing as roomsdb. HQ paints the day on top and does not replace the file.</p>" +
+        banner() +
+        floor(true)
+      );
+    }
+
+    function floor(staff) {
+      const rooms = [
+        ["155", "Power"],
+        ["160", "Power"],
+        ["145", ""],
+        ["150", "Individual"],
+      ];
+      return '<div class="floor">' + rooms.map(([id, label]) =>
+        '<button type="button" class="room-box" aria-pressed="' + (state.liveRoom === id) + '" data-action="live-room" data-id="' + id + '"><strong>' + id + "</strong>" +
+        (label ? '<div class="tag">' + (staff && id === "150" ? "Individual · timer unavailable" : esc(label)) + "</div>" : "") +
+        "</button>").join("") + "</div>";
+    }
+
+    function livePage() {
+      return (
+        "<h1>BMT 2026</h1><p class=\"sub\">Guests. No clock. No volunteer names. No student names.</p>" +
+        banner() +
+        floor(false) +
+        '<p class="card" style="margin-top:12px">Power round is in Dwinelle.</p>'
+      );
+    }
+
+    function liveNews() {
+      return (
+        "<h1>Announcements</h1><p class=\"sub\">Written by the one shared account at live.berkeley.mt/admin. That login is not a volunteer.</p>" +
+        banner() +
+        '<div class="card"><p>Power round is in Dwinelle.</p><p class="muted">Guests can read this. They cannot edit it.</p></div>'
+      );
+    }
+
+    function peopleColumns() {
+      if (state.role === "hq") return ["hq"];
+      if (state.role === "planner") return ["planner"];
+      if (state.screen === "rooms-people" || state.role === "roomsdb") return ["roomsdb"];
+      return ["volunteers", "roomsdb", "planner", "hq"];
+    }
+
+    function peoplePage(kind) {
+      const cols = kind === "rooms" ? ["roomsdb"] : peopleColumns();
+      const labels = { volunteers: "Volunteers", roomsdb: "Roomsdb", planner: "Planner", hq: "HQ" };
+      const options = {
+        volunteers: [{ value: "", label: "—" }, { value: "regular", label: "Regular" }, { value: "admin", label: "Admin" }],
+        roomsdb: [{ value: "", label: "—" }, { value: "view", label: "View" }, { value: "admin", label: "Admin" }],
+        planner: [{ value: "", label: "—" }, { value: "view", label: "View" }, { value: "admin", label: "Admin" }],
+        hq: [{ value: "", label: "—" }, { value: "view", label: "View" }, { value: "admin", label: "Admin" }],
+      };
+      const rows = state.staff.filter((s) => {
+        if (cols.length === 4) return s.roomsdb || s.planner || s.hq;
+        return cols.some((c) => s[c]);
+      });
+      const q = state.peopleQuery.trim().toLowerCase();
+      const hits = q ? state.volunteers.filter((v) => v.name.toLowerCase().includes(q)) : [];
+      const title = cols.length === 4 ? "People" : "People · " + labels[cols[0]];
+      const sub = cols.length === 4
+        ? "The handful who can open roomsdb, the planner, or HQ. Volunteer signups are not listed until you search."
+        : "One switch. A dash removes the grant and drops them off this list.";
+      return (
+        "<h1>" + title + "</h1><p class=\"sub\">" + sub + "</p>" +
+        banner() +
+        '<label>Find an account</label><input type="search" data-query="people" value="' + esc(state.peopleQuery) + '" placeholder="Name">' +
+        (hits.length ? '<div class="suggest">' + hits.map((v) => '<button type="button" data-action="add-staff" data-id="' + v.id + '">' + esc(v.name) + " · " + esc(v.email) + " · add</button>").join("") + "</div>" : "") +
+        "<table><thead><tr><th>Person</th>" + cols.map((c) => "<th>" + labels[c] + "</th>").join("") + "</tr></thead><tbody>" +
+        rows.map((s) => {
+          const person = volunteer(s.id);
+          return "<tr><td>" + esc(person ? person.name : s.id) + "</td>" +
+            cols.map((c) => "<td>" + levelSelect(s[c], options[c], "staff-level", s.id + ":" + c) + "</td>").join("") +
+            "</tr>";
+        }).join("") +
+        "</tbody></table>"
+      );
+    }
+
+    function page() {
+      switch (state.screen) {
+        case "my-info": return myInfo();
+        case "vol-list": return volList();
+        case "check-in": return checkIn();
+        case "vol-form": return volForm();
+        case "vol-people": return volPeople();
+        case "rooms": return roomsPage();
+        case "rooms-people": return peoplePage("rooms");
+        case "planner": return plannerPage();
+        case "hq": return hqPage();
+        case "hq-map": return hqMap();
+        case "people": return peoplePage("ops");
+        case "live-news": return liveNews();
+        default: return livePage();
+      }
+    }
+
+    function render() {
+      save();
+      const roleButtons = ROLES.map(([id, label]) =>
+        '<button type="button" data-role="' + id + '" aria-pressed="' + (state.role === id) + '">' + label + "</button>"
+      ).join("");
+      document.getElementById("app").innerHTML =
+        '<div class="workshop"><strong>Workshop</strong><div class="roles">' + roleButtons + '</div>' +
+        '<span class="hint">The bar above is not the product. The navbar below is what that person sees.</span>' +
+        '<button type="button" data-action="reset">Reset sample</button></div>' +
+        '<div class="stage"><div class="browser"><div class="chrome"><div class="dots"><i></i><i></i><i></i></div><div class="url">' +
+        esc(ADDRESS[state.screen] || "") + "</div></div>" + nav() + '<div class="page">' + page() + "</div></div></div>";
+    }
+
+    document.getElementById("app").addEventListener("click", (e) => {
+      const roleBtn = e.target.closest("[data-role]");
+      if (roleBtn) {
+        setRole(roleBtn.dataset.role);
+        return;
+      }
+      const goBtn = e.target.closest("[data-go]");
+      if (goBtn && !e.target.closest("[data-action]")) {
+        go(goBtn.dataset.go);
+        return;
+      }
+      const el = e.target.closest("[data-action]");
+      if (!el) return;
+      const action = el.dataset.action;
+      if (action === "reset") {
+        sessionStorage.removeItem(KEY);
+        state = seed();
+        render();
+        return;
+      }
+      if (action === "save-profile") {
+        state.profileSaved = true;
+        toast("Saved on this account.");
+        return;
+      }
+      if (action === "select-volunteer") {
+        state.selectedId = el.dataset.id;
+        state.query = volunteer(el.dataset.id).name;
+        if (el.dataset && el.hasAttribute("data-go")) state.screen = "check-in";
+        render();
+        return;
+      }
+      if (action === "check-role") {
+        state.checkRole = el.dataset.role;
+        render();
+        return;
+      }
+      if (action === "do-checkin") {
+        const v = volunteer(state.selectedId);
+        if (!v) return;
+        v.checkedIn = true;
+        v.role = state.checkRole;
+        v.building = state.checkBuilding;
+        state.query = "";
+        toast(v.name + " checked in as " + v.role + " · " + v.building + ".");
+        return;
+      }
+      if (action === "add-role") {
+        const input = document.getElementById("new-role");
+        const value = input && input.value.trim();
+        if (value && !state.roles.includes(value)) state.roles.push(value);
+        toast(value ? "Role added." : "Type a role first.");
+        return;
+      }
+      if (action === "remove-role") {
+        state.roles.splice(Number(el.dataset.index), 1);
+        render();
+        return;
+      }
+      if (action === "move-fill") {
+        const i = Number(el.dataset.index);
+        const dir = Number(el.dataset.dir);
+        const j = i + dir;
+        if (j < 0 || j >= state.fill.length) return;
+        const copy = state.fill.slice();
+        const tmp = copy[i];
+        copy[i] = copy[j];
+        copy[j] = tmp;
+        state.fill = copy;
+        render();
+        return;
+      }
+      if (action === "pick-building") {
+        state.building = el.dataset.building;
+        state.editingRoom = "";
+        state.mapOpen = false;
+        render();
+        return;
+      }
+      if (action === "toggle-map") {
+        state.mapOpen = !state.mapOpen;
+        render();
+        return;
+      }
+      if (action === "edit-room") {
+        const key = state.building + el.dataset.id;
+        if (state.editingRoom === key) {
+          const input = document.querySelector('[data-capacity="' + el.dataset.id + '"]');
+          const room = state.rooms[state.building].find((r) => r.id === el.dataset.id);
+          if (room && input) room.capacity = Number(input.value) || room.capacity;
+          state.editingRoom = "";
+        } else {
+          state.editingRoom = key;
+        }
+        render();
+        return;
+      }
+      if (action === "plan") {
+        state.planBlock = el.dataset.id;
+        render();
+        return;
+      }
+      if (action === "roster") {
+        state.roster[state.planBlock] = !state.roster[state.planBlock];
+        render();
+        return;
+      }
+      if (action === "now") {
+        state.hqMinutes = 10 * 60 + 30;
+        render();
+        return;
+      }
+      if (action === "live-room") {
+        state.liveRoom = el.dataset.id;
+        render();
+        return;
+      }
+      if (action === "add-staff") {
+        const id = el.dataset.id;
+        let row = staffRow(id);
+        if (!row) {
+          const v = volunteer(id);
+          row = { id, volunteers: v ? v.level : "", roomsdb: "", planner: "", hq: "" };
+          state.staff.push(row);
+        }
+        const col = peopleColumns()[0] === "volunteers" && peopleColumns().length === 4 ? "planner" : peopleColumns()[0];
+        if (!row[col]) row[col] = col === "volunteers" ? "regular" : "view";
+        state.peopleQuery = "";
+        toast("Grant added. They show on this list only because a column is set.");
+        return;
+      }
+    });
+
+    document.getElementById("app").addEventListener("input", (e) => {
+      const t = e.target;
+      if (t.dataset.profile) {
+        state.profile[t.dataset.profile] = t.value;
+        state.profileSaved = false;
+        save();
+        return;
+      }
+      if (t.dataset.query) {
+        state.query = t.dataset.query === "people" ? state.query : t.value;
+        if (t.dataset.query === "people") state.peopleQuery = t.value;
+        else state.query = t.value;
+        render();
+        const again = document.querySelector('[data-query="' + t.dataset.query + '"]');
+        if (again) {
+          again.focus();
+          again.setSelectionRange(again.value.length, again.value.length);
+        }
+        return;
+      }
+      if (t.dataset.action === "hq-time") {
+        state.hqMinutes = Number(t.value);
+        render();
+        const slider = document.querySelector('[data-action="hq-time"]');
+        if (slider) slider.focus();
+      }
+    });
+
+    document.getElementById("app").addEventListener("change", (e) => {
+      const t = e.target;
+      if (t.dataset.action === "check-building") {
+        state.checkBuilding = t.value;
+        save();
+        return;
+      }
+      if (t.dataset.action === "vol-level") {
+        const v = volunteer(t.dataset.id);
+        if (v) v.level = t.value;
+        const staff = staffRow(t.dataset.id);
+        if (staff) staff.volunteers = t.value;
+        save();
+        return;
+      }
+      if (t.dataset.action === "staff-level") {
+        const [id, col] = t.dataset.id.split(":");
+        const row = staffRow(id);
+        if (row) row[col] = t.value;
+        const v = volunteer(id);
+        if (v && col === "volunteers") v.level = t.value || v.level;
+        render();
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>

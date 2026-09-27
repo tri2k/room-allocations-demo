@@ -72,6 +72,8 @@ The current operations dashboard is one navbar: Live, Events, Schedule, Rooms, V
 
 Cmd-K stays inside the platform you are on. It does not jump from check-in to the room editor.
 
+A clickable wireframe of this split is [specs/wireframes/platforms.html](wireframes/platforms.html). The bar above the fake browser is the workshop control (pick a role). The navbar inside the browser is what that role sees.
+
 ## One event id, not one toggle
 
 Two different ideas got mixed together.
