@@ -157,7 +157,7 @@
       volunteerAdmin: ["my-info", "vol-list", "check-in", "vol-form", "vol-people"],
       roomsdb: ["rooms", "rooms-people"],
       planner: ["planner", "people"],
-      hq: ["hq", "hq-map", "people"],
+      hq: ["hq", "hq-map"],
       superuser: ["my-info", "vol-list", "check-in", "vol-form", "vol-people", "rooms", "rooms-people", "planner", "hq", "hq-map", "people"],
     };
 
@@ -294,12 +294,9 @@
 
     function setRole(role) {
       state.role = role;
-      if (!can(state.screen)) {
-        state.screen = HOME[role];
-        state.bounce = "That role cannot open the previous page, so this is their home screen.";
-      } else {
-        state.bounce = "";
-      }
+      state.screen = HOME[role];
+      state.bounce = "";
+      state.toast = "";
       render();
     }
 
@@ -345,13 +342,8 @@
       } else if (s === "hq" || s === "hq-map") {
         add("hq", "Saturday");
         add("hq-map", "Map");
-        add("people", "People");
       } else if (s === "people") {
-        if (state.role === "hq" || state.role === "superuser") {
-          add("hq", "Saturday");
-          add("hq-map", "Map");
-        }
-        if (state.role === "planner" || state.role === "superuser") add("planner", "Planner");
+        if (state.role === "planner") add("planner", "Planner");
         add("people", "People");
       }
       const roleLabel = ROLES.find((r) => r[0] === state.role)[1];
@@ -595,10 +587,10 @@
       });
       const q = state.peopleQuery.trim().toLowerCase();
       const hits = q ? state.volunteers.filter((v) => v.name.toLowerCase().includes(q)) : [];
-      const title = cols.length === 4 ? "People" : "People · " + labels[cols[0]];
-      const sub = cols.length === 4
-        ? "The handful who can open roomsdb, the planner, or HQ. Volunteer signups are not listed until you search."
-        : "One switch. A dash removes the grant and drops them off this list.";
+        const title = cols.length === 4 ? "People" : "People · " + labels[cols[0]];
+        const sub = cols.length === 4
+          ? "A bookmark, not a tab on Saturday. The handful who can open roomsdb, the planner, or HQ. Volunteer signups are not listed until you search."
+          : "One switch. A dash removes the grant and drops them off this list. This is not on the Saturday navbar.";
       return (
         "<h1>" + title + "</h1><p class=\"sub\">" + sub + "</p>" +
         banner() +
