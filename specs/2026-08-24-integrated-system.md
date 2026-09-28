@@ -154,9 +154,11 @@ A volunteer who has not been made a volunteer admin can still edit their own inf
 
 A **grant** is one stored row: this person, this platform, this level. “Own info on volunteers” is the volunteer signup. “Admin on the planner” is a grant. None is the absence of a grant, not a value Sign up writes on roomsdb, the planner, or HQ. The volunteer form writes the own-info relationship only. It does not mention roomsdb, the planner, or HQ. A later platform’s Sign up creates the person if needed and still writes no grant for that platform. The admin of that platform, or a superuser, adds the grant. Find an account on roomsdb searches roomsdb signups, not the volunteer list. A superuser’s Find an account searches all four: volunteers, roomsdb, the planner, and HQ. That is how a superuser promotes a volunteer to volunteer admin, for example an organization alumnus, without that person having signed up on roomsdb.
 
-View can look and cannot edit. Admin can edit, and can change who else is view or admin on that same platform. Being an HQ admin does not open roomsdb. Map upload stays its own switch (`may replace maps`), not the rooms-edit key.
+Roomsdb view is the read-only catalog. It shows the same kind of facts as the public rooms database: building, room, type, and capacity. A view grant does not edit a room, replace a map, or open People. The page still requires that grant. Guests and room laptops do not get a roomsdb login, and the public room read used by live and maps stays a separate unauthenticated GET.
 
-**Open:** whether “admin” on roomsdb, the planner, and HQ should split further into “may edit” and “may grant.” The page above treats admin as both. Ordinary volunteer versus volunteer admin does not split further.
+Roomsdb admin means edit. That role can change room facts, and can set view or admin for other people on roomsdb. It does not split into a separate “may grant.” Map upload stays its own switch (`may replace maps`), not the rooms-edit key. Being an HQ admin does not open roomsdb.
+
+On the planner and on HQ, view can look and admin can edit, and admin can still change who else is view or admin on that same platform. **Open:** whether planner admin and HQ admin should split further into “may edit” and “may grant.” Ordinary volunteer versus volunteer admin does not split further.
 
 When a permission question comes up, do not walk all six products. Sort the door into one of three:
 
@@ -219,7 +221,7 @@ Swire stays on its own admin login and proctor login. Live guests stay logged ou
 **Open, do not pretend these are decided:**
 
 - **Whether one sign-in click covers HQ, the planner, and roomsdb**, or the same person still clicks once per host. Separate accounts are decided against: an officer who fills out the volunteer form is one person. Live and Swire stay outside that person.
-- **Whether platform admin should split** into “may edit” and “may grant.” The page treats admin as both: edit that platform, and promote or demote on that platform only. View is the look-only level, set independently on roomsdb, the planner, and HQ. Re-login from the planner to roomsdb is fine. The first superuser is an allowlisted email.
+- **Whether planner admin and HQ admin should split** into “may edit” and “may grant.” Roomsdb is decided: view is the read-only catalog, and admin means edit. Re-login from the planner to roomsdb is fine. The first superuser is an allowlisted email.
 - **Who may edit rounds and roster checkboxes after create.** Live cannot. Create is volunteers admin, the planner, and HQ. Swire and roomsdb do not create rows here.
 - **Volunteer view on HQ.** A copy of the volunteers table on the dashboard is useful and also cuts against “go to the volunteers component for volunteer stuff.” Undecided.
 - **How a Figma file becomes the drawing.** The rest of maps is leaning below.

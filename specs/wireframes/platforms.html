@@ -141,12 +141,13 @@
 <body>
   <div id="app"></div>
   <script>
-    const KEY = "bmt-platform-wireframe-v4";
+    const KEY = "bmt-platform-wireframe-v5";
 
     const ROLES = [
       ["volunteer", "Volunteer, own info"],
       ["volunteerAdmin", "Volunteer admin"],
       ["roomsdbSignup", "Roomsdb signup, no grant"],
+      ["roomsdbView", "Roomsdb view"],
       ["plannerSignup", "Planner signup, no grant"],
       ["hqSignup", "HQ signup, no grant"],
       ["roomsdb", "Roomsdb admin"],
@@ -159,6 +160,7 @@
       volunteer: ["my-info"],
       volunteerAdmin: ["my-info", "vol-list", "check-in", "vol-form", "vol-people"],
       roomsdbSignup: ["rooms-wait"],
+      roomsdbView: ["rooms"],
       plannerSignup: ["planner-wait"],
       hqSignup: ["hq-wait"],
       roomsdb: ["rooms", "rooms-people"],
@@ -171,6 +173,7 @@
       volunteer: "my-info",
       volunteerAdmin: "check-in",
       roomsdbSignup: "rooms-wait",
+      roomsdbView: "rooms",
       plannerSignup: "planner-wait",
       hqSignup: "hq-wait",
       roomsdb: "rooms",
@@ -517,19 +520,28 @@
 
     function roomsPage() {
       const list = state.rooms[state.building];
+      const editing = state.role !== "roomsdbView";
+      const sub = editing
+        ? "Year-round facts. Admin can edit. Replace map does not edit capacity. Saturday HQ cannot edit this page."
+        : "Read-only catalog. Building, room, type, and capacity, the same kind of look as the public rooms database.";
       return (
-        "<h1>Rooms</h1><p class=\"sub\">Year-round facts. Replace map does not edit capacity. Saturday HQ cannot edit this page.</p>" +
+        "<h1>Rooms</h1><p class=\"sub\">" + sub + "</p>" +
         banner() +
         '<div class="rooms-layout"><div class="buildings">' +
         Object.keys(state.rooms).map((b) => '<button type="button" class="choice" aria-pressed="' + (state.building === b) + '" data-action="pick-building" data-building="' + esc(b) + '">' + esc(b) + "</button>").join("") +
-        '</div><div class="card"><div class="row-actions" style="margin-bottom:8px"><button type="button" data-action="toggle-map">' + (state.mapOpen ? "Close map upload" : "Replace map") + "</button></div>" +
-        (state.mapOpen ? '<p class="bounce">Upload a drawing for ' + esc(state.building) + ". This does not change a room's name or capacity.</p>" : "") +
-        "<table><thead><tr><th>Room</th><th>Type</th><th>Capacity</th><th></th></tr></thead><tbody>" +
+        "</div><div class=\"card\">" +
+        (editing
+          ? '<div class="row-actions" style="margin-bottom:8px"><button type="button" data-action="toggle-map">' + (state.mapOpen ? "Close map upload" : "Replace map") + "</button></div>" +
+            (state.mapOpen ? '<p class="bounce">Upload a drawing for ' + esc(state.building) + ". This does not change a room's name or capacity.</p>" : "")
+          : "") +
+        "<table><thead><tr><th>Room</th><th>Type</th><th>Capacity</th>" + (editing ? "<th></th>" : "") + "</tr></thead><tbody>" +
         list.map((r) => "<tr><td>" + esc(state.building.slice(0, 4).toUpperCase()) + " " + esc(r.id) + "</td><td>" + esc(r.type) + "</td><td>" +
-          (state.editingRoom === state.building + r.id
+          (editing && state.editingRoom === state.building + r.id
             ? '<input data-capacity="' + esc(r.id) + '" value="' + esc(r.capacity) + '" style="width:80px">'
             : esc(r.capacity)) +
-          '</td><td><button type="button" data-action="edit-room" data-id="' + esc(r.id) + '">' + (state.editingRoom === state.building + r.id ? "Done" : "Edit room") + "</button></td></tr>").join("") +
+          "</td>" +
+          (editing ? '<td><button type="button" data-action="edit-room" data-id="' + esc(r.id) + '">' + (state.editingRoom === state.building + r.id ? "Done" : "Edit room") + "</button></td>" : "") +
+          "</tr>").join("") +
         "</tbody></table></div></div>"
       );
     }
