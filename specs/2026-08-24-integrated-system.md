@@ -72,7 +72,9 @@ The current operations dashboard is one navbar: Live, Events, Schedule, Rooms, V
 
 Cmd-K stays inside the platform you are on. It does not jump from check-in to the room editor.
 
-The operations-dashboard upload is that one app. The clickable wireframe of the split is [specs/wireframes/platforms.html](wireframes/platforms.html). The bar above the fake browser picks a role. The navbar inside is what that role sees. It does not include the guest site.
+The operations-dashboard upload is that one app. For BmMT 2026 (spring 2026) the volunteer half was finished and used: the list, import, the person card, check-in, roles, CANRA, shifts, and building assignment. The operations and HQ half was not finished in time and was not used: Live, Events, Schedule, and the day-of picture of the tournament. Rooms and buildings exist in that codebase as data the volunteer tools attach to. They are not evidence that an HQ dashboard ran.
+
+The clickable wireframe of the split is [specs/wireframes/platforms.html](wireframes/platforms.html). The bar above the fake browser picks a role. The navbar inside is what that role sees. It does not include the guest site.
 
 **Today’s `live.berkeley.mt` is a different program.** React in front, a Rust server, its own SQLite file (`data.db`). Admin is one password (HTTP basic), not a person from the operations dashboard. It stores a public schedule, announcements, delays, and email signups, and it shows a campus-map image. Location on an event is text. It does not read volunteer rows or `rooms.id`. This workshop does not redraw it. Whoever runs that site keeps it.
 
