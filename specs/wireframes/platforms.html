@@ -141,10 +141,9 @@
 <body>
   <div id="app"></div>
   <script>
-    const KEY = "bmt-platform-wireframe-v1";
+    const KEY = "bmt-platform-wireframe-v2";
 
     const ROLES = [
-      ["guest", "Guest"],
       ["volunteer", "Regular volunteer"],
       ["volunteerAdmin", "Volunteer admin"],
       ["roomsdb", "Roomsdb admin"],
@@ -154,7 +153,6 @@
     ];
 
     const ACCESS = {
-      guest: ["live", "live-news"],
       volunteer: ["my-info"],
       volunteerAdmin: ["my-info", "vol-list", "check-in", "vol-form", "vol-people"],
       roomsdb: ["rooms", "rooms-people"],
@@ -164,7 +162,6 @@
     };
 
     const HOME = {
-      guest: "live",
       volunteer: "my-info",
       volunteerAdmin: "check-in",
       roomsdb: "rooms",
@@ -185,8 +182,6 @@
       hq: "ops.berkeley.mt",
       "hq-map": "ops.berkeley.mt/map",
       people: "ops.berkeley.mt/people",
-      live: "live.berkeley.mt",
-      "live-news": "live.berkeley.mt/announcements",
     };
 
     function seed() {
@@ -255,7 +250,9 @@
       try {
         const raw = sessionStorage.getItem(KEY);
         if (!raw) return seed();
-        return Object.assign(seed(), JSON.parse(raw));
+        const saved = Object.assign(seed(), JSON.parse(raw));
+        if (!ACCESS[saved.role]) return seed();
+        return saved;
       } catch (e) {
         return seed();
       }
@@ -356,9 +353,6 @@
         }
         if (state.role === "planner" || state.role === "superuser") add("planner", "Planner");
         add("people", "People");
-      } else {
-        add("live", "Map");
-        add("live-news", "Announcements");
       }
       const roleLabel = ROLES.find((r) => r[0] === state.role)[1];
       return (
@@ -579,23 +573,6 @@
         "</button>").join("") + "</div>";
     }
 
-    function livePage() {
-      return (
-        "<h1>BMT 2026</h1><p class=\"sub\">Guests. No clock. No volunteer names. No student names.</p>" +
-        banner() +
-        floor(false) +
-        '<p class="card" style="margin-top:12px">Power round is in Dwinelle.</p>'
-      );
-    }
-
-    function liveNews() {
-      return (
-        "<h1>Announcements</h1><p class=\"sub\">Written by the one shared account at live.berkeley.mt/admin. That login is not a volunteer.</p>" +
-        banner() +
-        '<div class="card"><p>Power round is in Dwinelle.</p><p class="muted">Guests can read this. They cannot edit it.</p></div>'
-      );
-    }
-
     function peopleColumns() {
       if (state.role === "hq") return ["hq"];
       if (state.role === "planner") return ["planner"];
@@ -651,8 +628,7 @@
         case "hq": return hqPage();
         case "hq-map": return hqMap();
         case "people": return peoplePage("ops");
-        case "live-news": return liveNews();
-        default: return livePage();
+        default: return checkIn();
       }
     }
 
