@@ -176,20 +176,18 @@ The management screen is a list of people and those switches. That screen is how
 
 The first superuser is one allowlisted email. They are not a separate account type and not a second login. They are the person who can set every platform on that page. A platform admin opens the same page and only sees their own platform.
 
-**Where that page lives (lean).** It is not its own site. `ops.berkeley.mt` already has two tools as paths: Saturday HQ at `/`, the planner at `/planner`. The permissions page that lists every platform for each person is a third path: **`ops.berkeley.mt/people`**. A superuser bookmarks that. It is not a tab on Saturday. Day-of is the dashboard. You are not granting roomsdb or planner access from that screen.
+**Where that page lives (lean).** It is not its own site. `ops.berkeley.mt` already has two tools as paths: Saturday HQ at `/`, the planner at `/planner`. The permissions page that lists every platform for each person is a third path: **`ops.berkeley.mt/people`**. A superuser bookmarks that. People who cannot grant access see no People link on the Saturday list, the planner grid, roomsdb, or volunteer check-in.
 
 A platform admin does not need that bookmark. Each platform they admin has a **People** link, shown only to admins of that platform. The screen lists people who already have access on that platform. The search box queries the one person table, every account, not that platform’s list. A roomsdb admin typing a name finds a volunteer who has never had roomsdb. Adding them writes the grant. Someone who has never signed in is not in that table, so they cannot be added until they have an account. Removing them deletes the grant, which is none, and they leave the list. Check-in, the grid, the Saturday list, and the room form stay their own screens.
 
 | Admin of | People link on | Who is listed | The switch |
 | -------- | -------------- | ------------- | ---------- |
-| Volunteers | `volunteers.berkeley.mt/admin/people`, in the check-in navbar | People with a volunteer grant | Regular, or volunteer admin |
-| HQ | No People link on Saturday. A superuser changes this on the bookmark above. | People with an HQ grant | View, or admin. Remove means none |
-| Planner | `ops.berkeley.mt/people`, linked from the planner, not from Saturday | People with a planner grant | View, or admin. Remove means none |
-| Roomsdb | `roomsdb.berkeley.mt/people`, linked from roomsdb, not from Saturday | People with a roomsdb grant | View, or admin. Remove means none |
+| Volunteers | `volunteers.berkeley.mt/admin/people` | People with a volunteer grant | Regular, or volunteer admin |
+| HQ | `ops.berkeley.mt/people` | People with an HQ grant | View, or admin. Remove means none |
+| Planner | the same `ops.berkeley.mt/people` | People with a planner grant | View, or admin. Remove means none |
+| Roomsdb | `roomsdb.berkeley.mt/people` | People with a roomsdb grant | View, or admin. Remove means none |
 
-**Saturday does not carry role management.** The day-of navbar is the dashboard and the map. It does not link to People, the planner, or roomsdb. The grant you might still change on Saturday is volunteer admin, and that screen is already on the volunteer host, next to check-in. Roomsdb and planner grants are not on that navbar, so Saturday cannot touch them.
-
-**Navbar follows the role.** A regular volunteer sees their own info. A volunteer admin also sees the volunteer table, check-in, assign, do-not-invite, the form, and People. The planner’s navbar can include People. Roomsdb’s navbar can include People. Saturday’s navbar does not. A superuser opens `ops.berkeley.mt/people` from a bookmark, and that page does not show Saturday as a tab beside it. Hiding the link is not the permission: opening the URL without the grant still bounces.
+**Navbar follows the role.** The same host shows different links. A regular volunteer sees their own info. A volunteer admin also sees the volunteer table, check-in, assign, do-not-invite, the form, and People. On ops, HQ, the planner, and People each appear only when that person has the matching grant. A superuser’s People link opens every column. Hiding the link is not the permission: opening the URL without the grant still bounces.
 
 `/admin` on the volunteer host is the folder for those staff pages, because that host also has a public half at the root (signup and your own info). Roomsdb, the planner, and HQ have no public half, so People is `/people`. The navbar is what makes the screens feel different. The folder is only so a volunteer’s bookmark and a staff bookmark are not the same URL.
 
