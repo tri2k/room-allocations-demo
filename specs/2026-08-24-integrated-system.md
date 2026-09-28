@@ -145,7 +145,7 @@ Levels on that page:
 | -------- | ------------------------------- |
 | Volunteers | Own info (what signup gives), or volunteer admin |
 | Roomsdb | None, view, or admin |
-| Planner | None, view, or admin |
+| Planner | None, create plans, or admin (role management) |
 | HQ | None, view, or admin |
 
 **None** means that account cannot see that platform. It is what Sign up leaves you with on roomsdb, the planner, and HQ, and it is what you return someone to by removing them. The person still has the one row. The page they signed up on shows nothing until a grant exists. They are not sent to the volunteer site.
@@ -158,7 +158,11 @@ Roomsdb view is the read-only catalog. It shows the same kind of facts as the pu
 
 Roomsdb admin means edit. That role can change room facts, and can set view or admin for other people on roomsdb. It does not split into a separate “may grant.” Map upload stays its own switch (`may replace maps`), not the rooms-edit key. Being an HQ admin does not open roomsdb.
 
-On the planner and on HQ, view can look and admin can edit, and admin can still change who else is view or admin on that same platform. **Open:** whether planner admin and HQ admin should split further into “may edit” and “may grant.” Ordinary volunteer versus volunteer admin does not split further.
+A planner grant can create plans. Planner admin is role management: who else may use the planner. Admin can still create plans. Plans are not one shared catalog the way rooms are, so creating a plan is not reserved for admin.
+
+How a plan is selected and pushed to Saturday HQ is not decided. The working picture is that any planner user can publish a plan, and each published plan shows up in a list on an HQ configuration menu. Still open: whether a plan starts private to its author, or whether everyone creates plans into one shared folder. One writer at a time still applies to a plan while someone is editing it.
+
+On HQ, view can look and admin can edit, and admin can still change who else is view or admin on HQ. **Open:** whether HQ admin should split further into “may edit” and “may grant.” Ordinary volunteer versus volunteer admin does not split further.
 
 When a permission question comes up, do not walk all six products. Sort the door into one of three:
 
@@ -188,7 +192,7 @@ A platform admin does not need that bookmark. Each platform they admin has a **P
 | -------- | -------------- | ------------- | ---------- |
 | Volunteers | `volunteers.berkeley.mt/admin/people` | People with a volunteer grant | Regular, or volunteer admin |
 | HQ | `ops.berkeley.mt/people` | People with an HQ grant | View, or admin. Remove means none |
-| Planner | the same `ops.berkeley.mt/people` | People with a planner grant | View, or admin. Remove means none |
+| Planner | the same `ops.berkeley.mt/people` | People with a planner grant | Create plans, or admin (role management). Remove means none |
 | Roomsdb | `roomsdb.berkeley.mt/people` | People with a roomsdb grant | View, or admin. Remove means none |
 
 **Navbar follows the role.** The same host shows different links. A regular volunteer sees their own info. A volunteer admin also sees the volunteer table, check-in, assign, do-not-invite, the form, and People. On ops, HQ, the planner, and People each appear only when that person has the matching grant. A superuser’s People link opens every column. Hiding the link is not the permission: opening the URL without the grant still bounces.
@@ -221,7 +225,8 @@ Swire stays on its own admin login and proctor login. Live guests stay logged ou
 **Open, do not pretend these are decided:**
 
 - **Whether one sign-in click covers HQ, the planner, and roomsdb**, or the same person still clicks once per host. Separate accounts are decided against: an officer who fills out the volunteer form is one person. Live and Swire stay outside that person.
-- **Whether planner admin and HQ admin should split** into “may edit” and “may grant.” Roomsdb is decided: view is the read-only catalog, and admin means edit. Re-login from the planner to roomsdb is fine. The first superuser is an allowlisted email.
+- **Whether HQ admin should split** into “may edit” and “may grant.” Planner is decided: a regular grant can create plans, and planner admin is role management. Roomsdb is decided: view is the read-only catalog, and admin means edit. Re-login from the planner to roomsdb is fine. The first superuser is an allowlisted email.
+- **How a plan becomes Saturday.** Not decided. Working picture: any planner user can publish, and published plans appear in a list on an HQ configuration menu. Also not decided: a plan starts private to its author, or every plan is created in one shared folder.
 - **Who may edit rounds and roster checkboxes after create.** Live cannot. Create is volunteers admin, the planner, and HQ. Swire and roomsdb do not create rows here.
 - **Volunteer view on HQ.** A copy of the volunteers table on the dashboard is useful and also cuts against “go to the volunteers component for volunteer stuff.” Undecided.
 - **How a Figma file becomes the drawing.** The rest of maps is leaning below.

@@ -141,7 +141,7 @@
 <body>
   <div id="app"></div>
   <script>
-    const KEY = "bmt-platform-wireframe-v5";
+    const KEY = "bmt-platform-wireframe-v6";
 
     const ROLES = [
       ["volunteer", "Volunteer, own info"],
@@ -149,6 +149,7 @@
       ["roomsdbSignup", "Roomsdb signup, no grant"],
       ["roomsdbView", "Roomsdb view"],
       ["plannerSignup", "Planner signup, no grant"],
+      ["plannerUser", "Planner, create plans"],
       ["hqSignup", "HQ signup, no grant"],
       ["roomsdb", "Roomsdb admin"],
       ["planner", "Planner admin"],
@@ -162,6 +163,7 @@
       roomsdbSignup: ["rooms-wait"],
       roomsdbView: ["rooms"],
       plannerSignup: ["planner-wait"],
+      plannerUser: ["planner"],
       hqSignup: ["hq-wait"],
       roomsdb: ["rooms", "rooms-people"],
       planner: ["planner", "people"],
@@ -175,6 +177,7 @@
       roomsdbSignup: "rooms-wait",
       roomsdbView: "rooms",
       plannerSignup: "planner-wait",
+      plannerUser: "planner",
       hqSignup: "hq-wait",
       roomsdb: "rooms",
       planner: "planner",
@@ -241,7 +244,7 @@
           { id: "alex", volunteers: "regular", roomsdb: "admin", planner: "admin", hq: "admin" },
           { id: "sam", volunteers: "admin", roomsdb: "", planner: "admin", hq: "view" },
           { id: "riley", volunteers: "regular", roomsdb: "view", planner: "", hq: "" },
-          { id: "morgan", volunteers: "", roomsdb: "", planner: "view", hq: "admin" },
+          { id: "morgan", volunteers: "", roomsdb: "", planner: "regular", hq: "admin" },
         ],
         rooms: {
           Dwinelle: [
@@ -556,7 +559,7 @@
       const cell = (id) => '<div class="cell"><button type="button" aria-pressed="' + (state.planBlock === id) + '" data-action="plan" data-id="' + id + '">' + esc(blocks[id].name) + "</button></div>";
       const empty = '<div class="cell"></div>';
       return (
-        "<h1>Planner</h1><p class=\"sub\">BMT 2026 · Sat Nov 14. Weeks before. One writer at a time.</p>" +
+        "<h1>Planner</h1><p class=\"sub\">BMT 2026 · Sat Nov 14. Weeks before. Creating a plan does not require admin. One writer at a time.</p>" +
         banner() +
         '<div class="split"><div class="card"><div class="plan">' +
         '<div></div><div class="h">DWIN 155</div><div class="h">DWIN 160</div><div class="h">DWIN 145</div><div class="h">WHLR 150</div>' +
@@ -658,7 +661,7 @@
       const options = {
         volunteers: [{ value: "", label: "—" }, { value: "regular", label: "Own info" }, { value: "admin", label: "Volunteer admin" }],
         roomsdb: [{ value: "", label: "—" }, { value: "view", label: "View" }, { value: "admin", label: "Admin" }],
-        planner: [{ value: "", label: "—" }, { value: "view", label: "View" }, { value: "admin", label: "Admin" }],
+        planner: [{ value: "", label: "—" }, { value: "regular", label: "Create plans" }, { value: "admin", label: "Admin" }],
         hq: [{ value: "", label: "—" }, { value: "view", label: "View" }, { value: "admin", label: "Admin" }],
       };
       const rows = state.staff.filter((s) => {
@@ -867,9 +870,9 @@
           toast("They did not sign up on this platform.");
           return;
         }
-        if (!row[col]) row[col] = "view";
+        if (!row[col]) row[col] = col === "planner" ? "regular" : "view";
         state.peopleQuery = "";
-        toast("Grant added. Sign up did not include this. They can see the platform now.");
+        toast(col === "planner" ? "They can create plans. Admin is a separate grant." : "Grant added. Sign up did not include this. They can see the platform now.");
         return;
       }
     });
