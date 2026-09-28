@@ -151,6 +151,7 @@
       ["plannerSignup", "Planner signup, no grant"],
       ["plannerUser", "Planner, create plans"],
       ["hqSignup", "HQ signup, no grant"],
+      ["hqView", "HQ view"],
       ["roomsdb", "Roomsdb admin"],
       ["planner", "Planner admin"],
       ["hq", "HQ admin"],
@@ -165,6 +166,7 @@
       plannerSignup: ["planner-wait"],
       plannerUser: ["planner"],
       hqSignup: ["hq-wait"],
+      hqView: ["hq", "hq-map"],
       roomsdb: ["rooms", "rooms-people"],
       planner: ["planner", "people"],
       hq: ["hq", "hq-map", "people"],
@@ -179,6 +181,7 @@
       plannerSignup: "planner-wait",
       plannerUser: "planner",
       hqSignup: "hq-wait",
+      hqView: "hq",
       roomsdb: "rooms",
       planner: "planner",
       hq: "hq",
@@ -581,9 +584,13 @@
         ["DWIN 145", "Empty", "No round"],
         ["WHLR 150", "Individual", "Swire unavailable"],
       ];
+      const canPick = state.role === "hq" || state.role === "superuser";
       return (
         "<h1>Saturday</h1><p class=\"sub\">Today's Live timeline, moved here. Reads the plan, assignments, and Swire.</p>" +
         banner() +
+        (canPick
+          ? '<div class="card"><strong>Saturday plan</strong><p>Power Saturday is selected. Published plans are listed here. Only HQ admin can choose which one is the day. That grant is the dispatcher and the other trusted people.</p></div>'
+          : '<p class="muted">Power Saturday is the plan. An HQ admin chooses it. View cannot.</p>') +
         '<div class="row-actions"><button type="button" class="primary" data-action="now">NOW</button><span>' + fmt(state.hqMinutes) + '</span></div>' +
         '<input type="range" min="480" max="1080" step="15" value="' + state.hqMinutes + '" data-action="hq-time" style="width:100%;margin:8px 0">' +
         '<div class="hours"><span>8 AM</span><span>10</span><span>12</span><span>2</span><span>4</span><span>6 PM</span></div>' +

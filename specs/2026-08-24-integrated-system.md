@@ -160,9 +160,9 @@ Roomsdb admin means edit. That role can change room facts, and can set view or a
 
 A planner grant can create plans. Planner admin is role management: who else may use the planner. Admin can still create plans. Plans are not one shared catalog the way rooms are, so creating a plan is not reserved for admin.
 
-How a plan is selected and pushed to Saturday HQ is not decided. The working picture is that any planner user can publish a plan, and each published plan shows up in a list on an HQ configuration menu. Still open: whether a plan starts private to its author, or whether everyone creates plans into one shared folder. One writer at a time still applies to a plan while someone is editing it.
+Any planner user can publish a plan, and each published plan shows up in a list on an HQ configuration menu. That picture is still the working one. **Only an HQ admin can open that menu and choose which published plan is Saturday.** View can see the day that plan produces and cannot change the choice. Still open: whether a plan starts private to its author, or whether everyone creates plans into one shared folder. One writer at a time still applies to a plan while someone is editing it.
 
-On HQ, view can look and admin can edit, and admin can still change who else is view or admin on HQ. **Open:** whether HQ admin should split further into “may edit” and “may grant.” Ordinary volunteer versus volunteer admin does not split further.
+On HQ, view can look and admin can edit. HQ admin is the grant for the dispatcher and the other trusted people on this dashboard. It is not a separate account. Admin can still change who else is view or admin on HQ. **Open:** whether HQ admin should split further into “may edit” and “may grant.” Ordinary volunteer versus volunteer admin does not split further.
 
 When a permission question comes up, do not walk all six products. Sort the door into one of three:
 
@@ -226,7 +226,7 @@ Swire stays on its own admin login and proctor login. Live guests stay logged ou
 
 - **Whether one sign-in click covers HQ, the planner, and roomsdb**, or the same person still clicks once per host. Separate accounts are decided against: an officer who fills out the volunteer form is one person. Live and Swire stay outside that person.
 - **Whether HQ admin should split** into “may edit” and “may grant.” Planner is decided: a regular grant can create plans, and planner admin is role management. Roomsdb is decided: view is the read-only catalog, and admin means edit. Re-login from the planner to roomsdb is fine. The first superuser is an allowlisted email.
-- **How a plan becomes Saturday.** Not decided. Working picture: any planner user can publish, and published plans appear in a list on an HQ configuration menu. Also not decided: a plan starts private to its author, or every plan is created in one shared folder.
+- **How a plan becomes Saturday.** Any planner user can publish, and published plans appear in a list on an HQ configuration menu. Only an HQ admin can choose which published plan is Saturday. HQ admin is the dispatcher and the other trusted people on that dashboard, not a separate account. Still not decided: a plan starts private to its author, or every plan is created in one shared folder.
 - **Who may edit rounds and roster checkboxes after create.** Live cannot. Create is volunteers admin, the planner, and HQ. Swire and roomsdb do not create rows here.
 - **Volunteer view on HQ.** A copy of the volunteers table on the dashboard is useful and also cuts against “go to the volunteers component for volunteer stuff.” Undecided.
 - **How a Figma file becomes the drawing.** The rest of maps is leaning below.
