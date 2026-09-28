@@ -127,9 +127,9 @@ Other pitfalls:
 
 HQ, the planner, and roomsdb are internal doors onto that account. They are not three accounts. Planner and roomsdb are not event-oriented; the account is still the person, and the event selector is a separate control.
 
-Volunteers is the mixed door on that same account. External people sign up there with OAuth and have no internal access. An officer uses the same OAuth identity to fill out the form. Live’s shared admin account and Swire’s logins stay outside this. They are not people.
+Volunteers is the mixed door on that same account. Signing up there lets a person edit their own info. That is all. They cannot see the volunteer list, check-in, other people, or the form. Those are volunteer admin. An officer who also fills out the form is the same row, not a second account. Live’s shared admin account and Swire’s logins stay outside this. They are not people.
 
-**One person in one table.** Roomsdb, the planner, HQ, and volunteers do not each keep their own user. Signing up does not make someone staff. A second account for “the admin” does not either.
+**One person in one table.** Roomsdb, the planner, HQ, and volunteers do not each keep their own user. Each of roomsdb, the planner, and HQ has its own Sign up. That button creates the person in this same table. It does not let them see that platform. A roomsdb admin of that platform, or a superuser, grants view or admin afterward. A planner admin grants the planner. An HQ admin grants HQ. A volunteer signup does not put someone in the roomsdb search, and a roomsdb signup does not make them a volunteer.
 
 A planner who sees a wrong room cannot fix it on the grid. They open roomsdb. Signing in again there is acceptable, because that hop is rare. It is not a reason to merge the two sites.
 
@@ -143,14 +143,16 @@ Levels on that page:
 
 | Platform | What you can set, independently |
 | -------- | ------------------------------- |
-| Volunteers | Regular volunteer, or volunteer admin |
+| Volunteers | Own info (what signup gives), or volunteer admin |
 | Roomsdb | None, view, or admin |
 | Planner | None, view, or admin |
 | HQ | None, view, or admin |
 
-**None** means that account cannot open that platform. It is the default for every account that was never given that platform, and it is what you return someone to by removing them. The person still has the one row. Someone who only signed up to volunteer is regular on volunteers and none on roomsdb, the planner, and HQ. Opening those hosts sends them to the volunteer site. They do not appear on the roomsdb People list with a None label. That list shows only people who have view or admin there.
+**None** means that account cannot see that platform. It is what Sign up leaves you with on roomsdb, the planner, and HQ, and it is what you return someone to by removing them. The person still has the one row. The page they signed up on shows nothing until a grant exists. They are not sent to the volunteer site.
 
-A **grant** is one stored row: this person, this platform, this level. “Regular on volunteers” is a grant. “Admin on the planner” is a grant. None is the absence of a grant, not a value signup writes. The volunteer form creates the person and one volunteer grant (regular). It does not mention roomsdb, the planner, or HQ. Signing in on one of those hosts for the first time can create the same person, and still writes no grant. Access there appears only when the permissions page adds a row for that platform. A later platform starts with no rows, so existing signup code does not learn about it.
+A volunteer who has not been made a volunteer admin can still edit their own info. They cannot see the rest of that platform.
+
+A **grant** is one stored row: this person, this platform, this level. “Own info on volunteers” is the volunteer signup. “Admin on the planner” is a grant. None is the absence of a grant, not a value Sign up writes on roomsdb, the planner, or HQ. The volunteer form writes the own-info relationship only. It does not mention roomsdb, the planner, or HQ. A later platform’s Sign up creates the person if needed and still writes no grant for that platform. The admin of that platform, or a superuser, adds the grant. Find an account on roomsdb searches roomsdb signups, not the volunteer list.
 
 View can look and cannot edit. Admin can edit, and can change who else is view or admin on that same platform. Being an HQ admin does not open roomsdb. Map upload stays its own switch (`may replace maps`), not the rooms-edit key.
 
@@ -178,7 +180,7 @@ The first superuser is one allowlisted email. They are not a separate account ty
 
 **Where that page lives (lean).** It is not its own site. `ops.berkeley.mt` already has two tools as paths: Saturday HQ at `/`, the planner at `/planner`. The permissions page that lists every platform for each person is a third path: **`ops.berkeley.mt/people`**. A superuser bookmarks that. People who cannot grant access see no People link on the Saturday list, the planner grid, roomsdb, or volunteer check-in.
 
-A platform admin does not need that bookmark. Each platform they admin has a **People** link, shown only to admins of that platform. The screen lists people who already have access on that platform. The search box queries the one person table, every account, not that platform’s list. A roomsdb admin typing a name finds a volunteer who has never had roomsdb. Adding them writes the grant. Someone who has never signed in is not in that table, so they cannot be added until they have an account. Removing them deletes the grant, which is none, and they leave the list. Check-in, the grid, the Saturday list, and the room form stay their own screens.
+A platform admin does not need that bookmark. Each platform they admin has a **People** link, shown only to admins of that platform. The screen lists people who already have access on that platform. Find an account searches people who signed up on that platform and still have no grant there. A roomsdb admin finds a roomsdb signup, not a volunteer who never signed up on roomsdb. Adding them writes the grant. Removing them deletes the grant, which is none, and they leave the list. They still have the account, and the page shows nothing again. Check-in, the grid, the Saturday list, and the room form stay their own screens.
 
 | Admin of | People link on | Who is listed | The switch |
 | -------- | -------------- | ------------- | ---------- |
@@ -191,7 +193,7 @@ A platform admin does not need that bookmark. Each platform they admin has a **P
 
 `/admin` on the volunteer host is the folder for those staff pages, because that host also has a public half at the root (signup and your own info). Roomsdb, the planner, and HQ have no public half, so People is `/people`. The navbar is what makes the screens feel different. The folder is only so a volunteer’s bookmark and a staff bookmark are not the same URL.
 
-On `ops.berkeley.mt/people`, the page shows the columns that person may change. An HQ admin sees HQ. A planner admin sees the planner. Someone who is both sees both. A superuser sees every internal column, but the rows are the handful with a roomsdb, planner, or HQ grant. The hundreds of volunteer signups stay on `volunteers.berkeley.mt/admin/people`. A blank column is none. Search still finds one volunteer by name when a superuser wants to give them the planner. It does not open as a scrollable list of every signup. Volunteer check-in, assign, and the form stay on `volunteers.berkeley.mt/admin`. Live’s shared account and Swire’s logins have no People screen here.
+On `ops.berkeley.mt/people`, the page shows the columns that person may change. An HQ admin sees HQ. A planner admin sees the planner. Someone who is both sees both. A superuser sees every internal column, but the rows are the handful with a roomsdb, planner, or HQ grant. Find an account on that page searches people who signed up on roomsdb, the planner, or HQ. It does not search the volunteer list, and it does not open as a scroll of every signup. Volunteer own-info and volunteer admin stay on `volunteers.berkeley.mt`. Live’s shared account and Swire’s logins have no People screen here.
 
 What is still awkward: these are different hosts, so a cookie on `roomsdb.berkeley.mt` is not sent to `ops.berkeley.mt`. One account can still mean a sign-in click per host. That is not four passwords. Do not solve it by setting the cookie on `.berkeley.mt`. That would also send the staff session to live and Swire.
 
