@@ -218,7 +218,7 @@ One API and one Postgres mean **one outage takes roomsdb, ops, volunteers, and l
 | If this is wrong | Blast |
 | ---------------- | ----- |
 | Person cookie on `.berkeley.mt` | XSS or a bad script on **live** can ride a staff session. Do not do this. |
-| Room session accepted as staff on this API | Shared room password becomes HQ. Do not do this. Swire calls only the public room GET. |
+| Room session accepted as staff on this API | Shared room password becomes HQ. Do not do this. Swire has no route on this API. |
 | Live public JSON includes roster names / HQ fields | Guests see Saturday internals. Public routes stay public-shaped even if someone is signed in elsewhere. |
 | Any route skips the cookie check (“same API, trust the SPA”) | One missed check is the whole database. Last semester’s six sites failed this in six places; we have **one** place that must not. |
 

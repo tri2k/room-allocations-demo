@@ -154,7 +154,7 @@ A volunteer who has not been made a volunteer admin can still edit their own inf
 
 A **grant** is one stored row: this person, this platform, this level. “Own info on volunteers” is the volunteer signup. “Admin on the planner” is a grant. None is the absence of a grant, not a value Sign up writes on roomsdb, the planner, or HQ. The volunteer form writes the own-info relationship only. It does not mention roomsdb, the planner, or HQ. A later platform’s Sign up creates the person if needed and still writes no grant for that platform. The admin of that platform, or a superuser, adds the grant. Find an account on roomsdb searches roomsdb signups, not the volunteer list. A superuser’s Find an account searches all four: volunteers, roomsdb, the planner, and HQ. That is how a superuser promotes a volunteer to volunteer admin, for example an organization alumnus, without that person having signed up on roomsdb.
 
-Roomsdb view is the read-only catalog. It shows the same kind of facts as the public rooms database: building, room, type, and capacity. A view grant does not edit a room, replace a map, or open People. The page still requires that grant. Guests and room laptops do not get a roomsdb login, and the public room read used by live and maps stays a separate unauthenticated GET.
+Roomsdb view is the read-only catalog. It shows the same kind of facts as the public rooms database: building, room, type, and capacity. A view grant does not edit a room, replace a map, or open People. The page still requires that grant. Guests and room laptops do not get a roomsdb login. Live and Swire do not get a roomsdb route either, unless their builders later ask for the small read described under cross-module callers.
 
 Roomsdb admin means edit. That role can change room facts, and can set view or admin for other people on roomsdb. It does not split into a separate “may grant.” Map upload stays its own switch (`may replace maps`), not the rooms-edit key. Being an HQ admin does not open roomsdb.
 
@@ -268,7 +268,7 @@ This is **not** a bad idea for “live might call roomsdb.” Folders name **who
 
 | Folder | Default caller | Owns |
 | ------ | -------------- | ---- |
-| `/api/v1/roomsdb/` | Staff write: Person + `can_open_ops`. **Some GETs may be public** (labels, capacity, `appears_on_grid`) | buildings, floors, rooms, field defs |
+| `/api/v1/roomsdb/` | Roomsdb admin writes. HQ and the planner read labels while that person is signed in on ops. No unauthenticated room GET in this product | buildings, floors, rooms, field defs |
 | `/api/v1/maps/` | Staff import from the **maps admin**, not from the HQ page. **Public GET** of external geometry (floor plates, polygons, POIs) | `floor_maps`, `map_spaces`, styles, POIs. Optional `room_id`. Bathrooms have none |
 | `/api/v1/ops/` | Person + `can_open_ops` | drafts/planner, day plan, roster import. **HQ reads** rooms, maps, assignments, and Swire. It does not write those systems |
 | `/api/v1/volunteers/` | Person (self) or staff on **`volunteers.berkeley.mt/admin`** | `me` (apply, own assignment). Staff writes (check-in, DNI, assign, form) live here, not on the HQ page |
@@ -288,13 +288,13 @@ There is **no** `/api/v1/swire/`. Swire’s exposed API is **read-only**. This p
 | Live | `live.berkeley.mt/admin` | Does not edit announcements |
 | Swire | Swire admins only | Poll the read-only API |
 
-**Paint is not geometry.** `/maps/` is the floor plate. Ops paints the day plan, roster, and (when Swire answers) timers onto it. Live paints only the public room projection (activity label if we allow it — still no roster, no clock). A `/maps/.../live` payload that includes proctor names is a staff route, not the guest one.
+**Paint is not geometry.** `/maps/` is the floor plate. Ops paints the day plan, roster, and (when Swire answers) timers onto it. Live paints the guest map from `/live/` and public map geometry (an activity label only if we allow it — still no roster, no clock). That paint does not read `/roomsdb/`. A `/maps/.../live` payload that includes proctor names is a staff route, not the guest one.
 
 What actually blocks a bad cross-call is **auth**, not the prefix:
 
-- Live **unauthenticated** may read public rooms and **public** map geometry (`mode=external`). It must not read roster names, DNI, internal map labels, or `/ops/`.
+- Live **unauthenticated** may read **public** map geometry (`mode=external`). It does not read `/roomsdb/`. It must not read roster names, DNI, internal map labels, or `/ops/`.
 - Volunteer **PII** needs a Person cookie. We still do not put that cookie on `live.berkeley.mt`. So live can **link** to `volunteers.berkeley.mt` to apply, or we add an explicit public apply POST later — not “guest GET `/volunteers/people`.”
-- Swire’s process cannot PATCH `/roomsdb/rooms`. It may **GET** the public room projection if it needs labels. Timer writes stay on Swire.
+- Swire’s process cannot PATCH `/roomsdb/rooms`, and it has no roomsdb route. Timer writes stay on Swire.
 
 Guest live (today → target): `GET /api/live` → `GET /api/v1/live`; `POST /api/email/subscribe` → `POST /api/v1/live/email/subscribe`. Public-shaped only.
 
@@ -327,10 +327,12 @@ One API means a live developer **can** call `/volunteers/` or `/roomsdb/`. It al
 
 | Caller | May call | Must not call |
 | ------ | -------- | ------------- |
-| Live (no cookie) | `/live/*` as today; **public GET** of roomsdb rooms (labels, capacity, grid bit); **public GET** `/maps/` external geometry | `/ops/*`; volunteer people list / DNI; internal map mode; Swire’s operator roster |
-| Volunteers (Person) | `/volunteers/me/...`; public rooms GET if the form picks a room | `/ops/*` except bounce; other people’s rows |
+| Live (no cookie) | `/live/*` as today; **public GET** `/maps/` external geometry | `/roomsdb/*`; `/ops/*`; volunteer people list / DNI; internal map mode; Swire’s operator roster |
+| Volunteers (Person) | `/volunteers/me/...` | `/roomsdb/*`; `/ops/*` except bounce; other people’s rows |
 | Ops / roomsdb staff | From the **matching admin**: `/roomsdb/*` writes, `/maps/` import, `/volunteers/` staff writes, `/ops/*` for drafts, day plan, and roster. HQ page itself only writes day plan and roster, and **reads** the others. **Poll** Swire’s read-only API for timer display | Writes to Swire. Doing another system’s edits on the HQ page |
-| Swire (their deploy) | Public GET rooms if they need `DWIN155` / `rooms.id` | `/ops/*`; `/volunteers`; roomsdb writes |
+| Swire (their deploy) | Nothing on this API | `/roomsdb/*`; `/ops/*`; `/volunteers` |
+
+**Room labels for live and Swire are not in this product.** There is no unauthenticated roomsdb GET. If the people building live or Swire want room labels without a roomsdb login, add one GET then: labels, capacity, and `appears_on_grid`. Nothing else. No custom fields, no People, no writes. Roomsdb view on `roomsdb.berkeley.mt` stays a signed-in catalog and is not that GET. Until they ask, Swire must not grow its own rooms list. It can store a `rooms.id` this platform already gave them.
 
 Live depending on “whatever `/volunteers/people` returns this week” is how the memo problem starts. If live needs apply, that is an explicit public POST (or a link to `volunteers.berkeley.mt`), not a private volunteer admin shape.
 
@@ -340,7 +342,7 @@ Module specs name the public fields. That is the contract. Slack is the backup, 
 
 ## Links (how people enter)
 
-Screens should feel like places you can bookmark. Last semester failed because those places were **separate products with separate rooms lists**, not because they had several URLs. **Swire stays a separate product on purpose** (proctor suite only) so its outage does not take live or HQ down. It must not grow a second rooms list: read public rooms, or accept `rooms.id` we already published.
+Screens should feel like places you can bookmark. Last semester failed because those places were **separate products with separate rooms lists**, not because they had several URLs. **Swire stays a separate product on purpose** (proctor suite only) so its outage does not take live or HQ down. It must not grow a second rooms list. This product does not give Swire a roomsdb read. If those builders need labels, they ask for the small GET above, or they keep a `rooms.id` this platform already published.
 
 **Cadence:** roomsdb is rare (start of semester). The planner is regular (weeks of grid work). HQ is Saturday. Those three are **different bookmarks** and do not share primary chrome. Same Google, same API. Details: [staff links by cadence](2026-08-23-bmt-2026-architecture.md#staff-links-by-cadence).
 
