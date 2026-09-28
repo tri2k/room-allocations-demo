@@ -141,7 +141,7 @@
 <body>
   <div id="app"></div>
   <script>
-    const KEY = "bmt-platform-wireframe-v3";
+    const KEY = "bmt-platform-wireframe-v4";
 
     const ROLES = [
       ["volunteer", "Volunteer, own info"],
@@ -621,34 +621,49 @@
       return ["volunteers", "roomsdb", "planner", "hq"];
     }
 
+    function findSignups(q, platforms) {
+      if (!q) return [];
+      const map = new Map();
+      state.accounts.forEach((a) => {
+        const where = ["roomsdb", "planner", "hq"].filter((p) => platforms.includes(p) && a[p]);
+        if (!where.length) return;
+        if (!a.name.toLowerCase().includes(q) && !a.email.includes(q)) return;
+        map.set(a.id, { id: a.id, name: a.name, email: a.email, where });
+      });
+      if (platforms.includes("volunteers")) {
+        state.volunteers.forEach((v) => {
+          if (!v.name.toLowerCase().includes(q) && !v.email.includes(q)) return;
+          const prev = map.get(v.id);
+          map.set(v.id, { id: v.id, name: v.name, email: v.email, where: prev ? ["volunteers"].concat(prev.where) : ["volunteers"] });
+        });
+      }
+      return Array.from(map.values());
+    }
+
     function peoplePage(kind) {
       const cols = kind === "rooms" ? ["roomsdb"] : peopleColumns();
       const labels = { volunteers: "Volunteers", roomsdb: "Roomsdb", planner: "Planner", hq: "HQ" };
       const options = {
-        volunteers: [{ value: "", label: "—" }, { value: "regular", label: "Regular" }, { value: "admin", label: "Admin" }],
+        volunteers: [{ value: "", label: "—" }, { value: "regular", label: "Own info" }, { value: "admin", label: "Volunteer admin" }],
         roomsdb: [{ value: "", label: "—" }, { value: "view", label: "View" }, { value: "admin", label: "Admin" }],
         planner: [{ value: "", label: "—" }, { value: "view", label: "View" }, { value: "admin", label: "Admin" }],
         hq: [{ value: "", label: "—" }, { value: "view", label: "View" }, { value: "admin", label: "Admin" }],
       };
       const rows = state.staff.filter((s) => {
-        if (cols.length === 4) return s.roomsdb || s.planner || s.hq;
+        if (cols.length === 4) return s.roomsdb || s.planner || s.hq || s.volunteers === "admin";
         return cols.some((c) => s[c]);
       });
       const q = state.peopleQuery.trim().toLowerCase();
-      const platforms = cols.length === 4 ? ["roomsdb", "planner", "hq"] : cols;
-      const hits = q ? state.accounts.filter((a) => (a.name.toLowerCase().includes(q) || a.email.includes(q)) && platforms.some((p) => a[p])) : [];
+      const hits = findSignups(q, cols);
       const title = cols.length === 4 ? "People" : "People · " + labels[cols[0]];
       const sub = cols.length === 4
-        ? "The handful who already have a grant. Find an account searches roomsdb, planner, and HQ signups. It does not search the volunteer list."
-        : "People who already have a grant. Find an account searches signups for this platform only, not volunteers.";
+        ? "The handful who already have a grant. Find an account searches all four: volunteers, roomsdb, the planner, and HQ. Promoting a volunteer to volunteer admin does not open the other three."
+        : "People who already have a grant. Find an account searches signups for this platform only.";
       return (
         "<h1>" + title + "</h1><p class=\"sub\">" + sub + "</p>" +
         banner() +
         '<label>Find an account</label><input type="search" data-query="people" value="' + esc(state.peopleQuery) + '" placeholder="Name">' +
-        (hits.length ? '<div class="suggest">' + hits.map((a) => {
-          const where = ["roomsdb", "planner", "hq"].filter((p) => a[p]).join(", ");
-          return '<button type="button" data-action="add-staff" data-id="' + a.id + '">' + esc(a.name) + " · " + esc(a.email) + " · signed up on " + esc(where) + "</button>";
-        }).join("") + "</div>" : "") +
+        (hits.length ? '<div class="suggest">' + hits.map((a) => '<button type="button" data-action="add-staff" data-id="' + a.id + '">' + esc(a.name) + " · " + esc(a.email) + " · signed up on " + esc(a.where.join(", ")) + "</button>").join("") + "</div>" : "") +
         "<table><thead><tr><th>Person</th>" + cols.map((c) => "<th>" + labels[c] + "</th>").join("") + "</tr></thead><tbody>" +
         rows.map((s) => {
           const person = accountById(s.id);
@@ -820,9 +835,21 @@
         }
         const cols = peopleColumns();
         const acct = state.accounts.find((a) => a.id === id);
+        const person = volunteer(id);
+        if (cols.length === 4 && person && row.volunteers !== "admin") {
+          row.volunteers = "admin";
+          person.level = "admin";
+          state.peopleQuery = "";
+          toast("Volunteer admin granted. This does not open roomsdb, the planner, or HQ.");
+          return;
+        }
         let col = cols[0];
         if (cols.length === 4) {
-          col = ["roomsdb", "planner", "hq"].find((p) => acct && acct[p] && !row[p]) || "roomsdb";
+          col = ["roomsdb", "planner", "hq"].find((p) => acct && acct[p] && !row[p]);
+          if (!col) {
+            toast("Nothing left to grant on the platforms they signed up for.");
+            return;
+          }
         }
         if (acct && cols.length === 1 && !acct[col]) {
           toast("They did not sign up on this platform.");
