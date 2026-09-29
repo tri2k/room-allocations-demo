@@ -201,18 +201,9 @@ A platform admin does not need that bookmark. Each platform they admin has a **P
 
 On `ops.berkeley.mt/people`, the page shows the columns that person may change. An HQ admin sees HQ. A planner admin sees the planner. Someone who is both sees both. A superuser sees every column. The rows stay a handful: people with a roomsdb, planner, or HQ grant, plus volunteer admins. A volunteer who can only edit their own info stays off that table until a superuser promotes them. Find an account on that page searches all four signups: volunteers, roomsdb, the planner, and HQ. A superuser can set a volunteer signup to volunteer admin. Promoting them does not open roomsdb, the planner, or HQ. The page still does not open as a scroll of every signup. A roomsdb admin’s search stays roomsdb signups only. Volunteer own-info and volunteer admin stay on `volunteers.berkeley.mt`. Live’s shared account and Swire’s logins have no People screen here.
 
-What is still awkward: these are different hosts, so a cookie on `roomsdb.berkeley.mt` is not sent to `ops.berkeley.mt`. One account can still mean a sign-in click per host. That is not four passwords. Do not solve it by setting the cookie on `.berkeley.mt`. That would also send the staff session to live and Swire.
+What is still awkward: these are different hosts, so a cookie on `roomsdb.berkeley.mt` is not sent to `ops.berkeley.mt`. That is not four passwords. Do not solve it by setting the cookie on `.berkeley.mt`. That would also send the staff session to live and Swire.
 
-**One prompt or one click per host.** “One prompt” means you sign in on the planner and roomsdb opens already signed in. “One click per host” means each address shows Continue again. It is still the same person. Not chosen.
-
-| | One prompt for HQ, planner, and roomsdb | One click on each of those hosts |
-| - | --- | --- |
-| What staff feel | The internal tools are one product. | Each address asks again. Often one click, not a password, if the provider session is still there. |
-| What we build | A sign-in step in the middle. Each host keeps its own cookie. The middle step recognizes the person and sends them back. | Each host starts its own OAuth. Nothing else. |
-| Sign-out | Can sign out of all three at once. | Signing out of roomsdb leaves the planner signed in. |
-| If that middle step breaks | All three internal tools fail sign-in together. They already share one API, so this is not a new outage by itself. | One host’s login can break alone. |
-| Extra cookie | The middle step holds a session that can mint a cookie for any of the three. That cookie must not be set on `.berkeley.mt`, and the volunteer site must not be able to mint an HQ session. | No cookie can mint a session for a host you did not just sign in on. |
-| Volunteers | An officer filling out the form can be included, so check-in does not ask again. External volunteers still sign in on that host only. Their session must not open HQ. | The officer clicks Continue once on the volunteer host too. Same account. |
+**Locked: one sign-in per host.** Three sign-ins, one per cookie. `ops.berkeley.mt` covers Saturday, `/planner`, and `/people` together. `roomsdb.berkeley.mt` and `volunteers.berkeley.mt` each start their own Google OAuth. If the person is already signed in to Google, the extra host is a Continue click, not a password. No middle step mints a cookie for a host the browser did not just finish Google on. Signing out of roomsdb leaves ops signed in. An officer who also fills out the volunteer form clicks Continue on the volunteer host too. Same person. A volunteer signup does not open ops.
 
 Why this is awkward with one event and several hosts:
 
@@ -224,7 +215,6 @@ Swire stays on its own admin login and proctor login. Live guests stay logged ou
 
 **Open, do not pretend these are decided:**
 
-- **Whether one sign-in click covers HQ, the planner, and roomsdb**, or the same person still clicks once per host. Separate accounts are decided against: an officer who fills out the volunteer form is one person. Live and Swire stay outside that person.
 - **Whether HQ admin should split** into “may edit” and “may grant.” Planner is decided: a regular grant can create plans, and planner admin is role management. Roomsdb is decided: view is the read-only catalog, and admin means edit. Re-login from the planner to roomsdb is fine. The first superuser is an allowlisted email.
 - **How a plan becomes Saturday.** Any planner user can publish, and published plans appear in a list on an HQ configuration menu. Only an HQ admin can choose which published plan is Saturday. HQ admin is the dispatcher and the other trusted people on that dashboard, not a separate account. Still not decided: a plan starts private to its author, or every plan is created in one shared folder.
 - **Who may edit rounds and roster checkboxes after create.** Live cannot. Create is volunteers admin, the planner, and HQ. Swire and roomsdb do not create rows here.
@@ -384,7 +374,7 @@ We are not inventing `hq.berkeley.mt`. HQ lives on **ops**. Volunteer **people**
 
 Cadence (rare roomsdb vs regular planner vs Saturday HQ): [architecture](2026-08-23-bmt-2026-architecture.md#staff-links-by-cadence).
 
-Same API, same Postgres for everything **except Swire**. Volunteer OAuth is a Person cookie on `volunteers.berkeley.mt` only. Live guests: none. Live **admin** is one shared account, cookie **`Path=/admin`**, so `/` does not receive it. The **room** cookie lives on Swire only. Do not set cookies on `.berkeley.mt`. Hosts are public; isolation is API authorization plus **Swire as a separate process**. Details: [hosts are public](2026-08-23-bmt-2026-architecture.md#hosts-are-public-isolation-is-the-api). Staff sign-in for HQ, the planner, and roomsdb is still open.
+Same API, same Postgres for everything **except Swire**. Volunteer OAuth is a Person cookie on `volunteers.berkeley.mt` only. Live guests: none. Live **admin** is one shared account, cookie **`Path=/admin`**, so `/` does not receive it. The **room** cookie lives on Swire only. Do not set cookies on `.berkeley.mt`. Hosts are public; isolation is API authorization plus **Swire as a separate process**. Details: [hosts are public](2026-08-23-bmt-2026-architecture.md#hosts-are-public-isolation-is-the-api). Each of ops, roomsdb, and volunteers runs its own Google OAuth. Saturday and `/planner` share the ops sign-in.
 
 Last semester’s “HQ on the same link as volunteers” was officers wanting one bookmark. Volunteer **accounts** and volunteer **admin** both stay on `volunteers.berkeley.mt`. ~300 people should not sign into `ops.berkeley.mt`. HQ reads the assignment list. It does not edit it.
 
