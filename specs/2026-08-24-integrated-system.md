@@ -2,7 +2,7 @@
 
 **Status**: Target design. This file is the parent for the integrated system. Workshop locks from [round 2](2026-08-23-bmt-2026-architecture.md) still apply where this file does not replace them.
 
-Indoor maps (Figma import, Leaflet): [2026-08-21-indoor-maps.md](2026-08-21-indoor-maps.md). Roomsdb workshop: [2026-08-24-roomsdb.md](2026-08-24-roomsdb.md). Older “ops platform” / Phase 1–2 notes are history, not the build contract.
+Indoor maps (Figma import, Leaflet): [2026-08-21-indoor-maps.md](2026-08-21-indoor-maps.md). Roomsdb workshop: [2026-08-24-roomsdb.md](2026-08-24-roomsdb.md). This file is the build contract.
 
 First event the product must run: **BMT 2026, Saturday 2026-11-14**. Design load: ~1800 contestants, ~50+ testing rooms, ~300 volunteers. Same org then runs semesterly contests (BmMT, …).
 
