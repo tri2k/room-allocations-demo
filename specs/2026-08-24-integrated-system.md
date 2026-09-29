@@ -10,7 +10,11 @@ First event the product must run: **BMT 2026, Saturday 2026-11-14**. Design load
 
 We are designing **one product** that replaces the spreadsheet pile and last semester’s separate tools. We are not extending the drag-and-drop demo until it grows volunteers.
 
-At implementation we may rewrite this repo or start a new tree. Specs describe the product. They do not have to match `server/app/models.py`.
+**Locked: build in a new repository.** This demo repo is the archive. Do not implement volunteers inside `frontend/` or `server/`. Copy the current-contract specs into the new repo (this file, the roomsdb spec, the API diagram, the August 23 architecture note, the indoor-maps note, and `wireframes/platforms.html`). Leave the August 11–13 phase notes and `docs/c4/` here. Specs describe the product. They do not have to match `server/app/models.py`.
+
+**First deploy of that repo.** One process and one Postgres. Publish only `volunteers.berkeley.mt`. Today’s `live.berkeley.mt` stays on its existing deploy until the people who run it move it. Do not point that hostname at this process in the first release. Later, `ops.berkeley.mt` and `roomsdb.berkeley.mt` are new hostnames on this same process, not new repos and not a second database.
+
+**OAuth client.** Create it in a club Google Cloud project you can still open after this semester. The client id cannot be moved to another Cloud project. Adding the club account as an owner of this project keeps the same client. A new project means a new client id and secret. Person rows stay keyed by Google’s `sub`, which does not change across clients. Register `https://volunteers.berkeley.mt/api/v1/auth/google/callback` before real signups, and point that hostname at whatever machine is serving the app. Moving the process onto the friend’s server is a DNS change and a database move. Publish the consent screen. A testing-mode client cannot hold the volunteer list.
 
 **Thrown away as design input** (they exist only because the prototype did):
 
@@ -259,7 +263,7 @@ The browser calls `/api/...` on the host it is already on (`ops.berkeley.mt`, `r
 
 **Locked: prefix by module**, the way you already name hosts. Each folder is many endpoints, not one dump.
 
-Folders name **who owns the tables**. They do not stop a page on `live.berkeley.mt` from requesting `/api/v1/roomsdb/rooms` on that same host. The live origin proxies **`/api/v1`** to this process so a map read is one hop. Do not send the browser to `api.berkeley.mt`. Do **not** proxy only `/api/v1/live` if we want maps on live.
+Folders name **who owns the tables**. They do not stop a page on `live.berkeley.mt` from requesting `/api/v1/roomsdb/rooms` on that same host. When live is served by this process, that origin proxies **`/api/v1`** so a map read is one hop. Until then, `live.berkeley.mt` stays the existing app and does not point here. Do not send the browser to `api.berkeley.mt`. Do **not** proxy only `/api/v1/live` if we want maps on live.
 
 | Folder | Default caller | Owns |
 | ------ | -------------- | ---- |
