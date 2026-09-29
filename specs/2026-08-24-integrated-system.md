@@ -265,11 +265,11 @@ Those can be **one JavaScript app** with several routes, or a staff bundle plus 
 
 ### API paths (one backend, folders not six APIs)
 
-The browser may call `live.berkeley.mt/api/...` (proxied) or `api.berkeley.mt/...`. Same process. Paths are **`/api/v1/{folder}/...`**.
+The browser calls `/api/...` on the host it is already on (`ops.berkeley.mt`, `roomsdb.berkeley.mt`, `volunteers.berkeley.mt`, `live.berkeley.mt`), proxied to this one process. Do not call `api.berkeley.mt`. Paths are **`/api/v1/{folder}/...`**.
 
 **Locked: prefix by module**, the way you already name hosts. Each folder is many endpoints, not one dump.
 
-This is **not** a bad idea for “live might call roomsdb.” Folders name **who owns the tables**. They do not stop `live.berkeley.mt` from `fetch('/api/v1/roomsdb/rooms')`. The live origin should proxy **`/api/v1`** (or call `api.berkeley.mt`) so cross-folder reads are one hop. Do **not** proxy only `/api/v1/live` if we want maps on live.
+Folders name **who owns the tables**. They do not stop a page on `live.berkeley.mt` from requesting `/api/v1/roomsdb/rooms` on that same host. The live origin proxies **`/api/v1`** to this process so a map read is one hop. Do not send the browser to `api.berkeley.mt`. Do **not** proxy only `/api/v1/live` if we want maps on live.
 
 | Folder | Default caller | Owns |
 | ------ | -------------- | ---- |
