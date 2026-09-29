@@ -172,6 +172,8 @@ Today Swire uses a **shared password in an environment variable** (all rooms, on
 
 ### Auth by screen
 
+The permission model in this section is the round-2 sketch. The parent spec replaced it. `can_open_ops`, cookies issued together from one Google prompt, and Google on live `/admin` are not the lock. The lock is one sign-in per host and a grant per platform. Live `/admin` is the shared password. Read [the parent](2026-08-24-integrated-system.md) for the current doors and for why. The table below is the earlier pass.
+
 Screens on **this** platform are not separate logins. There are **two ways to prove who you are here**:
 
 | Proof | Cookie | Who |
@@ -205,7 +207,7 @@ A Person cookie **must not** open a Swire room. Swire’s room session **must no
 
 **Saturday mix-up (locked):** the human assigned to proctor 155 may be signed into Google on their phone (screen 6). The HDMI laptop still uses the **room** login (screen 4). Those are not interchangeable.
 
-**Cookie hygiene:** Person cookies must not use `Domain=.berkeley.mt`. That would send a staff or volunteer session to every host. The live admin cookie is **`Path=/admin`** on `live.berkeley.mt` only, so `/` does not receive it. Swire does not receive a Person cookie. Proctors sign in on Swire.
+**Cookie hygiene:** Person cookies must not use `Domain=.berkeley.mt`. Many other products already live on `berkeley.mt` subdomains. A parent-domain cookie is sent to all of them, and any of them can overwrite it. The live admin cookie is **`Path=/admin`** on `live.berkeley.mt` only, so `/` does not receive it. Swire does not receive a Person cookie. Proctors sign in on Swire.
 
 ### Hosts are public; isolation is the API
 
