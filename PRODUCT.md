@@ -66,7 +66,7 @@ Design first (this PR), then implement the six screens against the greenfield sp
 | Question | Status |
 | -------- | ------ |
 | Staff / volunteer login | **Decided:** Google only for Person accounts on this platform. Ops = `can_open_ops`. Live guests = none. Live `/admin` = same staff flag. Room password is Swire’s, not this API |
-| Auth | **Decided:** Google for people. Publish the OAuth client (Testing cap is too small for ~300 volunteers) |
+| Auth | **Decided:** Google for people. Publish the OAuth client (Testing cap is too small for 400 volunteers) |
 | Slot granularity | **Decided:** 15 min default; per draft |
 | Registration / scoring | **Decided:** other product; roster CSV into this database |
 | Draft vs day plan | **Decided:** Event is the contest; draft is the grid; day plan is a frozen import |

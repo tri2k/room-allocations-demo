@@ -2,7 +2,7 @@
 
 **Status**: Draft — workshop locks. **Target parent:** [greenfield integrated system](2026-08-24-integrated-system.md). Where this note and the parent disagree, the parent is the lock.
 
-Parent notes: [ops platform](2026-08-22-ops-platform.md). Indoor maps: [2026-08-21-indoor-maps.md](2026-08-21-indoor-maps.md). First event: **BMT 2026, Saturday 2026-11-14**. Design load: ~1800 contestants, ~50+ testing rooms, ~300 volunteers.
+Parent notes: [ops platform](2026-08-22-ops-platform.md). Indoor maps: [2026-08-21-indoor-maps.md](2026-08-21-indoor-maps.md). First event: **BMT 2026, Saturday 2026-11-14**. Design load: 2500 students, 60 testing rooms, 400 volunteers.
 
 ## Are we ready to spec details?
 
@@ -67,7 +67,7 @@ Indoor maps docs used to say “three stores.” That means three **kinds of row
 | Split | What it actually is | Cost here |
 | ----- | ------------------- | --------- |
 | One DB per module (roomsdb DB, volunteer DB, maps DB, …) | Separate sources of truth | You cannot `FOREIGN KEY` to `rooms.id` across databases. You copy DWIN155 again. That is last semester. |
-| Two Postgres **instances** (staff vs public) | Two servers to run, backup, and fail | 50 rooms + 1800 roster rows will not saturate one instance. You still need the rooms list on both sides or public maps lie. |
+| Two Postgres **instances** (staff vs public) | Two servers to run, backup, and fail | 60 rooms + 2500 roster rows will not saturate one instance. You still need the rooms list on both sides or public maps lie. |
 | Postgres **schemas** (`roomsdb`, `ops`, `maps` inside `roomalloc`) | Folders of tables, still one database | Fine later for cleanliness. Does not buy isolation or scale. Skip until the table list is annoying. |
 | Read **replica** | Same data, extra copy for reads / failover | A hosting option later if `live.berkeley.mt` should survive a primary blip. Still one source of truth. |
 | Static **export** (print packet, JSON dump of the day plan) | Paper / file fallback | Already required. This is how you survive the DB dying, not a second database. |
@@ -133,7 +133,7 @@ Three different things (easy to smash together):
 
 **Still not Google, not a Person:** Swire (`DWIN155` + event password). **`live.berkeley.mt`:** no login.
 
-**Reasonable because:** officers and most Berkeley-adjacent volunteers already have Google (including `@berkeley.edu`). One id, one button, no volunteer password reset, kick one human by removing staff flag / that Google. **Cost:** you cannot volunteer without a Google account. Google OAuth must be **published** (Testing mode caps ~100 users — not enough for ~300 volunteers). Stolen staff Google opens HQ — same as any one-login design.
+**Reasonable because:** officers and most Berkeley-adjacent volunteers already have Google (including `@berkeley.edu`). One id, one button, no volunteer password reset, kick one human by removing staff flag / that Google. **Cost:** you cannot volunteer without a Google account. Google OAuth must be **published** (Testing mode caps ~100 users — not enough for 400 volunteers). Stolen staff Google opens HQ — same as any one-login design.
 
 **Rejected for this design pass:** extra ops password, second staff User table, email/password volunteer accounts, Microsoft (or any other issuer) as Person login, Google on projectors. A volunteer **form field** may still store a non-Gmail contact address; that is not a login. Identity is Google only until we reopen it on purpose.
 
@@ -201,7 +201,7 @@ A Person cookie **must not** open a Swire room. Swire’s room session **must no
 
 **Volunteer admin is not a seventh login.** It is `volunteers.berkeley.mt/admin` for people who already have `can_open_ops`. Same tables as screen 6. The HQ page only reads them.
 
-**OAuth:** one **published** Google client (Testing-mode user cap is too small for ~300 volunteers). Authorized origins include ops, roomsdb, volunteers, and **`live.berkeley.mt` for `/admin` only**. First visit: Continue with Google, then the form. Return visit: same Google → same `people.id`.
+**OAuth:** one **published** Google client (Testing-mode user cap is too small for 400 volunteers). Authorized origins include ops, roomsdb, volunteers, and **`live.berkeley.mt` for `/admin` only**. First visit: Continue with Google, then the form. Return visit: same Google → same `people.id`.
 
 **Bounce:** a Person **without** `can_open_ops` who opens `ops.berkeley.mt` or `roomsdb.berkeley.mt` does not see those tools. Send them to `volunteers.berkeley.mt`. Stolen staff Google still opens HQ and roomsdb — accepted.
 
@@ -330,7 +330,7 @@ When the box is checked, the roster is a snapshot from the registration product 
 - Default proctor count from a **capacity heuristic**, override per room.
 - Check-in: **name search** on `volunteers.berkeley.mt/admin`. Volunteer seeing their own room is on the same host. HQ reads the result.
 - **Do not invite** list.
-- ~300 volunteers. Shirt/dietary/etc stored; visible to managers; field list later.
+- 400 volunteers. Shirt/dietary/etc stored; visible to managers; field list later.
 
 ### Public (`live.berkeley.mt`)
 

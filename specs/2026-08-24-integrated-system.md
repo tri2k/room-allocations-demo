@@ -4,7 +4,7 @@
 
 Indoor maps (Figma import, Leaflet): [2026-08-21-indoor-maps.md](2026-08-21-indoor-maps.md). Roomsdb workshop: [2026-08-24-roomsdb.md](2026-08-24-roomsdb.md). This file is the build contract.
 
-First event the product must run: **BMT 2026, Saturday 2026-11-14**. Design load: ~1800 contestants, ~50+ testing rooms, ~300 volunteers. Same org then runs semesterly contests (BmMT, …).
+First event the product must run: **BMT 2026, Saturday 2026-11-14**. Design load: 2500 students, 60 testing rooms, 400 volunteers. Same org then runs semesterly contests (BmMT, …).
 
 ## Ground-up
 
@@ -204,11 +204,11 @@ On `ops.berkeley.mt/people`, the page shows the columns that person may change. 
 
 What is still awkward: these are different hosts, so a cookie on `roomsdb.berkeley.mt` is not sent to `ops.berkeley.mt`. That is not four passwords. Do not solve it by setting the cookie on `.berkeley.mt`. Many other products already live on `berkeley.mt` subdomains. A parent-domain cookie is sent to all of them, and any of them can overwrite it. The volunteer wall exists so a signup session is not already a staff session on Saturday.
 
-**Locked: one sign-in per host.** Three sign-ins, one per cookie. `ops.berkeley.mt` covers Saturday, `/planner`, and `/people` together, because those paths are one host and the browser already sends one cookie to all of them. A second sign-in for `/planner` would be a `Path` split we do not want. `roomsdb.berkeley.mt` and `volunteers.berkeley.mt` each start their own Google OAuth. If the person is already signed in to Google, the extra host is a Continue click, not a password. That is fast enough. No middle step mints a cookie for a host the browser did not just finish Google on. That step would be a new power: it could create a staff session without Google returning to that host, and the volunteer site must not be able to ask for one. Signing out of roomsdb leaves ops signed in. An officer who also fills out the volunteer form clicks Continue on the volunteer host too. Same person. A volunteer signup does not open ops, because about 300 signups must not be able to open Saturday.
+**Locked: one sign-in per host.** Three sign-ins, one per cookie. `ops.berkeley.mt` covers Saturday, `/planner`, and `/people` together, because those paths are one host and the browser already sends one cookie to all of them. A second sign-in for `/planner` would be a `Path` split we do not want. `roomsdb.berkeley.mt` and `volunteers.berkeley.mt` each start their own Google OAuth. If the person is already signed in to Google, the extra host is a Continue click, not a password. That is fast enough. No middle step mints a cookie for a host the browser did not just finish Google on. That step would be a new power: it could create a staff session without Google returning to that host, and the volunteer site must not be able to ask for one. Signing out of roomsdb leaves ops signed in. An officer who also fills out the volunteer form clicks Continue on the volunteer host too. Same person. A volunteer signup does not open ops, because about 400 signups must not be able to open Saturday.
 
 Why this is awkward with one event and several hosts:
 
-- A cookie set on `volunteers.berkeley.mt` is not sent to `ops.berkeley.mt`. Signing up to volunteer does not open the dashboard. That is what we want for ~300 volunteers. An officer is the same person on both hosts anyway.
+- A cookie set on `volunteers.berkeley.mt` is not sent to `ops.berkeley.mt`. Signing up to volunteer does not open the dashboard. That is what we want for 400 volunteers. An officer is the same person on both hosts anyway.
 - Live admin is the shared-account shape: one login, not a person. HQ, the planner, and roomsdb still need a proof of their own. None of those may be interchangeable with a volunteer session.
 - One event does not mean one login. The event row is shared. The session is per host.
 
@@ -358,7 +358,7 @@ Screens should feel like places you can bookmark. Last semester failed because t
 | Host | What it was | What was missing |
 | ---- | ----------- | ---------------- |
 | **`swire.berkeley.mt`** | Room timers (one page per room). Staff timer controls at **`/admin`** — a URL officers know, **not a button** on the room page | Clarifications, roster, maps, roomsdb. Swire was the clock product. HQ on ops was unfinished |
-| **`ops.berkeley.mt`** | Volunteers (this past semester) | Unmet ambition: ops **dashboard / HQ** on this host. Putting ~300 volunteer logins on the same door as HQ is the tension |
+| **`ops.berkeley.mt`** | Volunteers (this past semester) | Unmet ambition: ops **dashboard / HQ** on this host. Putting 400 volunteer logins on the same door as HQ is the tension |
 | **`live.berkeley.mt`** | Public contest site | Indoor maps joined to roomsdb |
 
 We are not inventing `hq.berkeley.mt`. HQ lives on **ops**. Volunteer **people** get their own host so they can come back next semester without walking into the war room. Roomsdb is rare and sacred, so it gets **`roomsdb.berkeley.mt`** — a different link from the planner, not a fifth product.
@@ -377,7 +377,7 @@ Cadence (rare roomsdb vs regular planner vs Saturday HQ): [architecture](2026-08
 
 Same API, same Postgres for everything **except Swire**. Volunteer OAuth is a Person cookie on `volunteers.berkeley.mt` only. Live guests: none. Live **admin** is one shared account, cookie **`Path=/admin`**, so `/` does not receive it. The **room** cookie lives on Swire only. Do not set cookies on `.berkeley.mt`. Hosts are public; isolation is API authorization plus **Swire as a separate process**. Details: [hosts are public](2026-08-23-bmt-2026-architecture.md#hosts-are-public-isolation-is-the-api). Each of ops, roomsdb, and volunteers runs its own Google OAuth. Saturday and `/planner` share the ops sign-in.
 
-Last semester’s “HQ on the same link as volunteers” was officers wanting one bookmark. Volunteer **accounts** and volunteer **admin** both stay on `volunteers.berkeley.mt`. ~300 people should not sign into `ops.berkeley.mt`. HQ reads the assignment list. It does not edit it.
+Last semester’s “HQ on the same link as volunteers” was officers wanting one bookmark. Volunteer **accounts** and volunteer **admin** both stay on `volunteers.berkeley.mt`. 400 people should not sign into `ops.berkeley.mt`. HQ reads the assignment list. It does not edit it.
 
 Do not mint `hq.berkeley.mt` unless ops is retired as a name.
 

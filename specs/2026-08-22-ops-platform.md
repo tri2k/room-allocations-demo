@@ -70,7 +70,7 @@ Figma does **not** own rooms. The volunteer form does **not** own rooms. The pro
 | Public vs staff | Same API; public routes **omit** fields | Guests never get rosters, phones, HQ notes |
 | First production event | **BMT 2026**, Saturday **2026-11-14** | Defines v1. Same org then runs semesterly events (BmMT, next BMT, …) |
 | Tenancy | **One org (BMT)** in product; `org_id` still in the schema | Do not build a multi-org marketplace this year |
-| Scale (design load) | ~**1800** contestants, **50+** testing rooms (growth 500 F22 → 1800 Sp26) | Timers, clarifications, maps, volunteer assign must work at this size |
+| Scale (design load) | **2500** students, **60** testing rooms, **400** volunteers (growth 500 F22 → 1800 Sp26) | Timers, clarifications, maps, volunteer assign must work at this size |
 | Student registration | **Out of scope.** Roster may be a **CSV import** | Separate platform exists; do not join it for v1 |
 | Volunteer product | **Replace** the current volunteer app | Shared roomsdb + assignments beats another room CSV |
 | Indoor turn-by-turn | **Not year one** | Public maps: floor finder + search + pinch-zoom |
@@ -87,9 +87,9 @@ Figma does **not** own rooms. The volunteer form does **not** own rooms. The pro
 | Contest rounds | **Power**, **Individual**, **Guts**. Individual: 2 of 4 focus **or** 1 general | One room × one slot = one activity |
 | Roster | CSV morning-of after check-in; **names**; **move in-app**; two tests = two rows | Registration platform stays separate |
 | Public site | `live.berkeley.mt`, English, **no public clock** | Per-room guest detail undecided. Outdoor maps stretch |
-| Volunteers | **`volunteers.berkeley.mt`**, **Google**. Staff admin at **`/admin` on that host** (`can_open_ops`). Form builder; ~300 people; DNI | PII visible to managers. HQ reads assignments and does not edit them |
+| Volunteers | **`volunteers.berkeley.mt`**, **Google**. Staff admin at **`/admin` on that host** (`can_open_ops`). Form builder; 400 people; DNI | PII visible to managers. HQ reads assignments and does not edit them |
 | Staff auth | **Google** for Person accounts on this platform. Ops and roomsdb require `can_open_ops`. Live: none. Room password is **Swire’s** | [architecture](2026-08-23-bmt-2026-architecture.md#one-person-one-id) |
-| Realtime | Swire admins own clocks. Other platforms **poll** Swire’s read-only API. Live does not show a public clock | 50+ rooms is still a small JSON on Swire |
+| Realtime | Swire admins own clocks. Other platforms **poll** Swire’s read-only API. Live does not show a public clock | 60 rooms is still a small JSON on Swire |
 | C4 | Update as-built diagrams only when code lands | This file is target, not current commit |
 
 ### Component map
@@ -131,7 +131,7 @@ Ops **writes live fields only**. It does not edit the roomsdb. Moving a round be
 
 #### 4. Proctor suite
 
-Timer + clarifications for 50+ rooms. Attached to **this event’s assignment + published allocation**, not to roomsdb forever.
+Timer + clarifications for 60 rooms. Attached to **this event’s assignment + published allocation**, not to roomsdb forever.
 
 - Timer: each **testing** room has its own clock, **on Swire**. **Only Swire admins** change it. Proctors watch. Other platforms poll the read-only API. HQ shows “unavailable” when the poll fails.
 - Auto **5 minutes remaining**. Non-testing rooms: no timer.
