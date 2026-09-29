@@ -1,6 +1,6 @@
 # BMT ops platform (greenfield)
 
-**Status**: Target design. This file is the parent for the integrated system. Workshop locks from [round 2](2026-08-23-bmt-2026-architecture.md) still apply. **The allocator prototype in this git repo is not a constraint** — ignore its tables, routes, Google login, and folder layout when designing.
+**Status**: Target design. This file is the parent for the integrated system. Workshop locks from [round 2](2026-08-23-bmt-2026-architecture.md) still apply where this file does not replace them.
 
 Indoor maps (Figma import, Leaflet): [2026-08-21-indoor-maps.md](2026-08-21-indoor-maps.md). Roomsdb workshop: [2026-08-24-roomsdb.md](2026-08-24-roomsdb.md). Older “ops platform” / Phase 1–2 notes are history, not the build contract.
 
@@ -8,25 +8,22 @@ First event the product must run: **BMT 2026, Saturday 2026-11-14**. Design load
 
 ## Ground-up
 
-We are designing **one product** that replaces the spreadsheet pile and last semester’s separate tools. We are not extending the drag-and-drop demo until it grows volunteers.
+We are designing **one product** that replaces the spreadsheet pile and last semester’s separate tools.
 
-**Locked: build in a new repository.** This demo repo is the archive. Its tables, routes, and login exist because the drag-and-drop grid shipped, not because they are the product. Building volunteers inside `frontend/` or `server/` would make those accidents the design. Do not implement there. Copy the current-contract specs into the new repo (this file, the roomsdb spec, the API diagram, the August 23 architecture note, the indoor-maps note, and `wireframes/platforms.html`). Leave the August 11–13 phase notes and `docs/c4/` here. Specs describe the product. They do not have to match `server/app/models.py`.
+**This spec is the product.** Tables, routes, login, and folders are whatever these decisions say. There is no earlier schema to match.
 
-**First deploy of that repo.** One process and one Postgres. Publish only `volunteers.berkeley.mt`. Volunteers is the time-sensitive piece, and that half already ran at BmMT 2026. The person table has to exist now, or the later hosts would grow a second user list to merge. Today’s `live.berkeley.mt` stays on its existing deploy until the people who run it move it. That hostname is already someone else’s program. Do not point it at this process in the first release. Later, `ops.berkeley.mt` and `roomsdb.berkeley.mt` are new hostnames on this same process, not new repos and not a second database.
+**First deploy.** One process and one Postgres. Publish only `volunteers.berkeley.mt`. Volunteers is the time-sensitive piece, and that half already ran at BmMT 2026. The person table has to exist now, or the later hosts would grow a second user list to merge. Today’s `live.berkeley.mt` stays on its existing deploy until the people who run it move it. That hostname is already someone else’s program. Do not point it at this process in the first release. Later, `ops.berkeley.mt` and `roomsdb.berkeley.mt` are new hostnames on this same process, not new repos and not a second database.
 
 **OAuth client.** Create it in a club Google Cloud project you can still open after this semester. A personal student project disappears when that account does, and sign-in dies even if the server is fine. The client id cannot be moved to another Cloud project. Adding the club account as an owner of this project keeps the same client. A new project means a new client id and secret. Person rows stay keyed by Google’s `sub`, which does not change across clients, so a new client does not create a second person. Register `https://volunteers.berkeley.mt/api/v1/auth/google/callback` before real signups, and point that hostname at whatever machine is serving the app. The return address is the hostname, not the building the process runs in. Moving onto the friend’s server is then a DNS change and a database move. Publish the consent screen. A testing-mode client caps how many Google accounts can sign in, which cannot hold the volunteer list.
 
-**Thrown away as design input** (they exist only because the prototype did):
+**Not in this product:**
 
-- Google OAuth “because Phase 2a shipped”
-- Owner-only sheets and “non-owner gets 404”
-- Hash routes (`#/catalog`), Vite proxy, FastAPI, Alembic, `roomalloc` as the database name
-- Hardcoded `room_type` / `optimal_capacity` columns
-- Multi-org marketplace (Phase 2c)
-- As-built C4 as a picture of the target
-- “Today’s room password is an env var” as the product (the *idea* of one shared room secret stays)
+- A plan only its author can open, hidden from everyone else with 404
+- A fixed set of room columns such as `room_type` and `optimal_capacity`. Rooms grow custom fields. The built-in fact is `capacity`.
+- More than one organization
+- The room password stored as a server setting you redeploy to change. One shared event password stays, on Swire, and it can be rotated without a redeploy
 
-**Kept because we decided them in workshop**, not because code did:
+**Locked:**
 
 - One Postgres, one database. **This** platform: roomsdb, planner, HQ, volunteers, live, and **maps**. They share `rooms.id`. Last semester the same room (DWIN155) lived in more than one place and the copies drifted. A second database would do that again. One outage takes this platform down. It does not take Swire’s timers down.
 - **One API** for that platform. Bookmarks: **`roomsdb.berkeley.mt`**, **`ops.berkeley.mt/planner`**, **`ops.berkeley.mt`**, **`volunteers.berkeley.mt`**, **`live.berkeley.mt`**. Six separately deployed sites would be six release buttons for one contest.
@@ -426,7 +423,7 @@ One Postgres
 
 Join key: **`rooms.id`**. Display `DWIN155` is computed. Swire should key proctor state by that id (or by `DWIN155`), not by a private room list. Database name and hosting are an implementation choice.
 
-## Domain (target, not prototype)
+## Domain
 
 | Concept | Meaning |
 | ------- | ------- |
@@ -444,7 +441,7 @@ Join key: **`rooms.id`**. Display `DWIN155` is computed. Swire should key procto
 
 One org in product (BMT). No `org_id` required for v1.
 
-**Draft plans** are club staff objects. The prototype’s “sheet owner” and 404-for-everyone-else go away unless we pick Google *and* want private drafts. Default: any staff who can sign in can open drafts; still **one writer at a time** (no live co-edit).
+**Draft plans** are club staff objects. A draft is not a private document owned by one account. Any planner user can open drafts. Still **one writer at a time** (no live co-edit). Hiding someone else’s draft with 404 is not the rule. Whether an unpublished plan starts private to its author is still open, under Auth.
 
 ## Runtime
 
@@ -452,7 +449,7 @@ Same picture as above. Different cookies / routes, not different APIs.
 
 If Postgres or the site dies: printed day plan, printed room password, assignment packet. Timers may keep ticking locally and show desync when they reconnect.
 
-## Open (product, not leftover prototype)
+## Open
 
 - **Auth** for volunteers, likely HQ, possibly roomsdb and the planner. Next workshop.
 - **Whether HQ shows a volunteers table.**

@@ -1,6 +1,6 @@
 # BMT 2026 architecture (after round 2)
 
-**Status**: Draft — workshop locks. **Target parent:** [greenfield integrated system](2026-08-24-integrated-system.md). The allocator prototype in this repo is not a constraint.
+**Status**: Draft — workshop locks. **Target parent:** [greenfield integrated system](2026-08-24-integrated-system.md). Where this note and the parent disagree, the parent is the lock.
 
 Parent notes: [ops platform](2026-08-22-ops-platform.md). Indoor maps: [2026-08-21-indoor-maps.md](2026-08-21-indoor-maps.md). First event: **BMT 2026, Saturday 2026-11-14**. Design load: ~1800 contestants, ~50+ testing rooms, ~300 volunteers.
 
@@ -398,7 +398,7 @@ v1: if pickup is **in a named room**, it is a roomsdb **room**. If it is a table
 
 ## Next specs to write (workshop; no application code yet)
 
-Parent: [greenfield integrated system](2026-08-24-integrated-system.md). Do not check the prototype for columns.
+Parent: [greenfield integrated system](2026-08-24-integrated-system.md). Columns are whatever that spec says.
 
 1. **Roomsdb** (in progress): [2026-08-24-roomsdb.md](2026-08-24-roomsdb.md) — custom fields, code mappings, `appears_on_grid`  
 2. Allocator + bulk floor assign + import-to-ops  
